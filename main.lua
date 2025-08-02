@@ -6,13 +6,15 @@ require "zombie"
 scrWidth, scrHeight = love.graphics.getDimensions()
 --local isDown = love.keyboard.isDown
 love.graphics.setBackgroundColor(0.6, 0.8, 1)
+gamerFont = love.graphics.newFont("fonts/Gamer.ttf", 32)
 
 function love.load()
-    bulletSpeed = 1000
+    bulletSpeed = 1500
     bulletDamage = 20
     player = Player(-20+scrWidth/2,-20+scrHeight/2)
     bullets = {}
     zombies = {}
+    damageTexts = {}
 end
 
 function love.update(dt)
@@ -36,11 +38,13 @@ function love.update(dt)
     for i, bullet in ipairs(bullets) do
         for _, zombie in ipairs(zombies) do
             if collision(bullet, zombie) then 
+                --showDamage(bulletDamage, zombie.x, zombie.y)
                 zombie.health=zombie.health-bulletDamage
                 table.remove(bullets, i)
             end
         end
     end
+
 end
 
 function love.draw()

@@ -8,13 +8,20 @@ function Zombie:new(x, y)
     self.health = 100
     self.x = x
     self.y = y
+    self.dx = 0
+    self.dy = 0
 end
 
 function Zombie:update(dt)
-    if player.x > self.x then self.x = self.x + (self.speed * dt) end
-    if player.x < self.x then self.x = self.x - (self.speed * dt) end
-    if player.y > self.y then self.y = self.y + (self.speed * dt) end
-    if player.y < self.y then self.y = self.y - (self.speed * dt) end
+    self.dx = player.x - self.x
+    self.dy = player.y - self.y
+    local dist = math.sqrt(self.dx^2 + self.dy^2)
+    if dist ~= 0 then
+        self.dx = self.dx / dist
+        self.dy = self.dy / dist
+    end
+    self.x = self.x + self.dx * self.speed * dt
+    self.y = self.y + self.dy * self.speed * dt
 end
 
 function Zombie:draw()
