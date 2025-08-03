@@ -1,12 +1,13 @@
 Bullet = Object:extend()
 
-function Bullet:new(x, y, dx, dy)
+function Bullet:new(x, y, dx, dy, damage)
 	self.x = x
 	self.y = y
 	self.width = 6
 	self.height = 6
 	self.dx = dx
 	self.dy = dy
+	self.damage = damage
 end
 
 function Bullet:update(dt)
