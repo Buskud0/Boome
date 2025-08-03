@@ -3,18 +3,20 @@ Object = require "lib/classic"
 require "player"
 require "bullet"
 require "zombie"
+require "damagetext"
 scrWidth, scrHeight = love.graphics.getDimensions()
 --local isDown = love.keyboard.isDown
 love.graphics.setBackgroundColor(0.6, 0.8, 1)
-gamerFont = love.graphics.newFont("fonts/Gamer.ttf", 32)
+
 
 function love.load()
     bulletSpeed = 1500
-    bulletDamage = 20
+    bulletDamage = 23
     player = Player(-20+scrWidth/2,-20+scrHeight/2)
     bullets = {}
     zombies = {}
     damageTexts = {}
+    killCount = 0
 end
 
 function love.update(dt)
@@ -29,7 +31,10 @@ function love.update(dt)
     for i, zombie in ipairs(zombies) do
         zombie:update(dt)
         seperateZombies()
-        if zombie.health<=0 then table.remove(zombies, i) end
+        if zombie.health<=0 then  --if zombie dies
+            table.remove(zombies, i) 
+            killCount = killCount + 1
+        end
         if collision(zombie, player) then
             love.load()
         end
@@ -38,17 +43,22 @@ function love.update(dt)
     for i, bullet in ipairs(bullets) do
         for _, zombie in ipairs(zombies) do
             if collision(bullet, zombie) then 
-                --showDamage(bulletDamage, zombie.x, zombie.y)
+                table.insert(damageTexts, DamageText(-bulletDamage, bullet.x, bullet.y))
                 zombie.health=zombie.health-bulletDamage
                 table.remove(bullets, i)
             end
         end
     end
 
+    for i, damageText in ipairs(damageTexts) do
+        damageText:update(dt)
+        if damageText.destruct == true then table.remove(damageTexts, i) end
+    end
 end
 
 function love.draw()
     player:draw()
+    printKillCount()
 
     for _, bullet in ipairs(bullets) do
         bullet:draw()
@@ -58,11 +68,15 @@ function love.draw()
         zombie:draw()
     end
 
+    for _, damageText in ipairs(damageTexts) do
+        damageText:draw()
+    end
+
 end
 
 function love.keypressed(key)
     if key == 'escape' then love.event.quit() end
-    --if key == '1' then  end
+    
 end
 
 function love.mousepressed(x, y, button) --shoot towards mouse function
@@ -111,4 +125,11 @@ function seperateZombies()
             end
         end
     end
+end
+
+function printKillCount()
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 200)
+    love.graphics.setFont(font)
+    love.graphics.setColor({1,1,1})
+    love.graphics.print(killCount, 30, scrHeight - 150)
 end

@@ -38,6 +38,8 @@ function drawHealthBar(self)
     love.graphics.rectangle("line", self.x, self.y+self.height+offset, self.width, height)
     love.graphics.setColor({1, 1, 1})
     love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width, height)
-    love.graphics.setColor({0.2, 1, 0.2})
+    if self.health > 50 then love.graphics.setColor({0.2, 1, 0.2})
+    elseif self.health > 20 then love.graphics.setColor({1, 0.7, 0.1})
+    else love.graphics.setColor({1, 0.2, 0.2}) end
     love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width*self.health*0.01, height)
 end
