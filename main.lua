@@ -4,26 +4,26 @@ require "player"
 require "bullet"
 require "zombie"
 require "damagetext"
+require "weapon"
 scrWidth, scrHeight = love.graphics.getDimensions()
 --local isDown = love.keyboard.isDown
 love.graphics.setBackgroundColor(0.6, 0.8, 1)
 
 
 function love.load()
-    bulletSpeed = 1500
     player = Player(-20+scrWidth/2,-20+scrHeight/2)
     bullets = {}
     zombies = {}
     damageTexts = {}
     killCount = 0
-    selectedWeapon = 2
-    cooldown = 0
+    weapon = Weapon("m9")
 end
 
 function love.update(dt)
     if #zombies == 0 then addZombies(5) end
 
     player:update(dt)
+    weapon:update(dt)
 
     for _, bullet in ipairs(bullets) do
         bullet:update(dt)
@@ -56,16 +56,11 @@ function love.update(dt)
         if damageText.destruct == true then table.remove(damageTexts, i) end
     end
 
-    --automatic rifle
-    if cooldown > 0 then cooldown = cooldown - dt end
-    while love.mouse.isDown(1) and selectedWeapon == 1 and cooldown <= 0 do
-        shootBullet(12)
-        cooldown = 0.1
-    end
 end
 
 function love.draw()
     player:draw()
+    weapon:draw()
     printKillCount()
 
     for _, bullet in ipairs(bullets) do
@@ -83,35 +78,9 @@ end
 
 function love.keypressed(key)
     if key == 'escape' then love.event.quit() end
-    if key == '1' then selectedWeapon = 1 end
-    if key == '2' then selectedWeapon = 2 end
-    if key == '3' then selectedWeapon = 3 end
+    if key == '1' then weapon = Weapon("mac10") end
+    if key == '2' then weapon = Weapon("m9") end
     
-end
-
-function love.mousepressed(x, y, button) --shoot towards mouse function
-    --pistol
-    if button == 1 and selectedWeapon == 2 and cooldown <= 0 then
-        shootBullet(16)
-        cooldown = 0.15
-    end
-    if button == 1 and selectedWeapon == 3 and cooldown <= 0 then
-        --
-    end
-end
-
-function shootBullet(damage)
-    local startX = player.x + player.width / 2
-    local startY = player.y + player.height / 2
-    local mouseX = love.mouse.getX()
-    local mouseY = love.mouse.getY()
-    
-    local angle = math.atan2((mouseY - startY), (mouseX - startX))
-    
-    local bulletDx = bulletSpeed * math.cos(angle)
-    local bulletDy = bulletSpeed * math.sin(angle)
-    
-    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, damage))
 end
 
 function collision(a, b)
