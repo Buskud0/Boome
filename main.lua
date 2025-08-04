@@ -91,9 +91,18 @@ function collision(a, b)
 end
 
 function addZombies(count)
+    local minDistance = 250
+
     for i = 1, count do
-        table.insert(zombies, Zombie(math.random(0, scrWidth), math.random(0, scrHeight)))
+        local x, y
+        repeat
+            x = math.random(0, scrWidth)
+            y = math.random(0, scrHeight)
+        until math.sqrt((x - player.x)^2 + (y - player.y)^2) > minDistance
+
+        table.insert(zombies, Zombie(x, y))
     end
+
 end
 
 function seperateZombies()
