@@ -24,12 +24,18 @@ function Weapon:new(model)
 		self.firerate = 0.1
 	elseif model == "remington870" then
 		self.automatic = false
-		self.damage = 7
+		self.damage = 9
 		self.magSize = 5
 		self.reloadTime = 4
 		self.firerate = 1
 		self.bulletAmount = 10
 		self.spread = 1
+	elseif model == "AWM" then
+		self.automatic = false
+		self.damage = 100
+		self.magSize = 5
+		self.reloadTime = 3
+		self.firerate = 1.5
 	end
 
 	self.capacity = self.magSize

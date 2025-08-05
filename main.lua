@@ -15,13 +15,21 @@ function love.load()
     player = Player(-20+scrWidth/2,-20+scrHeight/2)
     bullets = {}
     zombies = {}
+    weapons = {}
     damageTexts = {}
     killCount = 0
-    weapon = Weapon("m9")
     zombieCount = 1
+    currentWeaponIndex = 1
+    table.insert(weapons, Weapon("m9"))
+    table.insert(weapons, Weapon("mac10"))
+    table.insert(weapons, Weapon("remington870"))
+    table.insert(weapons, Weapon("AWM"))
 end
 
 function love.update(dt)
+    weapon = weapons[currentWeaponIndex]
+
+
     if #zombies == 0 then 
         addZombies(zombieCount) 
         zombieCount = zombieCount + 1
@@ -82,12 +90,12 @@ function love.draw()
 end
 
 function love.keypressed(key)
-    if key == 'escape' then love.event.quit() end
-    if key == 'r' then weapon.capacity = 0 end
-    if key == '1' then weapon = Weapon("mac10") end
-    if key == '2' then weapon = Weapon("m9") end
-    if key == '3' then weapon = Weapon("remington870") end
-    
+    if key == 'escape' then love.event.quit()
+    elseif key == 'r' then weapon.capacity = 0
+    elseif key == '1' then currentWeaponIndex = 1
+    elseif key == '2' then currentWeaponIndex = 2
+    elseif key == '3' then currentWeaponIndex = 3 
+    elseif key == '4' then currentWeaponIndex = 4 end
 end
 
 function collision(a, b)
