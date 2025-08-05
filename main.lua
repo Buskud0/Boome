@@ -17,10 +17,14 @@ function love.load()
     damageTexts = {}
     killCount = 0
     weapon = Weapon("m9")
+    zombieCount = 1
 end
 
 function love.update(dt)
-    if #zombies == 0 then addZombies(5) end
+    if #zombies == 0 then 
+        addZombies(zombieCount) 
+        zombieCount = zombieCount + 1
+    end
 
     player:update(dt)
     weapon:update(dt)
@@ -113,12 +117,11 @@ function seperateZombies()
                 local dy = z1.y - z2.y
                 local dist = math.sqrt(dx * dx + dy * dy)
                 if dist == 0 then dist = 1 end  -- prevent divide by zero
-                local push = 1
 
-                z1.x = z1.x + (dx / dist) * push
-                z1.y = z1.y + (dy / dist) * push
-                z2.x = z2.x - (dx / dist) * push
-                z2.y = z2.y - (dy / dist) * push
+                z1.x = z1.x + (dx / dist)
+                z1.y = z1.y + (dy / dist)
+                z2.x = z2.x - (dx / dist)
+                z2.y = z2.y - (dy / dist)
             end
         end 
     end

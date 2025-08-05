@@ -6,25 +6,27 @@ function Weapon:new(model)
 	self.bulletSpeed = 1500
 	self.reloadCooldown = 0
 	self.reloading = false
+	self.shotFirstBullet = false
 
 	if model == "m9" then
 		self.automatic = false
 		self.damage = 16
 		self.magSize = 12
 		self.reloadTime = 1
-	end
-
-	if model == "mac10" then
+		self.firerate = 0.15
+	elseif model == "mac10" then
 		self.automatic = true
 		self.damage = 12
 		self.magSize = 30
 		self.reloadTime = 2
+		self.firerate = 0.1
 	end
 
 	self.capacity = self.magSize
 end
 
 function Weapon:update(dt)
+
     if self.firerateCooldown > 0 then self.firerateCooldown = self.firerateCooldown - dt end
     if self.reloadCooldown > 0 then self.reloadCooldown = self.reloadCooldown - dt end
 
@@ -38,19 +40,14 @@ function Weapon:update(dt)
     	self.reloading = false
     end
 
-    while self.automatic == true and love.mouse.isDown(1) and self.firerateCooldown <= 0 do
-        if not self.reloading then shootBullet(12) end
-        self.firerateCooldown = 0.1
-    end
+    if love.mouse.isDown(1) and self.firerateCooldown <= 0 and not self.reloading and not self.shotFirstBullet then
+    		shootBullet(self.damage)
+        	self.firerateCooldown = self.firerate
+        	if not self.automatic then self.shotFirstBullet = true end
+    elseif not love.mouse.isDown(1) then self.shotFirstBullet = false end
 end
 
-function love.mousepressed(x, y, button) --shoot towards mouse function
-    --pistol
-    if weapon.automatic == false and button == 1 and weapon.firerateCooldown <= 0 then
-        if not weapon.reloading then shootBullet(16) end
-        weapon.firerateCooldown = 0.15
-    end
-end
+
 
 function reload()
 end
@@ -62,17 +59,22 @@ function Weapon:draw()
 	love.graphics.print(self.model .. " " .. self.capacity .. "/" .. self.magSize .. " " , 10, 0)
 end
 
-function shootBullet(damage)
+function shootBullet(damage, spread)
+	spread = spread or 0
     local startX = player.x + player.width / 2
     local startY = player.y + player.height / 2
     local mouseX = love.mouse.getX()
     local mouseY = love.mouse.getY()
     
-    local angle = math.atan2((mouseY - startY), (mouseX - startX))
-    
-    local bulletDx = weapon.bulletSpeed * math.cos(angle)
-    local bulletDy = weapon.bulletSpeed * math.sin(angle)
-    
+    local bulletDx = mouseX - startX
+	local bulletDy = mouseY - startY
+	local length = math.sqrt(bulletDx*bulletDx + bulletDy*bulletDy)
+	if (length ~= 0) then
+  		bulletDx = bulletDx/length
+  		bulletDy = bulletDy/length
+	end
+    bulletDx = bulletDx * weapon.bulletSpeed 
+    bulletDy = bulletDy * weapon.bulletSpeed 
     table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, damage))
     weapon.capacity = weapon.capacity - 1
 end
