@@ -10,6 +10,7 @@ function Weapon:new(model)
 	self.bulletAmount = 1
 	self.spread = 0
 	self.reloadProgress = 0
+	self.firerateProgress = 0
 
 	if model == "m9" then
 		self.automatic = false
@@ -44,21 +45,24 @@ end
 
 function Weapon:update(dt)
 	--update firerate and reload cooldowns
-    if self.firerateCooldown > 0 then self.firerateCooldown = self.firerateCooldown - dt end
-    if self.reloadCooldown > 0 then self.reloadCooldown = self.reloadCooldown - dt end
+    if self.firerateCooldown > 0 then 
+    	self.firerateCooldown = self.firerateCooldown - dt 
+    	if self.firerate >= 1 then self.firerateProgress = (1 - self.firerateCooldown / self.firerate) end
+    end
+    if self.reloadCooldown > 0 then 
+    	self.reloadCooldown = self.reloadCooldown - dt 
+    	self.reloadProgress = (1 - self.reloadCooldown / self.reloadTime)
+    end
     --reload weapon
     if self.capacity <= 0 and self.reloading == false then
     	self.reloadCooldown = self.reloadTime
     	self.reloading = true
     end
     --do while reloading
-    if self.reloading then
-    	self.reloadProgress = (1 - self.reloadCooldown / self.reloadTime)
-    	if self.reloadCooldown <= 0 then 
-    		self.capacity = self.magSize 
-    		self.reloadProgress = 0
-    		self.reloading = false
-    	end
+    if self.reloading and self.reloadCooldown <= 0 then 
+		self.capacity = self.magSize 
+		self.reloadProgress = 0
+		self.reloading = false
     end
     --shoot
     if love.mouse.isDown(1) and self.firerateCooldown <= 0 and not self.reloading and not self.shotFirstBullet then
@@ -76,6 +80,9 @@ function Weapon:draw()
 	love.graphics.setColor({1,1,1}) 
 	love.graphics.print(self.model .. " " .. self.capacity .. "/" .. self.magSize .. " " , 10, 0)
 	if self.reloading then love.graphics.arc("fill", player.x+20, player.y+20, 10, 0, math.pi*2 * self.reloadProgress) end
+	if self.firerateCooldown > 0 and not self.reloading then 
+		love.graphics.arc("line", player.x+20, player.y+20, 10, 0, math.pi*2 * self.firerateProgress) 
+	end
 end
 
 function shootBullet()
