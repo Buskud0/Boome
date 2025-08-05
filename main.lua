@@ -5,6 +5,7 @@ require "bullet"
 require "zombie"
 require "damagetext"
 require "weapon"
+
 scrWidth, scrHeight = love.graphics.getDimensions()
 --local isDown = love.keyboard.isDown
 love.graphics.setBackgroundColor(0.6, 0.8, 1)
@@ -82,8 +83,10 @@ end
 
 function love.keypressed(key)
     if key == 'escape' then love.event.quit() end
+    if key == 'r' then weapon.capacity = 0 end
     if key == '1' then weapon = Weapon("mac10") end
     if key == '2' then weapon = Weapon("m9") end
+    if key == '3' then weapon = Weapon("remington870") end
     
 end
 
@@ -132,4 +135,9 @@ function printKillCount()
     love.graphics.setFont(font)
     love.graphics.setColor({1,1,1})
     love.graphics.print(killCount, 30, scrHeight - 150)
+end
+
+function randNegPos(number)
+    local number = number or 1
+    return number * (math.random(0, 1) == 0 and -1 or 1)
 end

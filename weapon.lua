@@ -7,6 +7,8 @@ function Weapon:new(model)
 	self.reloadCooldown = 0
 	self.reloading = false
 	self.shotFirstBullet = false
+	self.bulletAmount = 1
+	self.spread = 0
 
 	if model == "m9" then
 		self.automatic = false
@@ -20,37 +22,41 @@ function Weapon:new(model)
 		self.magSize = 30
 		self.reloadTime = 2
 		self.firerate = 0.1
+	elseif model == "remington870" then
+		self.automatic = false
+		self.damage = 7
+		self.magSize = 5
+		self.reloadTime = 4
+		self.firerate = 1
+		self.bulletAmount = 10
+		self.spread = 1
 	end
 
 	self.capacity = self.magSize
 end
 
 function Weapon:update(dt)
-
+	--update firerate and reload cooldowns
     if self.firerateCooldown > 0 then self.firerateCooldown = self.firerateCooldown - dt end
     if self.reloadCooldown > 0 then self.reloadCooldown = self.reloadCooldown - dt end
-
-    if self.capacity == 0 and self.reloading == false then
+    --reload weapon
+    if self.capacity <= 0 and self.reloading == false then
     	self.reloadCooldown = self.reloadTime
     	self.reloading = true
     end
-
     if self.reloadCooldown <= 0 and self.reloading == true then 
     	self.capacity = self.magSize 
     	self.reloading = false
     end
-
+    --shoot
     if love.mouse.isDown(1) and self.firerateCooldown <= 0 and not self.reloading and not self.shotFirstBullet then
-    		shootBullet(self.damage)
+    		for i = 1, self.bulletAmount do shootBullet() end
         	self.firerateCooldown = self.firerate
         	if not self.automatic then self.shotFirstBullet = true end
+        	self.capacity = self.capacity - 1
     elseif not love.mouse.isDown(1) then self.shotFirstBullet = false end
 end
 
-
-
-function reload()
-end
 
 function Weapon:draw()
 	local font = love.graphics.newFont("fonts/Gamer.ttf", 40)
@@ -59,8 +65,8 @@ function Weapon:draw()
 	love.graphics.print(self.model .. " " .. self.capacity .. "/" .. self.magSize .. " " , 10, 0)
 end
 
-function shootBullet(damage, spread)
-	spread = spread or 0
+function shootBullet()
+
     local startX = player.x + player.width / 2
     local startY = player.y + player.height / 2
     local mouseX = love.mouse.getX()
@@ -70,11 +76,11 @@ function shootBullet(damage, spread)
 	local bulletDy = mouseY - startY
 	local length = math.sqrt(bulletDx*bulletDx + bulletDy*bulletDy)
 	if (length ~= 0) then
-  		bulletDx = bulletDx/length
-  		bulletDy = bulletDy/length
+  		bulletDx = bulletDx/length + randNegPos(0.1)*weapon.spread
+  		bulletDy = bulletDy/length + randNegPos(0.1)*weapon.spread
 	end
     bulletDx = bulletDx * weapon.bulletSpeed 
     bulletDy = bulletDy * weapon.bulletSpeed 
-    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, damage))
-    weapon.capacity = weapon.capacity - 1
+    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, weapon.damage))
 end
+
