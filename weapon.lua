@@ -66,7 +66,7 @@ function Weapon:update(dt)
     end
     --shoot
     if love.mouse.isDown(1) and self.firerateCooldown <= 0 and not self.reloading and not self.shotFirstBullet then
-    		for i = 1, self.bulletAmount do shootBullet() end
+    		for i = 1, self.bulletAmount do self:shootBullet() end
         	self.firerateCooldown = self.firerate
         	if not self.automatic then self.shotFirstBullet = true end
         	self.capacity = self.capacity - 1
@@ -79,14 +79,15 @@ function Weapon:draw()
 	love.graphics.setFont(font)
 	love.graphics.setColor({1,1,1}) 
 	love.graphics.print(self.model .. " " .. self.capacity .. "/" .. self.magSize .. " " , 10, 0)
-	if self.reloading then love.graphics.arc("fill", player.x+20, player.y+20, 10, 0, math.pi*2 * self.reloadProgress) end
+	if self.reloading then 
+		love.graphics.arc("fill", love.mouse.getX(), love.mouse.getY(), 15, 0, math.pi*2 * self.reloadProgress) 
+	end
 	if self.firerateCooldown > 0 and not self.reloading then 
-		love.graphics.arc("line", player.x+20, player.y+20, 10, 0, math.pi*2 * self.firerateProgress) 
+		love.graphics.arc("line", love.mouse.getX(), love.mouse.getY(), 15, 0, math.pi*2 * self.firerateProgress) 
 	end
 end
 
-function shootBullet()
-
+function Weapon:shootBullet()
     local startX = player.x + player.width / 2
     local startY = player.y + player.height / 2
     local mouseX = love.mouse.getX()
@@ -96,11 +97,11 @@ function shootBullet()
 	local bulletDy = mouseY - startY
 	local length = math.sqrt(bulletDx*bulletDx + bulletDy*bulletDy)
 	if (length ~= 0) then
-  		bulletDx = bulletDx/length + randNegPos(0.01)*weapon.spread
-  		bulletDy = bulletDy/length + randNegPos(0.01)*weapon.spread
+  		bulletDx = bulletDx/length + randNegPos(0.01)*self.spread
+  		bulletDy = bulletDy/length + randNegPos(0.01)*self.spread
 	end
-    bulletDx = bulletDx * weapon.bulletSpeed 
-    bulletDy = bulletDy * weapon.bulletSpeed 
-    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, weapon.damage))
+    bulletDx = bulletDx * self.bulletSpeed
+    bulletDy = bulletDy * self.bulletSpeed
+    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage))
 end
 

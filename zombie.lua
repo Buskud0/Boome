@@ -28,10 +28,10 @@ function Zombie:draw()
     love.graphics.setColor(self.color)
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 
-    drawHealthBar(self)
+    self:drawHealthBar()
 end
 
-function drawHealthBar(self)
+function Zombie:drawHealthBar()
     local offset = 5
     local height = 3
     love.graphics.setColor({0, 0, 0})

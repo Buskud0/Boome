@@ -5,12 +5,15 @@ require "bullet"
 require "zombie"
 require "damagetext"
 require "weapon"
+require "menu"
 
 scrWidth, scrHeight = love.graphics.getDimensions()
 love.graphics.setBackgroundColor(0.6, 0.8, 1)
 
 
 function love.load()
+    menu = Menu()
+    love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     player = Player(-20+scrWidth/2,-20+scrHeight/2)
     bullets = {}
     zombies = {}
@@ -23,57 +26,57 @@ function love.load()
     table.insert(weapons, Weapon("mac10"))
     table.insert(weapons, Weapon("remington870"))
     table.insert(weapons, Weapon("AWM"))
+    paused = false
 end
 
 function love.update(dt)
-    --changes weapon to whichever one is selected by player
-    weapon = weapons[currentWeaponIndex]
+    if not paused then
+        --changes weapon to whichever one is selected by player
+        weapon = weapons[currentWeaponIndex]
 
-    --adds zombies more zombies whenever there is none
-    if #zombies == 0 then 
-        addZombies(zombieCount) 
-        zombieCount = zombieCount + 1
-    end
-
-    player:update(dt)
-    weapon:update(dt)
-
-    for _, bullet in ipairs(bullets) do
-        bullet:update(dt)
-    end
-
-    for i, zombie in ipairs(zombies) do
-        zombie:update(dt)
-        seperateZombies()
-        if zombie.health <= 0 then  --if zombie dies
-            table.remove(zombies, i) 
-            killCount = killCount + 1
+        --adds zombies more zombies whenever there is none
+        if #zombies == 0 then 
+            addZombies(zombieCount) 
+            zombieCount = zombieCount + 1
         end
-        if collision(zombie, player) then
-            love.load()
-        end
-    end
 
-    for i, bullet in ipairs(bullets) do
-        for _, zombie in ipairs(zombies) do
-            if collision(bullet, zombie) then 
-                table.insert(damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
-                zombie.health = zombie.health - bullet.damage
-                table.remove(bullets, i)
+        player:update(dt)
+        weapon:update(dt)
+
+        for _, bullet in ipairs(bullets) do
+            bullet:update(dt)
+        end
+
+        for i, zombie in ipairs(zombies) do
+            zombie:update(dt)
+            seperateZombies()
+            if zombie.health <= 0 then  --if zombie dies
+                table.remove(zombies, i) 
+                killCount = killCount + 1
+            end
+            if collision(zombie, player) then
+                love.load()
             end
         end
-    end
 
-    for i, damageText in ipairs(damageTexts) do
-        damageText:update(dt)
-        if damageText.destruct == true then table.remove(damageTexts, i) end
-    end
+        for i, bullet in ipairs(bullets) do
+            for _, zombie in ipairs(zombies) do
+                if collision(bullet, zombie) then 
+                    table.insert(damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
+                    zombie.health = zombie.health - bullet.damage
+                    table.remove(bullets, i)
+                end
+            end
+        end
 
+        for i, damageText in ipairs(damageTexts) do
+            damageText:update(dt)
+            if damageText.destruct == true then table.remove(damageTexts, i) end
+        end
+    end
 end
 
 function love.draw()
-    player:draw()
-    weapon:draw()
     printKillCount()
 
     for _, bullet in ipairs(bullets) do
@@ -87,10 +90,14 @@ function love.draw()
     for _, damageText in ipairs(damageTexts) do
         damageText:draw()
     end
+
+    player:draw()
+    weapon:draw()
+    if paused then menu:draw() end
 end
 
 function love.keypressed(key)
-    if key == 'escape' then love.event.quit()
+    if key == 'escape' then paused = not paused
     elseif key == 'r' then weapon.capacity = 0
     elseif key == '1' then currentWeaponIndex = 1
     elseif key == '2' then currentWeaponIndex = 2
