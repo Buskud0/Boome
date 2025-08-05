@@ -9,11 +9,12 @@ function Weapon:new(model)
 	self.shotFirstBullet = false
 	self.bulletAmount = 1
 	self.spread = 0
+	self.reloadProgress = 0
 
 	if model == "m9" then
 		self.automatic = false
-		self.damage = 16
-		self.magSize = 12
+		self.damage = 13
+		self.magSize = 15
 		self.reloadTime = 1
 		self.firerate = 0.15
 	elseif model == "mac10" then
@@ -28,8 +29,8 @@ function Weapon:new(model)
 		self.magSize = 5
 		self.reloadTime = 4
 		self.firerate = 1
-		self.bulletAmount = 10
-		self.spread = 1
+		self.bulletAmount = 12
+		self.spread = 12
 	elseif model == "AWM" then
 		self.automatic = false
 		self.damage = 100
@@ -50,9 +51,14 @@ function Weapon:update(dt)
     	self.reloadCooldown = self.reloadTime
     	self.reloading = true
     end
-    if self.reloadCooldown <= 0 and self.reloading == true then 
-    	self.capacity = self.magSize 
-    	self.reloading = false
+    --do while reloading
+    if self.reloading then
+    	self.reloadProgress = (1 - self.reloadCooldown / self.reloadTime)
+    	if self.reloadCooldown <= 0 then 
+    		self.capacity = self.magSize 
+    		self.reloadProgress = 0
+    		self.reloading = false
+    	end
     end
     --shoot
     if love.mouse.isDown(1) and self.firerateCooldown <= 0 and not self.reloading and not self.shotFirstBullet then
@@ -69,6 +75,7 @@ function Weapon:draw()
 	love.graphics.setFont(font)
 	love.graphics.setColor({1,1,1}) 
 	love.graphics.print(self.model .. " " .. self.capacity .. "/" .. self.magSize .. " " , 10, 0)
+	if self.reloading then love.graphics.arc("fill", player.x+20, player.y+20, 10, 0, math.pi*2 * self.reloadProgress) end
 end
 
 function shootBullet()
@@ -82,8 +89,8 @@ function shootBullet()
 	local bulletDy = mouseY - startY
 	local length = math.sqrt(bulletDx*bulletDx + bulletDy*bulletDy)
 	if (length ~= 0) then
-  		bulletDx = bulletDx/length + randNegPos(0.1)*weapon.spread
-  		bulletDy = bulletDy/length + randNegPos(0.1)*weapon.spread
+  		bulletDx = bulletDx/length + randNegPos(0.01)*weapon.spread
+  		bulletDy = bulletDy/length + randNegPos(0.01)*weapon.spread
 	end
     bulletDx = bulletDx * weapon.bulletSpeed 
     bulletDy = bulletDy * weapon.bulletSpeed 

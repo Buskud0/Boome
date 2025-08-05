@@ -7,7 +7,6 @@ require "damagetext"
 require "weapon"
 
 scrWidth, scrHeight = love.graphics.getDimensions()
---local isDown = love.keyboard.isDown
 love.graphics.setBackgroundColor(0.6, 0.8, 1)
 
 
@@ -27,9 +26,10 @@ function love.load()
 end
 
 function love.update(dt)
+    --changes weapon to whichever one is selected by player
     weapon = weapons[currentWeaponIndex]
 
-
+    --adds zombies more zombies whenever there is none
     if #zombies == 0 then 
         addZombies(zombieCount) 
         zombieCount = zombieCount + 1
@@ -58,7 +58,7 @@ function love.update(dt)
         for _, zombie in ipairs(zombies) do
             if collision(bullet, zombie) then 
                 table.insert(damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
-                zombie.health=zombie.health-bullet.damage
+                zombie.health = zombie.health - bullet.damage
                 table.remove(bullets, i)
             end
         end
