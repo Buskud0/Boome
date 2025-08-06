@@ -26,12 +26,13 @@ function love.load()
     weapons = {}
     damageTexts = {}
     killCount = 0
-    zombieCount = 3
+    zombieCount = 2
     currentWeaponIndex = 1
     table.insert(weapons, Weapon("M9"))
     table.insert(weapons, Weapon("MAC-10"))
     table.insert(weapons, Weapon("REMINGTON-870"))
-    table.insert(weapons, Weapon("AWM"))
+    table.insert(weapons, Weapon("AWP"))
+    table.insert(weapons, Weapon("AK47"))
     paused = false
     currentRound = 0
 end
@@ -45,8 +46,10 @@ function love.update(dt)
         if #zombies == 0 then 
             currentRound = currentRound + 1
             mostKills = currentRound
-            addZombies(zombieCount) 
-            zombieCount = zombieCount + 3
+            addZombies("normal", zombieCount) 
+            addZombies("heavy", currentRound/3)
+            addZombies("light", currentRound/2)
+            zombieCount = zombieCount + 2
         end
 
         player:update(dt)
@@ -112,7 +115,8 @@ function love.keypressed(key)
     elseif key == '1' then currentWeaponIndex = 1
     elseif key == '2' then currentWeaponIndex = 2
     elseif key == '3' then currentWeaponIndex = 3 
-    elseif key == '4' then currentWeaponIndex = 4 end
+    elseif key == '4' then currentWeaponIndex = 4
+    elseif key == '5' then currentWeaponIndex = 5 end
 end
 
 function collision(a, b)
@@ -122,7 +126,7 @@ function collision(a, b)
            b.y < a.y + a.height
 end
 
-function addZombies(count)
+function addZombies(type, count)
     local minDistance = 250
 
     for i = 1, count do
@@ -132,7 +136,7 @@ function addZombies(count)
             y = math.random(0, scrHeight)
         until math.sqrt((x - player.x)^2 + (y - player.y)^2) > minDistance
 
-        table.insert(zombies, Zombie(x, y))
+        table.insert(zombies, Zombie(type, x, y))
     end
 
 end

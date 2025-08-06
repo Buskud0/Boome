@@ -1,15 +1,29 @@
 Zombie = Object:extend()
 
-function Zombie:new(x, y)
+function Zombie:new(type, x, y)
     self.width = 40
     self.height = 40
-    self.speed = 50
-    self.color = {1, 0.2, 0}
-    self.health = 100
     self.x = x
     self.y = y
     self.dx = 0
     self.dy = 0
+    self.type = type or "normal"
+    if self.type == "normal" then
+        self.speed = 50
+        self.maxHealth = 100
+        self.color = {1, 0.2, 0}
+    end
+    if self.type == "heavy" then
+        self.speed = 25
+        self.maxHealth = 300
+        self.color = {1, 0.2, 0.5}
+    end
+    if self.type == "light" then
+        self.speed = 100
+        self.maxHealth = 50
+        self.color = {0.8, 0.6, 0}
+    end
+    self.health = self.maxHealth
 end
 
 function Zombie:update(dt)
@@ -38,8 +52,8 @@ function Zombie:drawHealthBar()
     love.graphics.rectangle("line", self.x, self.y+self.height+offset, self.width, height)
     love.graphics.setColor({1, 1, 1})
     love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width, height)
-    if self.health > 50 then love.graphics.setColor({0.2, 1, 0.2})
-    elseif self.health > 20 then love.graphics.setColor({1, 0.7, 0.1})
+    if self.health > self.maxHealth/4*2 then love.graphics.setColor({0.2, 1, 0.2})
+    elseif self.health > self.maxHealth/4 then love.graphics.setColor({1, 0.7, 0.1})
     else love.graphics.setColor({1, 0.2, 0.2}) end
-    love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width*self.health*0.01, height)
+    love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width*self.health/self.maxHealth, height)
 end

@@ -23,21 +23,27 @@ function Weapon:new(model)
 		self.damage = 12
 		self.magSize = 30
 		self.reloadTime = 2
-		self.firerate = 0.1
+		self.firerate = 0.08
 	elseif model == "REMINGTON-870" then
 		self.automatic = false
-		self.damage = 9
+		self.damage = 14
 		self.magSize = 5
 		self.reloadTime = 4
 		self.firerate = 1
-		self.bulletAmount = 12
-		self.spread = 12
-	elseif model == "AWM" then
+		self.bulletAmount = 13
+		self.spread = 20
+	elseif model == "AWP" then
 		self.automatic = false
-		self.damage = 100
+		self.damage = 159
 		self.magSize = 5
 		self.reloadTime = 3
 		self.firerate = 1.5
+	elseif model == "AK47" then
+		self.automatic = true
+		self.damage = 29
+		self.magSize = 30
+		self.reloadTime = 3
+		self.firerate = 0.12
 	end
 
 	self.capacity = self.magSize
