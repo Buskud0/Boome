@@ -12,19 +12,19 @@ function Weapon:new(model)
 	self.reloadProgress = 0
 	self.firerateProgress = 0
 
-	if model == "m9" then
+	if model == "M9" then
 		self.automatic = false
 		self.damage = 13
 		self.magSize = 15
 		self.reloadTime = 1
 		self.firerate = 0.15
-	elseif model == "mac10" then
+	elseif model == "MAC-10" then
 		self.automatic = true
 		self.damage = 12
 		self.magSize = 30
 		self.reloadTime = 2
 		self.firerate = 0.1
-	elseif model == "remington870" then
+	elseif model == "REMINGTON-870" then
 		self.automatic = false
 		self.damage = 9
 		self.magSize = 5

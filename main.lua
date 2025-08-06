@@ -1,3 +1,7 @@
+--bullets slow down zombies when hit
+--add more different kinds of zombies
+--work on the menu
+
 require "conf"
 Object = require "lib/classic"
 require "player"
@@ -6,12 +10,14 @@ require "zombie"
 require "damagetext"
 require "weapon"
 require "menu"
+require "grid"
 
 scrWidth, scrHeight = love.graphics.getDimensions()
-love.graphics.setBackgroundColor(0.6, 0.8, 1)
-
+love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
+mostKills = 0
 
 function love.load()
+    grid = Grid()
     menu = Menu()
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     player = Player(-20+scrWidth/2,-20+scrHeight/2)
@@ -20,13 +26,14 @@ function love.load()
     weapons = {}
     damageTexts = {}
     killCount = 0
-    zombieCount = 1
+    zombieCount = 3
     currentWeaponIndex = 1
-    table.insert(weapons, Weapon("m9"))
-    table.insert(weapons, Weapon("mac10"))
-    table.insert(weapons, Weapon("remington870"))
+    table.insert(weapons, Weapon("M9"))
+    table.insert(weapons, Weapon("MAC-10"))
+    table.insert(weapons, Weapon("REMINGTON-870"))
     table.insert(weapons, Weapon("AWM"))
     paused = false
+    currentRound = 0
 end
 
 function love.update(dt)
@@ -36,8 +43,10 @@ function love.update(dt)
 
         --adds zombies more zombies whenever there is none
         if #zombies == 0 then 
+            currentRound = currentRound + 1
+            mostKills = currentRound
             addZombies(zombieCount) 
-            zombieCount = zombieCount + 1
+            zombieCount = zombieCount + 3
         end
 
         player:update(dt)
@@ -77,7 +86,8 @@ function love.update(dt)
 end
 
 function love.draw()
-    printKillCount()
+    grid:draw()
+    printHUD()
 
     for _, bullet in ipairs(bullets) do
         bullet:draw()
@@ -145,11 +155,14 @@ function seperateZombies()
     end
 end
 
-function printKillCount()
+function printHUD()
     local font = love.graphics.newFont("fonts/Gamer.ttf", 200)
-    love.graphics.setFont(font)
+    local font2 = love.graphics.newFont("fonts/Gamer.ttf", 30)
     love.graphics.setColor({1,1,1})
-    love.graphics.print(killCount, 30, scrHeight - 150)
+    love.graphics.setFont(font)
+    love.graphics.print(currentRound, 30, scrHeight - 190)
+    love.graphics.setFont(font2)
+    love.graphics.print("KILL COUNT: " .. killCount, 30, scrHeight - 40)
 end
 
 function randNegPos(number)
