@@ -13,8 +13,8 @@ function love.conf(t)
 
     t.window.title = "FIGHTER GAME"         -- The window title (string)
     --t.window.icon = "images/logo.png"                 -- Filepath to an image to use as the window's icon (string)
-    t.window.width = 800                -- The window width (number)
-    t.window.height = 600               -- The window height (number)
+    t.window.width = 800                -- The window width (number) default - 800
+    t.window.height = 600               -- The window height (number) default - 600
     t.window.borderless = false         -- Remove all border visuals from the window (boolean)
     t.window.resizable = false          -- Let the window be user-resizable (boolean)
     t.window.minwidth = 1               -- Minimum window width if the window is resizable (number)

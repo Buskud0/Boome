@@ -3,8 +3,8 @@ Grid = Object:extend()
 function Grid:new()
     self.grid = {}
     self.tileSize = 40
-    self.cols = scrHeight / self.tileSize
-    self.rows = scrWidth / self.tileSize
+    self.cols = mapHeight / self.tileSize
+    self.rows = mapWidth / self.tileSize
 
     for y = 1, self.rows do
         for x = 1, self.cols do
