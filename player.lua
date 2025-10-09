@@ -6,6 +6,7 @@ function Player:new(x, y)
     self.speed = 200
     self.color = {0, 1, 0}
     self.health = 100
+    self.money = 0
     self.x = x
     self.y = y
 end

@@ -14,6 +14,7 @@ require "grid"
 
 scrWidth, scrHeight = love.graphics.getDimensions()
 love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
+
 maxKills = 0
 maxRounds = 0
 
@@ -35,11 +36,10 @@ function love.load()
     damageTexts = {}
     table.insert(weapons, Weapon("M9"))
     table.insert(weapons, Weapon("MAC-10"))
-    table.insert(weapons, Weapon("REMINGTON-870"))
     table.insert(weapons, Weapon("AWP"))
+    table.insert(weapons, Weapon("REMINGTON-870"))
     table.insert(weapons, Weapon("AK47"))
     paused = false
-    
 end
 
 function love.update(dt)
@@ -76,6 +76,10 @@ function love.update(dt)
             if zombie.health <= 0 then  --if zombie dies
                 table.remove(zombies, i) 
                 killCount = killCount + 1
+                if zombie.type == "light" then player.money = player.money + 5 end
+                if zombie.type == "normal" then player.money = player.money + 10 end
+                if zombie.type == "heavy" then player.money = player.money + 15 end
+                
             end
             if collision(zombie, player) then
                 love.load()
@@ -97,8 +101,9 @@ function love.update(dt)
             if damageText.destruct == true then table.remove(damageTexts, i) end
         end
     end
-    if killCount > maxKills then maxKills = killCount end
     if currentRound-1 > maxRounds then maxRounds = currentRound-1 end
+    if killCount > maxKills then maxKills = killCount end
+    --love.filesystem.write("record.txt", maxRounds .. " " .. killCount)
 end
 
 function love.draw()
@@ -108,7 +113,6 @@ function love.draw()
     love.graphics.rectangle("fill", 0, 0, mapWidth, mapHeight)
 
     grid:draw()
-    printHUD()
 
     for _, bullet in ipairs(bullets) do
         bullet:draw()
@@ -125,6 +129,7 @@ function love.draw()
 
     player:draw()
     weapon:draw()
+    printHUD()
     if paused then menu:draw() end
 
    
@@ -187,7 +192,8 @@ function printHUD()
     love.graphics.setFont(font)
     love.graphics.print(currentRound, 30 + camera.x, scrHeight - 190 + camera.y)
     love.graphics.setFont(font2)
-    love.graphics.print("KILL COUNT: " .. killCount, 30 + camera.x, scrHeight - 40 + camera.y)
+    love.graphics.print("KILL COUNT: " .. killCount, 30 + camera.x, scrHeight - 50 + camera.y)
+    love.graphics.print("$" .. player.money, 30 + camera.x, scrHeight - 30 + camera.y)
 end
 
 function randNegPos(number)
