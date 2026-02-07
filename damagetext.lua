@@ -1,10 +1,11 @@
 DamageText = Object:extend()
 
-function DamageText:new(text, x, y)
+function DamageText:new(text, x, y, duration, color)
 	self.text = text
 	self.x = x
 	self.y = y
-	self.duration = 0.5
+	self.duration = duration or 0.5
+	self.color = color or {1, 1, 1}
 	self.destruct = false
 	self.opacity = 1
 end
@@ -22,6 +23,6 @@ end
 function DamageText:draw()
 	local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
 	love.graphics.setFont(font)
-	love.graphics.setColor({1,1,1,self.opacity})
+	love.graphics.setColor({self.color[1], self.color[2], self.color[3], self.opacity})
 	love.graphics.print(self.text, self.x, self.y)
 end

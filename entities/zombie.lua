@@ -12,18 +12,22 @@ function Zombie:new(type, x, y)
         self.speed = 50
         self.maxHealth = 100
         self.color = {1, 0.2, 0}
+        self.damage = 60
     end
     if self.type == "heavy" then
         self.speed = 25
         self.maxHealth = 300
         self.color = {1, 0.2, 0.5}
+        self.damage = 90
     end
     if self.type == "light" then
         self.speed = 100
         self.maxHealth = 50
         self.color = {0.8, 0.6, 0}
+        self.damage = 30
     end
     self.health = self.maxHealth
+    self.hasHitPlayer = false
 end
 
 function Zombie:update(dt)
@@ -36,6 +40,15 @@ function Zombie:update(dt)
     end
     self.x = self.x + self.dx * self.speed * dt
     self.y = self.y + self.dy * self.speed * dt
+
+    if not self.hasHitPlayer and collision(self, player) then 
+        print("player hit") 
+        player.health = player.health - self.damage
+        self.hasHitPlayer = true
+        for i, zombie in ipairs(zombies) do
+            if zombie == self then table.remove(zombies, i) break end
+        end
+    end
 end
 
 function Zombie:draw()

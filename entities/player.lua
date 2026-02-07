@@ -12,11 +12,15 @@ function Player:new(x, y)
 end
 
 function Player:update(dt)
-    --movement with check that player isnt out of window
     if self.y>=0                      and love.keyboard.isDown("w") then self.y = self.y - self.speed*dt end
     if self.y<=mapHeight-self.height  and love.keyboard.isDown("s") then self.y = self.y + self.speed*dt end
     if self.x>=0                      and love.keyboard.isDown("a") then self.x = self.x - self.speed*dt end
     if self.x<=mapWidth-self.width    and love.keyboard.isDown("d") then self.x = self.x + self.speed*dt end
+
+    if self.health <= 0 then
+        love.load() 
+    end
+
 end
 
 function Player:draw()

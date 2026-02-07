@@ -3,14 +3,15 @@
 --work on the menu
 
 require "conf"
-Object = require "lib/classic"
-require "player"
-require "bullet"
-require "zombie"
+Object = require "lib.classic"
+require "entities.player"
+require "entities.bullet"
+require "entities.zombie"
 require "damagetext"
 require "weapon"
 require "menu"
 require "grid"
+require "entities.powerUp"
 
 scrWidth, scrHeight = love.graphics.getDimensions()
 love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
@@ -34,6 +35,7 @@ function love.load()
     zombies = {}
     weapons = {}
     damageTexts = {}
+    powerUps = {}
     table.insert(weapons, Weapon("M9"))
     table.insert(weapons, Weapon("MAC-10"))
     table.insert(weapons, Weapon("AWP"))
@@ -74,15 +76,16 @@ function love.update(dt)
             zombie:update(dt)
             seperateZombies()
             if zombie.health <= 0 then  --if zombie dies
+                print("killed " .. zombie.type .. " zombie")
                 table.remove(zombies, i) 
                 killCount = killCount + 1
                 if zombie.type == "light" then player.money = player.money + 5 end
                 if zombie.type == "normal" then player.money = player.money + 10 end
                 if zombie.type == "heavy" then player.money = player.money + 15 end
-                
-            end
-            if collision(zombie, player) then
-                love.load()
+                local powerUpChance = math.random(1, 5)
+                if powerUpChance == 1 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "money")) end
+                if powerUpChance == 2 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "health")) end
+
             end
         end
 
@@ -94,6 +97,10 @@ function love.update(dt)
                     table.remove(bullets, i)
                 end
             end
+        end
+
+        for i, powerUp in ipairs(powerUps) do
+            powerUp:update(dt)
         end
 
         for i, damageText in ipairs(damageTexts) do
@@ -114,6 +121,10 @@ function love.draw()
 
     grid:draw()
 
+    for _, powerUp in ipairs(powerUps) do
+        powerUp:draw()
+    end
+
     for _, bullet in ipairs(bullets) do
         bullet:draw()
     end
@@ -122,13 +133,13 @@ function love.draw()
         zombie:draw()
     end
 
+    player:draw()
+    weapon:draw()
+
     for _, damageText in ipairs(damageTexts) do
         damageText:draw()
     end
 
-
-    player:draw()
-    weapon:draw()
     printHUD()
     if paused then menu:draw() end
 
@@ -186,14 +197,16 @@ function seperateZombies()
 end
 
 function printHUD()
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 200)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 100)
     local font2 = love.graphics.newFont("fonts/Gamer.ttf", 30)
     love.graphics.setColor({1,1,1})
     love.graphics.setFont(font)
-    love.graphics.print(currentRound, 30 + camera.x, scrHeight - 190 + camera.y)
+    love.graphics.print(math.floor(player.health), 30 + camera.x, scrHeight - 150 + camera.y)
     love.graphics.setFont(font2)
+    love.graphics.print("WAVE: " .. currentRound, 30 + camera.x, scrHeight - 70 + camera.y)
     love.graphics.print("KILL COUNT: " .. killCount, 30 + camera.x, scrHeight - 50 + camera.y)
     love.graphics.print("$" .. player.money, 30 + camera.x, scrHeight - 30 + camera.y)
+    
 end
 
 function randNegPos(number)
