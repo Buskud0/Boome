@@ -18,7 +18,7 @@ function powerUp:new(x, y, type)
 end
 
 function powerUp:update(dt) 
-	if(collision(player, self)) then
+	if(Collisions.check(player, self)) then
         if self.type == "health" and player.health < 100 then 
             player.health = math.min(player.health + 25, 100)
             self.isPickedUp = true

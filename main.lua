@@ -12,6 +12,7 @@ require "weapon"
 require "menu"
 require "grid"
 require "entities.powerUp"
+Collisions = require "collisions"
 
 scrWidth, scrHeight = love.graphics.getDimensions()
 love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
@@ -67,6 +68,9 @@ function love.update(dt)
         weapon:update(dt)
         menu:update(dt)
         updateCamera()
+        Collisions.bulletVsZombie()
+        Collisions.zombieVsPlayer()
+        Collisions.seperateZombies()
 
         for _, bullet in ipairs(bullets) do
             bullet:update(dt)
@@ -74,7 +78,7 @@ function love.update(dt)
 
         for i, zombie in ipairs(zombies) do
             zombie:update(dt)
-            seperateZombies()
+            
             if zombie.health <= 0 then  --if zombie dies
                 print("killed " .. zombie.type .. " zombie")
                 table.remove(zombies, i) 
@@ -86,16 +90,6 @@ function love.update(dt)
                 if powerUpChance == 1 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "money")) end
                 if powerUpChance == 2 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "health")) end
 
-            end
-        end
-
-        for i, bullet in ipairs(bullets) do
-            for _, zombie in ipairs(zombies) do
-                if collision(bullet, zombie) then 
-                    table.insert(damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
-                    zombie.health = zombie.health - bullet.damage
-                    table.remove(bullets, i)
-                end
             end
         end
 
@@ -156,13 +150,6 @@ function love.keypressed(key)
     elseif key == '5' then currentWeaponIndex = 5 end
 end
 
-function collision(a, b)
-    return a.x < b.x + b.width and
-           b.x < a.x + a.width and
-           a.y < b.y + b.height and
-           b.y < a.y + a.height
-end
-
 function addZombies(type, count)
     local minDistance = 250
 
@@ -176,24 +163,6 @@ function addZombies(type, count)
         table.insert(zombies, Zombie(type, x, y))
     end
 
-end
-
-function seperateZombies()
-    for i, z1 in ipairs(zombies) do
-        for j, z2 in ipairs(zombies) do
-            if i ~= j and collision(z1, z2) then
-                local dx = z1.x - z2.x
-                local dy = z1.y - z2.y
-                local dist = math.sqrt(dx * dx + dy * dy)
-                if dist == 0 then dist = 1 end  -- prevent divide by zero
-
-                z1.x = z1.x + (dx / dist)
-                z1.y = z1.y + (dy / dist)
-                z2.x = z2.x - (dx / dist)
-                z2.y = z2.y - (dy / dist)
-            end
-        end 
-    end
 end
 
 function printHUD()

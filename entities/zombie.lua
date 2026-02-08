@@ -40,15 +40,6 @@ function Zombie:update(dt)
     end
     self.x = self.x + self.dx * self.speed * dt
     self.y = self.y + self.dy * self.speed * dt
-
-    if not self.hasHitPlayer and collision(self, player) then 
-        print("player hit") 
-        player.health = player.health - self.damage
-        self.hasHitPlayer = true
-        for i, zombie in ipairs(zombies) do
-            if zombie == self then table.remove(zombies, i) break end
-        end
-    end
 end
 
 function Zombie:draw()
