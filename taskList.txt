@@ -2,3 +2,7 @@ toliau refactorint
 pridet cooldown powerUp'ams
 gavus pinigu kad parodytu prie pinigu kiek prisidejo
 buy menu
+add traps
+add grenades
+add pathfinding
+add a basic map

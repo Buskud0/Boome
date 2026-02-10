@@ -32,19 +32,23 @@ end
 
 function Collisions.seperateZombies()
     for i, z1 in ipairs(zombies) do
-        for j, z2 in ipairs(zombies) do
-            if i ~= j and Collisions.check(z1, z2) then
+        for j = i+1, #zombies do
+            local z2 = zombies[j]
+            if Collisions.check(z1, z2) then
                 local dx = z1.x - z2.x
                 local dy = z1.y - z2.y
                 local dist = math.sqrt(dx * dx + dy * dy)
                 if dist == 0 then dist = 1 end  -- prevent divide by zero
 
-                z1.x = z1.x + (dx / dist)
-                z1.y = z1.y + (dy / dist)
-                z2.x = z2.x - (dx / dist)
-                z2.y = z2.y - (dy / dist)
+                local pushX = (dx / dist) * 0.5
+                local pushY = (dy / dist) * 0.5
+
+                z1.x = z1.x + pushX
+                z1.y = z1.y + pushY
+                z2.x = z2.x - pushX
+                z2.y = z2.y - pushY
             end
-        end 
+        end
     end
 end
 
