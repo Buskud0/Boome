@@ -6,3 +6,4 @@ add traps
 add grenades
 add pathfinding
 add a basic map
+add bullet drops and limit them
