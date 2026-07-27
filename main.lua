@@ -6,6 +6,8 @@ require "conf"
 require "config"
 Object = require "lib.classic"
 Input = require "input"
+Textures = require "textures"
+require "entities.entity"
 require "entities.player"
 require "entities.bullet"
 require "entities.zombie"
@@ -34,6 +36,9 @@ function love.load()
     loadRecord()
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     Input.load()
+    Textures.load("spritesheet.png", 40)
+    Textures.define("empty", 1)
+    Textures.define("wall", 2)
     resetGame()
 end
 
@@ -95,6 +100,17 @@ function updateDamageTexts(dt)
     end
 end
 
+function tryMove(entity, dx, dy)
+    local newX = entity.x + dx
+    local newY = entity.y + dy
+    if not grid:isBlocked(newX, entity.y, entity.width, entity.height) and newX >= 0 and newX <= mapWidth - entity.width then
+        entity.x = newX
+    end
+    if not grid:isBlocked(entity.x, newY, entity.width, entity.height) and newY >= 0 and newY <= mapHeight - entity.height then
+        entity.y = newY
+    end
+end
+
 function love.update(dt)
     if not paused then
         --changes weapon to whichever one is selected by player
@@ -113,6 +129,8 @@ function love.update(dt)
         for _, bullet in ipairs(bullets) do
             bullet:update(dt)
         end
+
+        Collisions.bulletVsWalls()
 
         for i, zombie in ipairs(zombies) do
             zombie:update(dt)

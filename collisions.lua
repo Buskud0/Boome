@@ -52,4 +52,12 @@ function Collisions.seperateZombies()
     end
 end
 
+function Collisions.bulletVsWalls()
+    for i, bullet in ipairs(bullets) do
+        if grid:isBlocked(bullet.x, bullet.y, bullet.width, bullet.height) then
+            table.remove(bullets, i)
+        end
+    end
+end
+
 return Collisions

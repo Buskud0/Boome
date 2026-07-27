@@ -1,13 +1,10 @@
-Zombie = Object:extend()
+Zombie = Entity:extend()
 
 function Zombie:new(type, x, y)
-    self.width = 40
-    self.height = 40
-    self.x = x
-    self.y = y
+    Zombie.super.new(self, x, y)
+    self.type = type or "normal"
     self.dx = 0
     self.dy = 0
-    self.type = type or "normal"
     if self.type == "normal" then
         self.speed = 50
         self.maxHealth = 100
@@ -38,14 +35,11 @@ function Zombie:update(dt)
         self.dx = self.dx / dist
         self.dy = self.dy / dist
     end
-    self.x = self.x + self.dx * self.speed * dt
-    self.y = self.y + self.dy * self.speed * dt
+    tryMove(self, self.dx * self.speed * dt, self.dy * self.speed * dt)
 end
 
 function Zombie:draw()
-    love.graphics.setColor(self.color)
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-
+    Zombie.super.draw(self)
     self:drawHealthBar()
 end
 
