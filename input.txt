@@ -2,6 +2,7 @@ move_up=w
 move_down=s
 move_left=a
 move_right=d
+sprint=lshift
 shoot=mouse1
 pause=escape
 reload=r

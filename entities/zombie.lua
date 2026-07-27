@@ -25,6 +25,7 @@ function Zombie:new(type, x, y)
     end
     self.health = self.maxHealth
     self.hasHitPlayer = false
+    self.sprite = "zombie_" .. self.type
 end
 
 function Zombie:update(dt)
@@ -35,7 +36,7 @@ function Zombie:update(dt)
         self.dx = self.dx / dist
         self.dy = self.dy / dist
     end
-    tryMove(self, self.dx * self.speed * dt, self.dy * self.speed * dt)
+    tryMove(self, self.dx * self.speed * dt, self.dy * self.speed * dt, false)
 end
 
 function Zombie:draw()

@@ -10,6 +10,10 @@ function Entity:new(x, y)
 end
 
 function Entity:draw()
-    love.graphics.setColor(self.color)
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    if self.sprite then
+        Textures.draw(self.sprite, self.x, self.y, self.width, self.height)
+    else
+        love.graphics.setColor(self.color)
+        love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+    end
 end

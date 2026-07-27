@@ -22,8 +22,7 @@ end
 function Collisions.zombieVsPlayer()
     for i, zombie in ipairs(zombies) do
         if not zombie.hasHitPlayer and Collisions.check(zombie, player) then 
-            print("player hit") 
-            player.health = player.health - zombie.damage
+            player:takeDamage(zombie.damage)
             zombie.hasHitPlayer = true
             table.remove(zombies, i)
         end

@@ -3,20 +3,21 @@
 --work on the menu
 
 require "conf"
-require "config"
+require "core.config"
 Object = require "lib.classic"
-Input = require "input"
-Textures = require "textures"
+Input = require "core.input"
+Textures = require "core.textures"
 require "entities.entity"
 require "entities.player"
 require "entities.bullet"
 require "entities.zombie"
-require "damagetext"
-require "weapon"
-require "menu"
-require "grid"
-require "entities.powerUp"
-Collisions = require "collisions"
+require "ui.damagetext"
+require "systems.weapon"
+require "ui.menu"
+require "core.grid"
+require "entities.PowerUp"
+Collisions = require "core.collisions"
+HUD = require "ui.hud"
 
 function loadRecord()
     local record = love.filesystem.read("record.txt")
@@ -36,9 +37,17 @@ function love.load()
     loadRecord()
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
     Input.load()
-    Textures.load("spritesheet.png", 40)
+    Textures.load("images/spritesheet.png", 40)
     Textures.define("empty", 1)
     Textures.define("wall", 2)
+    Textures.load("images/spritesheet_entities.png", 40)
+    Textures.define("player", 1)
+    Textures.define("zombie_normal", 2)
+    Textures.define("zombie_heavy", 3)
+    Textures.define("zombie_light", 4)
+    Textures.define("bullet", 5)
+    Textures.define("powerup_health", 6)
+    Textures.define("powerup_money", 7)
     resetGame()
 end
 
@@ -88,9 +97,9 @@ function onZombieKilled(zombie, index)
     if zombie.type == "light" then player.money = player.money + 5 end
     if zombie.type == "normal" then player.money = player.money + 10 end
     if zombie.type == "heavy" then player.money = player.money + 15 end
-    local powerUpChance = math.random(1, 5)
-    if powerUpChance == 1 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "money")) end
-    if powerUpChance == 2 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "health")) end
+    local powerUpChance = math.random(1, 10)
+    if powerUpChance == 1 then table.insert(powerUps, PowerUp(zombie.x, zombie.y, "money")) end
+    if powerUpChance == 2 then table.insert(powerUps, PowerUp(zombie.x, zombie.y, "health")) end
 end
 
 function updateDamageTexts(dt)
@@ -100,14 +109,45 @@ function updateDamageTexts(dt)
     end
 end
 
-function tryMove(entity, dx, dy)
+function tryMove(entity, dx, dy, constrainToMap)
+    if constrainToMap == nil then constrainToMap = true end
     local newX = entity.x + dx
     local newY = entity.y + dy
-    if not grid:isBlocked(newX, entity.y, entity.width, entity.height) and newX >= 0 and newX <= mapWidth - entity.width then
+    if not grid:isBlocked(newX, entity.y, entity.width, entity.height) and (not constrainToMap or (newX >= 0 and newX <= mapWidth - entity.width)) then
         entity.x = newX
     end
-    if not grid:isBlocked(entity.x, newY, entity.width, entity.height) and newY >= 0 and newY <= mapHeight - entity.height then
+    if not grid:isBlocked(entity.x, newY, entity.width, entity.height) and (not constrainToMap or (newY >= 0 and newY <= mapHeight - entity.height)) then
         entity.y = newY
+    end
+    resolveStuck(entity)
+end
+
+function resolveStuck(entity)
+    if entity.x < 0 then entity.x = 0
+    elseif entity.x > mapWidth - entity.width then entity.x = mapWidth - entity.width end
+    if entity.y < 0 then entity.y = 0
+    elseif entity.y > mapHeight - entity.height then entity.y = mapHeight - entity.height end
+
+    if not grid:isBlocked(entity.x, entity.y, entity.width, entity.height) then return end
+
+    local tileSize = Textures.getTileSize()
+    for offset = 1, tileSize do
+        if not grid:isBlocked(entity.x + offset, entity.y, entity.width, entity.height) then
+            entity.x = entity.x + offset
+            break
+        end
+        if not grid:isBlocked(entity.x - offset, entity.y, entity.width, entity.height) then
+            entity.x = entity.x - offset
+            break
+        end
+        if not grid:isBlocked(entity.x, entity.y + offset, entity.width, entity.height) then
+            entity.y = entity.y + offset
+            break
+        end
+        if not grid:isBlocked(entity.x, entity.y - offset, entity.width, entity.height) then
+            entity.y = entity.y - offset
+            break
+        end
     end
 end
 
@@ -178,7 +218,7 @@ function love.draw()
         damageText:draw()
     end
 
-    printHUD()
+    HUD.draw()
     if paused then menu:draw() end
    
 end
@@ -204,23 +244,13 @@ function addZombies(type, count)
             y = math.random(0, mapHeight)
         until math.sqrt((x - player.x)^2 + (y - player.y)^2) > minDistance
 
-        table.insert(zombies, Zombie(type, x, y))
+        local zombie = Zombie(type, x, y)
+        resolveStuck(zombie)
+        table.insert(zombies, zombie)
     end
 
 end
 
-function printHUD()
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 100)
-    local font2 = love.graphics.newFont("fonts/Gamer.ttf", 30)
-    love.graphics.setColor({1,1,1})
-    love.graphics.setFont(font)
-    love.graphics.print(math.floor(player.health), 30 + camera.x, scrHeight - 150 + camera.y)
-    love.graphics.setFont(font2)
-    love.graphics.print("WAVE: " .. currentRound, 30 + camera.x, scrHeight - 70 + camera.y)
-    love.graphics.print("KILL COUNT: " .. killCount, 30 + camera.x, scrHeight - 50 + camera.y)
-    love.graphics.print("$" .. player.money, 30 + camera.x, scrHeight - 30 + camera.y)
-    
-end
 
 function randNegPos(number)
     local number = number or 1

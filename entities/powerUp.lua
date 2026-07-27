@@ -1,6 +1,6 @@
-powerUp = Object:extend()
+PowerUp = Object:extend()
 
-function powerUp:new(x, y, type)
+function PowerUp:new(x, y, type)
 	self.x = x
 	self.y = y
 	self.width = 20
@@ -10,14 +10,20 @@ function powerUp:new(x, y, type)
     if self.type == "health" then 
         self.color = {0.8, 0.2, 0.2} 
         self.amount = 25
+        self.sprite = "powerup_health"
     end
     if self.type == "money" then 
         self.color = {1, 0.8, 0.2} 
         self.amount = 100
+        self.sprite = "powerup_money"
     end
 end
 
-function powerUp:update(dt) 
+function PowerUp:draw()
+    Textures.draw(self.sprite, self.x, self.y, self.width, self.height)
+end
+
+function PowerUp:update(dt) 
 	if(Collisions.check(player, self)) then
         if self.type == "health" and player.health < 100 then 
             player.health = math.min(player.health + 25, 100)
@@ -37,9 +43,4 @@ function powerUp:update(dt)
             end
         end
     end
-end
-
-function powerUp:draw()
-	love.graphics.setColor(self.color)
-	love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 end
