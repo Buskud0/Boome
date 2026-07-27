@@ -20,6 +20,7 @@ WEAPONS = {
         firerate = 0.15,
         bulletAmount = 1,
         spread = 0,
+        price = 0,
     },
     ["MAC-10"] = {
         automatic = true,
@@ -29,6 +30,7 @@ WEAPONS = {
         firerate = 0.08,
         bulletAmount = 1,
         spread = 0,
+        price = 5,
     },
     ["REMINGTON-870"] = {
         automatic = false,
@@ -38,6 +40,7 @@ WEAPONS = {
         firerate = 1,
         bulletAmount = 13,
         spread = 18,
+        price = 15,
     },
     AWP = {
         automatic = false,
@@ -47,6 +50,7 @@ WEAPONS = {
         firerate = 1.5,
         bulletAmount = 1,
         spread = 0,
+        price = 50,
     },
     AK47 = {
         automatic = true,
@@ -56,5 +60,6 @@ WEAPONS = {
         firerate = 0.12,
         bulletAmount = 1,
         spread = 0,
+        price = 30,
     },
 }

@@ -1,6 +1,5 @@
 local Textures = {}
 
-local sheets = {}
 local materialRegistry = {}
 local currentSheet = nil
 
@@ -22,7 +21,6 @@ function Textures.load(filename, tileSize)
         end
     end
 
-    sheets[filename] = sheet
     currentSheet = sheet
     Textures.tileSize = tileSize
 end

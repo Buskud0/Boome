@@ -47,7 +47,6 @@ function Menu:new()
     self.screens = buildScreens()
     self.stack = {}
     self.selection = 1
-    self.useMouseSelection = true
     self.lastMouseX = -1
     self.lastMouseY = -1
     self.notification = nil
@@ -88,7 +87,6 @@ end
 
 function Menu:resetFocus()
     self.selection = 1
-    self.useMouseSelection = true
     self.optionRects = {}
 end
 
@@ -98,10 +96,8 @@ end
 
 function Menu:handleAction(action)
     if action == "menu_up" then
-        self.useMouseSelection = false
         self:selectPrevious()
     elseif action == "menu_down" then
-        self.useMouseSelection = false
         self:selectNext()
     elseif action == "menu_confirm" then
         self:confirmCurrentSelection()
@@ -109,7 +105,6 @@ function Menu:handleAction(action)
 end
 
 function Menu:mousepressed(worldX, worldY)
-    self.useMouseSelection = true
     local index = self:optionAtPosition(worldX, worldY)
     if index then
         self.selection = index
@@ -242,7 +237,6 @@ function Menu:updateHover(entry, rect, mouseX, mouseY, index)
     if entry.action and
        mouseX >= rect.x and mouseX <= rect.x + rect.w and
        mouseY >= rect.y and mouseY <= rect.y + rect.h then
-        self.useMouseSelection = true
         self.selection = index
     end
 end

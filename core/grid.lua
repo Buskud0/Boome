@@ -6,20 +6,11 @@ function Grid:new()
     self.cols = mapHeight / self.tileSize
     self.rows = mapWidth / self.tileSize
 
-    for y = 1, self.rows do
-        for x = 1, self.cols do
-            local index = (y-1) * self.cols + x
-        end
-    end
-
     self:colorTile("wall", 10, 10)
     self:colorTile("wall", 10, 11)
     self:colorTile("wall", 10, 12)
     self:colorTile("wall", 10, 13)
     self:colorTile("wall", 10, 14)
-end
-
-function Grid:update(dt)
 end
 
 function Grid:draw()

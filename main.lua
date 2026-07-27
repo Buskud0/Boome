@@ -18,6 +18,9 @@ require "core.grid"
 require "entities.PowerUp"
 Collisions = require "core.collisions"
 HUD = require "ui.hud"
+Survival = require "gamemodes.survival"
+Inventory = require "ui.inventory"
+BuyMenu = require "ui.buymenu"
 
 function loadRecord()
     local record = love.filesystem.read("record.txt")
@@ -48,6 +51,8 @@ function love.load()
     Textures.define("bullet", 5)
     Textures.define("powerup_health", 6)
     Textures.define("powerup_money", 7)
+    Textures.load("images/itemSpriteSheet.png", 40)
+    Inventory.load()
     resetGame()
 end
 
@@ -55,9 +60,8 @@ function resetGame()
     mapWidth = MAP_WIDTH
     mapHeight = MAP_HEIGHT
     killCount = 0
-    currentRound = 0
-    zombieCount = STARTING_ZOMBIE_COUNT
     currentWeaponIndex = 1
+    Survival.reset()
     camera = {x=0, y=0}
     grid = Grid()
     menu = Menu()
@@ -68,26 +72,8 @@ function resetGame()
     damageTexts = {}
     powerUps = {}
     table.insert(weapons, Weapon("M9"))
-    table.insert(weapons, Weapon("MAC-10"))
-    table.insert(weapons, Weapon("AWP"))
-    table.insert(weapons, Weapon("REMINGTON-870"))
-    table.insert(weapons, Weapon("AK47"))
     paused = false
-end
-
-function ManageRounds()
-    if #zombies == 0 then
-        currentRound = currentRound + 1
-        mostKills = currentRound
-        addZombies("normal", zombieCount)
-        addZombies("heavy", currentRound/3)
-        addZombies("light", currentRound/2)
-        zombieCount = zombieCount + 2
-        for i, weapon in ipairs(weapons) do
-            weapon.reloadCooldown = 0
-            weapon.capacity = weapon.magSize
-        end
-    end
+    BuyMenu.close()
 end
 
 function onZombieKilled(zombie, index)
@@ -156,10 +142,12 @@ function love.update(dt)
         --changes weapon to whichever one is selected by player
         weapon = weapons[currentWeaponIndex]
 
-        ManageRounds()
+        Survival.update(dt)
 
         player:update(dt)
-        weapon:update(dt)
+        if not BuyMenu.isOpen() then
+            weapon:update(dt)
+        end
         updateCamera()
         Collisions.bulletVsZombie()
         Collisions.zombieVsPlayer()
@@ -219,6 +207,9 @@ function love.draw()
     end
 
     HUD.draw()
+    Inventory.draw()
+    Survival.draw()
+    BuyMenu.draw()
     if paused then menu:draw() end
    
 end
@@ -227,27 +218,46 @@ function love.keypressed(key)
     local action = Input.getActionForKey(key)
 
     if action == "pause" then
-        if menu:isOpen() then
+        if BuyMenu.isOpen() then
+            BuyMenu.close()
+        elseif menu:isOpen() then
             menu:closeSubmenu()
+            paused = menu:isOpen()
         else
             menu:openSubmenu("main")
+            paused = menu:isOpen()
         end
-        paused = menu:isOpen()
+    elseif action == "buy" then
+        if not menu:isOpen() then
+            BuyMenu.toggle()
+        end
     elseif menu:isOpen() then
         menu:handleAction(action)
         paused = menu:isOpen()
+    elseif BuyMenu.isOpen() then
+        BuyMenu.handleAction(action)
     elseif action == "reload" then
         weapon.capacity = 0
-    elseif action == "weapon1" then
+    elseif action == "weapon1" and weapons[1] then
         currentWeaponIndex = 1
-    elseif action == "weapon2" then
+    elseif action == "weapon2" and weapons[2] then
         currentWeaponIndex = 2
-    elseif action == "weapon3" then
+    elseif action == "weapon3" and weapons[3] then
         currentWeaponIndex = 3
-    elseif action == "weapon4" then
+    elseif action == "weapon4" and weapons[4] then
         currentWeaponIndex = 4
-    elseif action == "weapon5" then
+    elseif action == "weapon5" and weapons[5] then
         currentWeaponIndex = 5
+    elseif key == "left" then
+        repeat
+            currentWeaponIndex = currentWeaponIndex - 1
+            if currentWeaponIndex < 1 then currentWeaponIndex = #weapons end
+        until weapons[currentWeaponIndex]
+    elseif key == "right" then
+        repeat
+            currentWeaponIndex = currentWeaponIndex + 1
+            if currentWeaponIndex > #weapons then currentWeaponIndex = 1 end
+        until weapons[currentWeaponIndex]
     end
 end
 
@@ -255,26 +265,42 @@ function love.mousepressed(x, y, button)
     if button == 1 and menu:isOpen() then
         menu:mousepressed(x + camera.x, y + camera.y)
         paused = menu:isOpen()
+    elseif button == 1 and BuyMenu.isOpen() then
+        BuyMenu.mousepressed(x + camera.x, y + camera.y)
     end
 end
 
-function addZombies(type, count)
-    local minDistance = 500
-
-    for i = 1, count do
-        local x, y
+function love.wheelmoved(x, y)
+    if paused then return end
+    if BuyMenu.isOpen() then
+        BuyMenu.wheelmoved(y)
+        return
+    end
+    if y > 0 then
         repeat
-            x = math.random(0, mapWidth)
-            y = math.random(0, mapHeight)
-        until math.sqrt((x - player.x)^2 + (y - player.y)^2) > minDistance
-
-        local zombie = Zombie(type, x, y)
-        resolveStuck(zombie)
-        table.insert(zombies, zombie)
+            currentWeaponIndex = currentWeaponIndex - 1
+            if currentWeaponIndex < 1 then currentWeaponIndex = #weapons end
+        until weapons[currentWeaponIndex]
+    elseif y < 0 then
+        repeat
+            currentWeaponIndex = currentWeaponIndex + 1
+            if currentWeaponIndex > #weapons then currentWeaponIndex = 1 end
+        until weapons[currentWeaponIndex]
     end
-
 end
 
+function spawnZombie(type)
+    local minDistance = 500
+    local x, y
+    repeat
+        x = math.random(0, mapWidth)
+        y = math.random(0, mapHeight)
+    until math.sqrt((x - player.x)^2 + (y - player.y)^2) > minDistance
+
+    local zombie = Zombie(type, x, y)
+    resolveStuck(zombie)
+    table.insert(zombies, zombie)
+end
 
 function randNegPos(number)
     local number = number or 1

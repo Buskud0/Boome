@@ -28,10 +28,6 @@ function Input.isDown(action)
     return false
 end
 
-function Input.keyMatches(action, key)
-    return Input.bindings[action] == key
-end
-
 function Input.getActionForKey(key)
     for action, boundKey in pairs(Input.bindings) do
         if boundKey == key then return action end
