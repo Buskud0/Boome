@@ -58,12 +58,12 @@ function Weapon:update(dt)
 
 	self:reload(dt)
     --shoot
-    if love.mouse.isDown(1) and self.firerateCooldown <= 0 and not self.reloading and not self.shotFirstBullet then
+    if Input.isDown("shoot") and self.firerateCooldown <= 0 and not self.reloading and not self.shotFirstBullet then
     		for i = 1, self.bulletAmount do self:shootBullet() end
         	self.firerateCooldown = self.firerate
         	if not self.automatic then self.shotFirstBullet = true end
         	self.capacity = self.capacity - 1
-    elseif not love.mouse.isDown(1) then self.shotFirstBullet = false end
+    elseif not Input.isDown("shoot") then self.shotFirstBullet = false end
 end
 
 

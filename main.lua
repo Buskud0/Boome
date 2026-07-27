@@ -4,6 +4,7 @@
 
 require "conf"
 Object = require "lib.classic"
+Input = require "input"
 require "entities.player"
 require "entities.bullet"
 require "entities.zombie"
@@ -31,6 +32,7 @@ function love.load()
     grid = Grid()
     menu = Menu()
     love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
+    Input.load()
     player = Player(-20+mapWidth/2,-20+mapHeight/2)
     bullets = {}
     zombies = {}
@@ -141,13 +143,14 @@ function love.draw()
 end
 
 function love.keypressed(key)
-    if key == 'escape' then paused = not paused
-    elseif key == 'r' then weapon.capacity = 0
-    elseif key == '1' then currentWeaponIndex = 1
-    elseif key == '2' then currentWeaponIndex = 2
-    elseif key == '3' then currentWeaponIndex = 3 
-    elseif key == '4' then currentWeaponIndex = 4
-    elseif key == '5' then currentWeaponIndex = 5 end
+    local action = Input.getActionForKey(key)
+    if action == "pause" then paused = not paused
+    elseif action == "reload" then weapon.capacity = 0
+    elseif action == "weapon1" then currentWeaponIndex = 1
+    elseif action == "weapon2" then currentWeaponIndex = 2
+    elseif action == "weapon3" then currentWeaponIndex = 3
+    elseif action == "weapon4" then currentWeaponIndex = 4
+    elseif action == "weapon5" then currentWeaponIndex = 5 end
 end
 
 function addZombies(type, count)
