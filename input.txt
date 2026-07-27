@@ -1,5 +1,8 @@
 move_up=w
 move_down=s
+menu_up=up
+menu_down=down
+menu_confirm=return
 move_left=a
 move_right=d
 sprint=lshift

@@ -160,7 +160,6 @@ function love.update(dt)
 
         player:update(dt)
         weapon:update(dt)
-        menu:update(dt)
         updateCamera()
         Collisions.bulletVsZombie()
         Collisions.zombieVsPlayer()
@@ -183,6 +182,7 @@ function love.update(dt)
 
         updateDamageTexts(dt)
     end
+    menu:update(dt)
     if currentRound-1 > maxRounds then maxRounds = currentRound-1 end
     if killCount > maxKills then maxKills = killCount end
 end
@@ -225,13 +225,37 @@ end
 
 function love.keypressed(key)
     local action = Input.getActionForKey(key)
-    if action == "pause" then paused = not paused
-    elseif action == "reload" then weapon.capacity = 0
-    elseif action == "weapon1" then currentWeaponIndex = 1
-    elseif action == "weapon2" then currentWeaponIndex = 2
-    elseif action == "weapon3" then currentWeaponIndex = 3
-    elseif action == "weapon4" then currentWeaponIndex = 4
-    elseif action == "weapon5" then currentWeaponIndex = 5 end
+
+    if action == "pause" then
+        if menu:isOpen() then
+            menu:closeSubmenu()
+        else
+            menu:openSubmenu("main")
+        end
+        paused = menu:isOpen()
+    elseif menu:isOpen() then
+        menu:handleAction(action)
+        paused = menu:isOpen()
+    elseif action == "reload" then
+        weapon.capacity = 0
+    elseif action == "weapon1" then
+        currentWeaponIndex = 1
+    elseif action == "weapon2" then
+        currentWeaponIndex = 2
+    elseif action == "weapon3" then
+        currentWeaponIndex = 3
+    elseif action == "weapon4" then
+        currentWeaponIndex = 4
+    elseif action == "weapon5" then
+        currentWeaponIndex = 5
+    end
+end
+
+function love.mousepressed(x, y, button)
+    if button == 1 and menu:isOpen() then
+        menu:mousepressed(x + camera.x, y + camera.y)
+        paused = menu:isOpen()
+    end
 end
 
 function addZombies(type, count)

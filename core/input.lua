@@ -39,4 +39,8 @@ function Input.getActionForKey(key)
     return nil
 end
 
+function Input.getMousePosition()
+    return love.mouse.getX(), love.mouse.getY()
+end
+
 return Input
