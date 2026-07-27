@@ -18,7 +18,7 @@ function Player:update(dt)
     if self.x<=mapWidth-self.width    and Input.isDown("move_right") then self.x = self.x + self.speed*dt end
 
     if self.health <= 0 then
-        love.load() 
+        resetGame()
     end
 
 end

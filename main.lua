@@ -3,6 +3,7 @@
 --work on the menu
 
 require "conf"
+require "config"
 Object = require "lib.classic"
 Input = require "input"
 require "entities.player"
@@ -15,25 +16,38 @@ require "grid"
 require "entities.powerUp"
 Collisions = require "collisions"
 
-scrWidth, scrHeight = love.graphics.getDimensions()
-love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
-
-maxKills = 0
-maxRounds = 0
+function loadRecord()
+    local record = love.filesystem.read("record.txt")
+    if record then
+        maxRounds, maxKills = record:match("(%d+)%s+(%d+)")
+        maxRounds = tonumber(maxRounds) or 0
+        maxKills = tonumber(maxKills) or 0
+    else
+        maxRounds = 0
+        maxKills = 0
+    end
+end
 
 function love.load()
-    mapWidth = 1000
-    mapHeight = 1000
+    scrWidth, scrHeight = love.graphics.getDimensions()
+    love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
+    loadRecord()
+    love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
+    Input.load()
+    resetGame()
+end
+
+function resetGame()
+    mapWidth = MAP_WIDTH
+    mapHeight = MAP_HEIGHT
     killCount = 0
     currentRound = 0
-    zombieCount = 2
+    zombieCount = STARTING_ZOMBIE_COUNT
     currentWeaponIndex = 1
     camera = {x=0, y=0}
     grid = Grid()
     menu = Menu()
-    love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
-    Input.load()
-    player = Player(-20+mapWidth/2,-20+mapHeight/2)
+    player = Player(mapWidth/2 - 20, mapHeight/2 - 20)
     bullets = {}
     zombies = {}
     weapons = {}
@@ -47,24 +61,46 @@ function love.load()
     paused = false
 end
 
+function ManageRounds()
+    if #zombies == 0 then
+        currentRound = currentRound + 1
+        mostKills = currentRound
+        addZombies("normal", zombieCount)
+        addZombies("heavy", currentRound/3)
+        addZombies("light", currentRound/2)
+        zombieCount = zombieCount + 2
+        for i, weapon in ipairs(weapons) do
+            weapon.reloadCooldown = 0
+            weapon.capacity = weapon.magSize
+        end
+    end
+end
+
+function onZombieKilled(zombie, index)
+    print("killed " .. zombie.type .. " zombie")
+    table.remove(zombies, index)
+    killCount = killCount + 1
+    if zombie.type == "light" then player.money = player.money + 5 end
+    if zombie.type == "normal" then player.money = player.money + 10 end
+    if zombie.type == "heavy" then player.money = player.money + 15 end
+    local powerUpChance = math.random(1, 5)
+    if powerUpChance == 1 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "money")) end
+    if powerUpChance == 2 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "health")) end
+end
+
+function updateDamageTexts(dt)
+    for i = #damageTexts, 1, -1 do
+        damageTexts[i]:update(dt)
+        if damageTexts[i].destruct then table.remove(damageTexts, i) end
+    end
+end
+
 function love.update(dt)
     if not paused then
         --changes weapon to whichever one is selected by player
         weapon = weapons[currentWeaponIndex]
 
-        --adds zombies more zombies whenever there is none
-        if #zombies == 0 then 
-            currentRound = currentRound + 1
-            mostKills = currentRound
-            addZombies("normal", zombieCount) 
-            addZombies("heavy", currentRound/3)
-            addZombies("light", currentRound/2)
-            zombieCount = zombieCount + 2
-            for i, weapon in ipairs(weapons) do
-                weapon.reloadCooldown = 0
-                weapon.capacity = weapon.magSize
-            end
-        end
+        ManageRounds()
 
         player:update(dt)
         weapon:update(dt)
@@ -80,33 +116,21 @@ function love.update(dt)
 
         for i, zombie in ipairs(zombies) do
             zombie:update(dt)
-            
-            if zombie.health <= 0 then  --if zombie dies
-                print("killed " .. zombie.type .. " zombie")
-                table.remove(zombies, i) 
-                killCount = killCount + 1
-                if zombie.type == "light" then player.money = player.money + 5 end
-                if zombie.type == "normal" then player.money = player.money + 10 end
-                if zombie.type == "heavy" then player.money = player.money + 15 end
-                local powerUpChance = math.random(1, 5)
-                if powerUpChance == 1 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "money")) end
-                if powerUpChance == 2 then table.insert(powerUps, powerUp(zombie.x, zombie.y, "health")) end
-
-            end
+            if zombie.health <= 0 then onZombieKilled(zombie, i) end
         end
 
         for i, powerUp in ipairs(powerUps) do
             powerUp:update(dt)
         end
 
-        for i, damageText in ipairs(damageTexts) do
-            damageText:update(dt)
-            if damageText.destruct == true then table.remove(damageTexts, i) end
-        end
+        updateDamageTexts(dt)
     end
     if currentRound-1 > maxRounds then maxRounds = currentRound-1 end
     if killCount > maxKills then maxKills = killCount end
-    --love.filesystem.write("record.txt", maxRounds .. " " .. killCount)
+end
+
+function love.quit()
+    love.filesystem.write("record.txt", maxRounds .. " " .. maxKills)
 end
 
 function love.draw()
@@ -138,7 +162,6 @@ function love.draw()
 
     printHUD()
     if paused then menu:draw() end
-
    
 end
 
@@ -154,7 +177,7 @@ function love.keypressed(key)
 end
 
 function addZombies(type, count)
-    local minDistance = 250
+    local minDistance = 500
 
     for i = 1, count do
         local x, y
