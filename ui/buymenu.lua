@@ -155,41 +155,44 @@ function drawMoney(px, py)
     love.graphics.print(text, px + PANEL_WIDTH / 2 - textW / 2, py + MONEY_OFFSET_Y)
 end
 
-function drawWeaponOptions(px, py, mouseX, mouseY, mouseMoved)
+function drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
+    local stats = WEAPONS[model]
+    local canAfford = player.money >= stats.price
+    local rect = { x = px + 15, y = optionY, w = PANEL_WIDTH - 30, h = OPTION_HEIGHT }
+
+    table.insert(optionRects, rect)
+
+    if mouseMoved and useMouseSelection then
+        updateHover(rect, mouseX, mouseY, i)
+    end
+
+    if i == selection then
+        love.graphics.setColor(0.3, 0.5, 0.7)
+        love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
+    end
+
+    Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28)
+
     local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
+    love.graphics.setFont(font)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print(model, rect.x + 40, optionY + 6)
+
     local smallFont = love.graphics.newFont("fonts/Gamer.ttf", 18)
+    love.graphics.setFont(smallFont)
+    if canAfford then
+        love.graphics.setColor(1, 0.8, 0.2)
+    else
+        love.graphics.setColor(0.8, 0.3, 0.3)
+    end
+    love.graphics.print("$" .. stats.price, rect.x + rect.w - 74, optionY + 8)
+end
+
+function drawWeaponOptions(px, py, mouseX, mouseY, mouseMoved)
     local optionY = py + OPTIONS_OFFSET_Y
 
     for i, model in ipairs(sortedWeapons) do
-        local stats = WEAPONS[model]
-        local canAfford = player.money >= stats.price
-        local rect = { x = px + 15, y = optionY, w = PANEL_WIDTH - 30, h = OPTION_HEIGHT }
-
-        table.insert(optionRects, rect)
-
-        if mouseMoved and useMouseSelection then
-            updateHover(rect, mouseX, mouseY, i)
-        end
-
-        if i == selection then
-            love.graphics.setColor(0.3, 0.5, 0.7)
-            love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
-        end
-
-        Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28)
-
-        love.graphics.setFont(font)
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print(model, rect.x + 40, optionY + 6)
-
-        love.graphics.setFont(smallFont)
-        if canAfford then
-            love.graphics.setColor(1, 0.8, 0.2)
-        else
-            love.graphics.setColor(0.8, 0.3, 0.3)
-        end
-        love.graphics.print("$" .. stats.price, rect.x + rect.w - 74, optionY + 8)
-
+        drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
         optionY = optionY + OPTION_GAP
     end
 end

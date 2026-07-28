@@ -11,6 +11,10 @@ PLAYER_SPRINT_THRESHOLD = 30
 
 WEAPON_BULLET_SPEED = 1500
 
+BUILDING_ITEMS = {
+    wall = { name = "Wall", material = "wall" },
+}
+
 WEAPONS = {
     M9 = {
         automatic = false,

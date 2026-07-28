@@ -18,6 +18,11 @@ end
 
 function Player:update(dt)
     local isSprinting = self:_updateStamina(dt)
+    self:_handleMovement(dt, isSprinting)
+    if self.health <= 0 then resetGame() end
+end
+
+function Player:_handleMovement(dt, isSprinting)
     local speed = isSprinting and self.speed * PLAYER_SPRINT_MULTIPLIER or self.speed
 
     local dx, dy = 0, 0
@@ -26,7 +31,6 @@ function Player:update(dt)
     if Input.isDown("move_left") then dx = dx - speed * dt end
     if Input.isDown("move_right") then dx = dx + speed * dt end
     tryMove(self, dx, dy)
-    if self.health <= 0 then resetGame() end
 end
 
 function Player:_updateStamina(dt)

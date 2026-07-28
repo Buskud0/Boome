@@ -1,0 +1,287 @@
+local ItemBrowser = {}
+
+local PANEL_WIDTH = 500
+local PANEL_HEIGHT = 400
+local ITEM_CELL_SIZE = 60
+local ITEM_CELL_GAP = 10
+local ITEMS_PER_ROW = 6
+local HEADER_HEIGHT = 70
+
+ItemBrowser.isOpen = false
+ItemBrowser.searchQuery = ""
+ItemBrowser.filteredItems = {}
+ItemBrowser.draggedItem = nil
+ItemBrowser.scrollY = 0
+ItemBrowser.consumeNextText = false
+ItemBrowser.searchFocused = false
+ItemBrowser.dragStartX = 0
+ItemBrowser.dragStartY = 0
+
+local DRAG_THRESHOLD = 10
+
+local allItems = {}
+
+local function buildItemList()
+    allItems = {}
+    for key, item in pairs(BUILDING_ITEMS) do
+        table.insert(allItems, { key = key, name = item.name, material = item.material })
+    end
+    table.sort(allItems, function(a, b) return a.name < b.name end)
+end
+
+local function getPanelPosition()
+    local px = math.floor(scrWidth / 2 - PANEL_WIDTH / 2 + camera.x)
+    local py = math.floor(scrHeight / 2 - PANEL_HEIGHT / 2 + camera.y)
+    return px, py
+end
+
+local function clampScroll()
+    local rowH = ITEM_CELL_SIZE + ITEM_CELL_GAP
+    local numRows = math.ceil(#ItemBrowser.filteredItems / ITEMS_PER_ROW)
+    if numRows == 0 then
+        ItemBrowser.scrollY = 0
+        return
+    end
+    local contentHeight = numRows * rowH
+    local visibleHeight = PANEL_HEIGHT - HEADER_HEIGHT
+    local maxScroll = math.max(0, contentHeight - visibleHeight)
+    if ItemBrowser.scrollY > maxScroll then
+        ItemBrowser.scrollY = maxScroll
+    end
+end
+
+local function filterItems()
+    local query = ItemBrowser.searchQuery:lower()
+    ItemBrowser.filteredItems = {}
+    for _, item in ipairs(allItems) do
+        if query == "" or item.name:lower():find(query, 1, true) then
+            table.insert(ItemBrowser.filteredItems, item)
+        end
+    end
+    clampScroll()
+end
+
+function ItemBrowser.open()
+    if #allItems == 0 then buildItemList() end
+    ItemBrowser.isOpen = true
+    ItemBrowser.searchQuery = ""
+    ItemBrowser.scrollY = 0
+    ItemBrowser.draggedItem = nil
+    ItemBrowser.searchFocused = false
+    ItemBrowser.dragStartX = 0
+    ItemBrowser.dragStartY = 0
+    filterItems()
+end
+
+function ItemBrowser.close()
+    ItemBrowser.isOpen = false
+    ItemBrowser.draggedItem = nil
+    ItemBrowser.searchFocused = false
+end
+
+function ItemBrowser.clampScroll()
+    clampScroll()
+end
+
+function ItemBrowser.toggle()
+    if ItemBrowser.isOpen then ItemBrowser.close() else ItemBrowser.open() end
+end
+
+function ItemBrowser.handleTextInput(text)
+    if not ItemBrowser.searchFocused then return end
+    ItemBrowser.searchQuery = ItemBrowser.searchQuery .. text
+    filterItems()
+    ItemBrowser.scrollY = 0
+end
+
+function ItemBrowser.handleKeyPressed(key)
+    if key == "backspace" and ItemBrowser.searchFocused then
+        ItemBrowser.searchQuery = ItemBrowser.searchQuery:sub(1, -2)
+        filterItems()
+    end
+end
+
+function ItemBrowser.handleOutsideClick(px, py, worldX, worldY)
+    if worldX < px or worldX > px + PANEL_WIDTH or worldY < py or worldY > py + PANEL_HEIGHT then
+        ItemBrowser.close()
+        return true
+    end
+    return false
+end
+
+function ItemBrowser.handleSearchClick(px, py, worldX, worldY)
+    if worldX >= px + 10 and worldX <= px + PANEL_WIDTH - 10 and
+       worldY >= py + 36 and worldY <= py + 60 then
+        ItemBrowser.searchFocused = true
+        return true
+    end
+    return false
+end
+
+function ItemBrowser.handleGridClick(px, py, worldX, worldY)
+    local gridStartY = py + HEADER_HEIGHT - ItemBrowser.scrollY
+    local col = 0
+    local row = 0
+    for i, item in ipairs(ItemBrowser.filteredItems) do
+        local cellX = px + 10 + col * (ITEM_CELL_SIZE + ITEM_CELL_GAP)
+        local cellY = gridStartY + row * (ITEM_CELL_SIZE + ITEM_CELL_GAP)
+
+        if worldX >= cellX and worldX <= cellX + ITEM_CELL_SIZE and
+           worldY >= cellY and worldY <= cellY + ITEM_CELL_SIZE then
+            ItemBrowser.draggedItem = item
+            ItemBrowser.dragStartX = worldX
+            ItemBrowser.dragStartY = worldY
+            return true
+        end
+
+        col = col + 1
+        if col >= ITEMS_PER_ROW then
+            col = 0
+            row = row + 1
+        end
+    end
+    return false
+end
+
+function ItemBrowser.mousepressed(worldX, worldY)
+    if not ItemBrowser.isOpen then return end
+
+    local px, py = getPanelPosition()
+
+    if ItemBrowser.handleOutsideClick(px, py, worldX, worldY) then return end
+    if ItemBrowser.handleSearchClick(px, py, worldX, worldY) then return end
+
+    ItemBrowser.searchFocused = false
+    ItemBrowser.handleGridClick(px, py, worldX, worldY)
+end
+
+function ItemBrowser.autoPlaceItem(item)
+    for i = 1, MapBuilder.QUICK_ACCESS_COUNT do
+        if not MapBuilder.quickAccess[i] then
+            MapBuilder.setQuickAccess(i, item.key)
+            return true
+        end
+    end
+    return false
+end
+
+function ItemBrowser.dropOnSlot(worldX, worldY, item)
+    local slotRects = MapBuilderHUD.getSlotRects()
+    for i, rect in ipairs(slotRects) do
+        if worldX >= rect.x and worldX <= rect.x + rect.w and
+           worldY >= rect.y and worldY <= rect.y + rect.h then
+            MapBuilder.setQuickAccess(i, item.key)
+            return true
+        end
+    end
+    return false
+end
+
+function ItemBrowser.mousereleased(worldX, worldY)
+    if not ItemBrowser.draggedItem then return end
+
+    local item = ItemBrowser.draggedItem
+    ItemBrowser.draggedItem = nil
+
+    local dx = worldX - ItemBrowser.dragStartX
+    local dy = worldY - ItemBrowser.dragStartY
+    local isClick = dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD
+
+    if isClick then
+        ItemBrowser.autoPlaceItem(item)
+        return
+    end
+
+    ItemBrowser.dropOnSlot(worldX, worldY, item)
+end
+
+function ItemBrowser.drawOverlay()
+    love.graphics.setColor(0, 0, 0, 0.5)
+    love.graphics.rectangle("fill", camera.x, camera.y, scrWidth, scrHeight)
+end
+
+function ItemBrowser.drawPanel(px, py)
+    love.graphics.setColor(0.15, 0.15, 0.15, 0.95)
+    love.graphics.rectangle("fill", px, py, PANEL_WIDTH, PANEL_HEIGHT)
+    love.graphics.setColor(0.4, 0.4, 0.4)
+    love.graphics.rectangle("line", px, py, PANEL_WIDTH, PANEL_HEIGHT)
+end
+
+function ItemBrowser.drawTitle(px, py)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
+    love.graphics.setFont(font)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print("Building Items", px + 10, py + 8)
+end
+
+function ItemBrowser.drawSearchBar(px, py)
+    love.graphics.setColor(0.25, 0.25, 0.25)
+    love.graphics.rectangle("fill", px + 10, py + 36, PANEL_WIDTH - 20, 24)
+
+    if ItemBrowser.searchFocused then
+        love.graphics.setColor(0.5, 0.7, 1.0)
+    else
+        love.graphics.setColor(0.5, 0.5, 0.5)
+    end
+    love.graphics.rectangle("line", px + 10, py + 36, PANEL_WIDTH - 20, 24)
+
+    love.graphics.setFont(love.graphics.newFont("fonts/Gamer.ttf", 16))
+    love.graphics.setColor(0.8, 0.8, 0.8)
+    if ItemBrowser.searchFocused then
+        local cursor = love.timer.getTime() % 1 > 0.5 and "|" or " "
+        love.graphics.print(ItemBrowser.searchQuery .. cursor, px + 14, py + 38)
+    else
+        local display = ItemBrowser.searchQuery ~= "" and ItemBrowser.searchQuery or "Press SPACE or click to search"
+        love.graphics.print(display, px + 14, py + 38)
+    end
+end
+
+function ItemBrowser.drawItemGrid(px, py)
+    local gridStartY = py + HEADER_HEIGHT - ItemBrowser.scrollY
+    local col = 0
+    local row = 0
+
+    for i, item in ipairs(ItemBrowser.filteredItems) do
+        local cellX = px + 10 + col * (ITEM_CELL_SIZE + ITEM_CELL_GAP)
+        local cellY = gridStartY + row * (ITEM_CELL_SIZE + ITEM_CELL_GAP)
+
+        love.graphics.setColor(0.2, 0.2, 0.2)
+        love.graphics.rectangle("fill", cellX, cellY, ITEM_CELL_SIZE, ITEM_CELL_SIZE)
+        love.graphics.setColor(0.35, 0.35, 0.35)
+        love.graphics.rectangle("line", cellX, cellY, ITEM_CELL_SIZE, ITEM_CELL_SIZE)
+
+        Textures.draw(item.material, cellX + 5, cellY + 5, ITEM_CELL_SIZE - 10, ITEM_CELL_SIZE - 10)
+
+        love.graphics.setFont(love.graphics.newFont("fonts/Gamer.ttf", 14))
+        love.graphics.setColor(0.8, 0.8, 0.8)
+        love.graphics.print(item.name, cellX + 2, cellY + ITEM_CELL_SIZE + 2)
+
+        col = col + 1
+        if col >= ITEMS_PER_ROW then
+            col = 0
+            row = row + 1
+        end
+    end
+end
+
+function ItemBrowser.drawDragGhost()
+    if not ItemBrowser.draggedItem then return end
+    local mx, my = love.mouse.getPosition()
+    love.graphics.setColor(1, 1, 1, 0.8)
+    Textures.draw(ItemBrowser.draggedItem.material, mx + camera.x - 20, my + camera.y - 20, 40, 40)
+end
+
+function ItemBrowser.draw()
+    if not ItemBrowser.isOpen then return end
+
+    local px, py = getPanelPosition()
+
+    ItemBrowser.drawOverlay()
+    ItemBrowser.drawPanel(px, py)
+    ItemBrowser.drawTitle(px, py)
+    ItemBrowser.drawSearchBar(px, py)
+    ItemBrowser.drawItemGrid(px, py)
+    ItemBrowser.drawDragGhost()
+end
+
+return ItemBrowser

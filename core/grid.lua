@@ -5,23 +5,19 @@ function Grid:new()
     self.tileSize = 40
     self.cols = mapHeight / self.tileSize
     self.rows = mapWidth / self.tileSize
-
-    self:colorTile("wall", 10, 10)
-    self:colorTile("wall", 10, 11)
-    self:colorTile("wall", 10, 12)
-    self:colorTile("wall", 10, 13)
-    self:colorTile("wall", 10, 14)
 end
 
 function Grid:draw()
     for y = 1, self.cols do
         for x = 1, self.rows do
             local i = self:index(x, y, self.cols)
-            local material = "empty"
-            if self.grid[i] == "wall" then material = "wall" end
-            Textures.draw(material, (x-1)*self.tileSize, (y-1)*self.tileSize)
+            Textures.draw(self.grid[i] or "empty", (x-1)*self.tileSize, (y-1)*self.tileSize)
         end
     end
+end
+
+function Grid:clearTile(x, y)
+    self.grid[(y-1) * self.cols + x] = nil
 end
 
 function Grid:index(x, y, width)

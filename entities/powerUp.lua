@@ -23,24 +23,32 @@ function PowerUp:draw()
     Textures.draw(self.sprite, self.x, self.y, self.width, self.height)
 end
 
-function PowerUp:update(dt) 
-	if(Collisions.check(player, self)) then
-        if self.type == "health" and player.health < 100 then 
-            player.health = math.min(player.health + 25, 100)
-            self.isPickedUp = true
-        end 
-        if self.type == "money" then 
-            player.money = player.money + 100
-            self.isPickedUp = true
-        end
+function PowerUp:update(dt)
+    if self:_tryPickup() then
+        self:_removeFromWorld()
+    end
+end
 
-        for i, powerUp in ipairs(powerUps) do
-            if powerUp == self and powerUp.isPickedUp then 
-                print("picked up " .. self.type)
-                table.insert(damageTexts, DamageText("+" .. self.amount .. " " .. self.type, self.x, self.y, 1.5, self.color))
-                table.remove(powerUps, i)
-                break
-            end
+function PowerUp:_tryPickup()
+    if not Collisions.check(player, self) then return false end
+    if self.type == "health" and player.health < 100 then
+        player.health = math.min(player.health + 25, 100)
+        return true
+    end
+    if self.type == "money" then
+        player.money = player.money + 100
+        return true
+    end
+    return false
+end
+
+function PowerUp:_removeFromWorld()
+    for i, powerUp in ipairs(powerUps) do
+        if powerUp == self then
+            print("picked up " .. self.type)
+            table.insert(damageTexts, DamageText("+" .. self.amount .. " " .. self.type, self.x, self.y, 1.5, self.color))
+            table.remove(powerUps, i)
+            break
         end
     end
 end

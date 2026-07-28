@@ -29,6 +29,10 @@ function Zombie:new(type, x, y)
 end
 
 function Zombie:update(dt)
+    self:_moveTowardPlayer(dt)
+end
+
+function Zombie:_moveTowardPlayer(dt)
     self.dx = player.x - self.x
     self.dy = player.y - self.y
     local dist = math.sqrt(self.dx^2 + self.dy^2)

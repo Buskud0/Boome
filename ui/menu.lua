@@ -6,7 +6,7 @@ local function buildScreens()
             title = "PAUSED",
             options = {
                 { label = "Resume",             action = "resume" },
-                { label = "Map Builder",        action = "coming_soon" },
+                { label = function() return gameMode == "mapbuilder" and "Horde Mode" or "Map Builder" end, action = "toggle_mode" },
                 { label = "Multiplayer Server", action = "coming_soon" },
                 { label = "Lobby Settings",     action = "screen_lobby" },
                 { label = "Stats",              action = "screen_stats" },
@@ -16,8 +16,8 @@ local function buildScreens()
         stats = {
             title = "STATS",
             options = {
-                { label = function() return "Max kills: " .. maxKills end,   action = nil },
-                { label = function() return "Max rounds: " .. maxRounds end, action = nil },
+                { label = function() return "Max kills: " .. Horde.maxKills end,   action = nil },
+                { label = function() return "Max rounds: " .. Horde.maxRounds end, action = nil },
                 { label = "Back", action = "back" },
             },
         },
@@ -154,6 +154,13 @@ function Menu:doAction(action)
         self.stack = {}
     elseif action == "back" then
         self:closeSubmenu()
+    elseif action == "toggle_mode" then
+        self.stack = {}
+        if gameMode == "mapbuilder" then
+            enterHordeMode()
+        else
+            enterMapBuilder()
+        end
     elseif action == "coming_soon" then
         self.notification = "Coming soon!"
         self.notificationTimeLeft = 2

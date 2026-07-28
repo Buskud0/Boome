@@ -15,3 +15,4 @@ weapon3=3
 weapon4=4
 weapon5=5
 buy=b
+browser=e
