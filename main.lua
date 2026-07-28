@@ -27,11 +27,31 @@ ItemBrowser = require "ui.item_browser"
 
 gameMode = "horde"
 
+function loadCursor()
+    local img = love.graphics.newImage("images/crosshair.png")
+    local cursorSize = 32
+    local canvas = love.graphics.newCanvas(cursorSize, cursorSize)
+    love.graphics.setCanvas(canvas)
+    love.graphics.draw(img, 0, 0, 0, cursorSize / img:getWidth(), cursorSize / img:getHeight())
+    love.graphics.setCanvas()
+    local imgData = canvas:newImageData()
+    cursor = love.mouse.newCursor(imgData, cursorSize / 2, cursorSize / 2)
+    updateCursor()
+end
+
+function updateCursor()
+    if menu and gameMode == "horde" and not menu:isOpen() and not BuyMenu.isOpen() then
+        love.mouse.setCursor(cursor)
+    else
+        love.mouse.setCursor(love.mouse.getSystemCursor("arrow"))
+    end
+end
+
 function love.load()
     scrWidth, scrHeight = love.graphics.getDimensions()
     love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
     Horde.loadScoreRecord()
-    love.mouse.setCursor(love.mouse.getSystemCursor("crosshair"))
+    loadCursor()
     Input.load()
     Textures.load("images/spritesheet.png", 40)
     Textures.define("empty", 1)
@@ -176,6 +196,7 @@ function love.keypressed(key)
     elseif gameMode == "horde" then
         Horde.handleKey(key, action)
     end
+    updateCursor()
 end
 
 function love.mousepressed(x, y, button)
@@ -187,6 +208,7 @@ function love.mousepressed(x, y, button)
     elseif gameMode == "mapbuilder" then
         MapBuilder.handleClick(x, y, button)
     end
+    updateCursor()
 end
 
 function love.mousereleased(x, y, button)
@@ -229,11 +251,13 @@ end
 function enterMapBuilder()
     gameMode = "mapbuilder"
     paused = false
+    updateCursor()
     MapBuilder.enter()
 end
 
 function enterHordeMode()
     gameMode = "horde"
+    updateCursor()
     camera.zoom = 1
 end
 
