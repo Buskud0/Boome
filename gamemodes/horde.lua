@@ -130,11 +130,14 @@ function Horde.updateCamera()
 end
 
 function Horde.cycleWeapon(direction)
-    repeat
-        currentWeaponIndex = currentWeaponIndex + direction
-        if currentWeaponIndex < 1 then currentWeaponIndex = #weapons end
-        if currentWeaponIndex > #weapons then currentWeaponIndex = 1 end
-    until weapons[currentWeaponIndex]
+    local target = currentWeaponIndex + direction
+    while target >= 1 and target <= #weapons do
+        if weapons[target] then
+            currentWeaponIndex = target
+            return
+        end
+        target = target + direction
+    end
 end
 
 function Horde.handleKey(key, action)

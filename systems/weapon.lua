@@ -56,50 +56,73 @@ function Weapon:_tryShoot()
 end
 
 function Weapon:draw()
+    self:_drawAmmoText()
+    self:_drawReloadArc()
+    self:_drawFirerateArc()
+end
+
+function Weapon:_drawAmmoText()
     local font = love.graphics.newFont("fonts/Gamer.ttf", 40)
     love.graphics.setFont(font)
     love.graphics.setColor({1, 1, 1})
     love.graphics.print(self.model .. " " .. self.capacity .. "/" .. self.magSize .. " ", 10 + camera.x, 0 + camera.y)
-    if self.reloading then
-        love.graphics.arc("fill", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.reloadProgress)
-    end
-    if self.firerateCooldown > 0 and not self.reloading then
-        love.graphics.arc("line", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.firerateProgress)
-    end
+end
+
+function Weapon:_drawReloadArc()
+    if not self.reloading then return end
+    love.graphics.arc("fill", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.reloadProgress)
+end
+
+function Weapon:_drawFirerateArc()
+    if self.firerateCooldown <= 0 or self.reloading then return end
+    love.graphics.arc("line", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.firerateProgress)
 end
 
 function Weapon:shootBullet()
-    local startX = player.x + player.width / 2
-    local startY = player.y + player.height / 2
-    local mouseX = love.mouse.getX() + camera.x
-    local mouseY = love.mouse.getY() + camera.y
-
-    local bulletDx = mouseX - startX
-    local bulletDy = mouseY - startY
-    local length = math.sqrt(bulletDx * bulletDx + bulletDy * bulletDy)
-    if length ~= 0 then
-        bulletDx = bulletDx / length + randNegPos(0.01) * self.spread
-        bulletDy = bulletDy / length + randNegPos(0.01) * self.spread
-    end
-    bulletDx = bulletDx * self.bulletSpeed
-    bulletDy = bulletDy * self.bulletSpeed
+    local startX, startY = self:_getMuzzlePosition()
+    local bulletDx, bulletDy = self:_calculateBulletDirection(startX, startY)
     table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage))
 end
 
+function Weapon:_getMuzzlePosition()
+    return player.x + player.width / 2, player.y + player.height / 2
+end
+
+function Weapon:_calculateBulletDirection(startX, startY)
+    local mouseX = love.mouse.getX() + camera.x
+    local mouseY = love.mouse.getY() + camera.y
+    local dx = mouseX - startX
+    local dy = mouseY - startY
+    local length = math.sqrt(dx * dx + dy * dy)
+    if length ~= 0 then
+        dx = dx / length + randNegPos(0.01) * self.spread
+        dy = dy / length + randNegPos(0.01) * self.spread
+    end
+    return dx * self.bulletSpeed, dy * self.bulletSpeed
+end
+
 function Weapon:reload(dt)
+    self:_updateReloadCooldown(dt)
+    self:_triggerReload()
+    self:_completeReload()
+end
+
+function Weapon:_updateReloadCooldown(dt)
     if self.reloadCooldown > 0 then
         self.reloadCooldown = self.reloadCooldown - dt
         self.reloadProgress = 1 - self.reloadCooldown / self.reloadTime
     end
+end
 
-    if self.capacity <= 0 and not self.reloading then
-        self.reloadCooldown = self.reloadTime
-        self.reloading = true
-    end
+function Weapon:_triggerReload()
+    if self.capacity > 0 or self.reloading then return end
+    self.reloadCooldown = self.reloadTime
+    self.reloading = true
+end
 
-    if self.reloading and self.reloadCooldown <= 0 then
-        self.capacity = self.magSize
-        self.reloadProgress = 0
-        self.reloading = false
-    end
+function Weapon:_completeReload()
+    if not self.reloading or self.reloadCooldown > 0 then return end
+    self.capacity = self.magSize
+    self.reloadProgress = 0
+    self.reloading = false
 end

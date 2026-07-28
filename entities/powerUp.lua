@@ -6,27 +6,42 @@ function PowerUp:new(x, y, type)
 	self.width = 20
 	self.height = 20
     self.type = type
-    self.isPickedUp = false
-    if self.type == "health" then 
-        self.color = {0.8, 0.2, 0.2} 
+    self.lifetime = 6
+    self.opacity = 1
+    self:_initByType()
+end
+
+function PowerUp:_initByType()
+    if self.type == "health" then
+        self.color = {0.8, 0.2, 0.2}
         self.amount = 25
         self.sprite = "powerup_health"
-    end
-    if self.type == "money" then 
-        self.color = {1, 0.8, 0.2} 
+    elseif self.type == "money" then
+        self.color = {1, 0.8, 0.2}
         self.amount = 100
         self.sprite = "powerup_money"
     end
 end
 
 function PowerUp:draw()
-    Textures.draw(self.sprite, self.x, self.y, self.width, self.height)
+    Textures.draw(self.sprite, self.x, self.y, self.width, self.height, self.opacity)
 end
 
 function PowerUp:update(dt)
-    if self:_tryPickup() then
-        self:_removeFromWorld()
+    self.lifetime = self.lifetime - dt
+    if self.lifetime <= 0 then
+        self:_expire()
+        return
     end
+    self:_updateOpacity()
+    if self:_tryPickup() then
+        self:_collect()
+    end
+end
+
+function PowerUp:_updateOpacity()
+    if self.lifetime >= 2 then return end
+    self.opacity = math.max(0, self.lifetime / 2)
 end
 
 function PowerUp:_tryPickup()
@@ -45,10 +60,18 @@ end
 function PowerUp:_removeFromWorld()
     for i, powerUp in ipairs(powerUps) do
         if powerUp == self then
-            print("picked up " .. self.type)
-            table.insert(damageTexts, DamageText("+" .. self.amount .. " " .. self.type, self.x, self.y, 1.5, self.color))
             table.remove(powerUps, i)
             break
         end
     end
+end
+
+function PowerUp:_collect()
+    print("picked up " .. self.type)
+    table.insert(damageTexts, DamageText("+" .. self.amount .. " " .. self.type, self.x, self.y, 1.5, self.color))
+    self:_removeFromWorld()
+end
+
+function PowerUp:_expire()
+    self:_removeFromWorld()
 end

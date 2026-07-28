@@ -16,8 +16,7 @@ local lastMouseY = -1
 local useMouseSelection = true
 
 function BuyMenu.open()
-    sortedWeapons = buildSortedWeapons()
-    if #sortedWeapons == 0 then return end
+    sortedWeapons = buildAllWeaponsSorted()
     isOpen = true
     selection = 1
     optionRects = {}
@@ -26,17 +25,15 @@ function BuyMenu.open()
     lastMouseY = -1
 end
 
-function buildSortedWeapons()
-    local available = {}
+function buildAllWeaponsSorted()
+    local all = {}
     for model in pairs(WEAPONS) do
-        if not playerHasWeapon(model) then
-            table.insert(available, model)
-        end
+        table.insert(all, model)
     end
-    table.sort(available, function(a, b)
+    table.sort(all, function(a, b)
         return WEAPONS[a].price < WEAPONS[b].price
     end)
-    return available
+    return all
 end
 
 function playerHasWeapon(model)
@@ -86,7 +83,7 @@ end
 
 function BuyMenu:confirmPurchase()
     local model = sortedWeapons[selection]
-    if not model then return end
+    if not model or playerHasWeapon(model) then return end
     local stats = WEAPONS[model]
     if player.money >= stats.price then
         player.money = player.money - stats.price
@@ -157,6 +154,7 @@ end
 
 function drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
     local stats = WEAPONS[model]
+    local isOwned = playerHasWeapon(model)
     local canAfford = player.money >= stats.price
     local rect = { x = px + 15, y = optionY, w = PANEL_WIDTH - 30, h = OPTION_HEIGHT }
 
@@ -171,21 +169,29 @@ function drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
         love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
     end
 
+    if isOwned then
+        love.graphics.setColor(0.4, 0.4, 0.4)
+    else
+        love.graphics.setColor(1, 1, 1)
+    end
     Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28)
 
     local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
     love.graphics.setFont(font)
-    love.graphics.setColor(1, 1, 1)
     love.graphics.print(model, rect.x + 40, optionY + 6)
 
     local smallFont = love.graphics.newFont("fonts/Gamer.ttf", 18)
     love.graphics.setFont(smallFont)
-    if canAfford then
+    if isOwned then
+        love.graphics.setColor(0.4, 0.4, 0.4)
+        love.graphics.print("OWNED", rect.x + rect.w - 80, optionY + 8)
+    elseif canAfford then
         love.graphics.setColor(1, 0.8, 0.2)
+        love.graphics.print("$" .. stats.price, rect.x + rect.w - 74, optionY + 8)
     else
         love.graphics.setColor(0.8, 0.3, 0.3)
+        love.graphics.print("$" .. stats.price, rect.x + rect.w - 74, optionY + 8)
     end
-    love.graphics.print("$" .. stats.price, rect.x + rect.w - 74, optionY + 8)
 end
 
 function drawWeaponOptions(px, py, mouseX, mouseY, mouseMoved)

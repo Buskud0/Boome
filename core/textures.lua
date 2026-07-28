@@ -35,10 +35,10 @@ function Textures.define(material, tileIndex)
     end
 end
 
-function Textures.draw(material, x, y, w, h)
+function Textures.draw(material, x, y, w, h, alpha)
     local entry = materialRegistry[material]
     if entry then
-        love.graphics.setColor(1, 1, 1)
+        love.graphics.setColor(1, 1, 1, alpha or 1)
         local sx = (w or entry.tileSize) / entry.tileSize
         local sy = (h or entry.tileSize) / entry.tileSize
         love.graphics.draw(entry.image, entry.quad, x, y, 0, sx, sy)
