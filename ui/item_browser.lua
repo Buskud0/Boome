@@ -3,8 +3,8 @@ local ItemBrowser = {}
 local PANEL_WIDTH = 500
 local PANEL_HEIGHT = 400
 local ITEM_CELL_SIZE = 60
-local ITEM_CELL_GAP = 10
-local ITEMS_PER_ROW = 6
+local ITEM_CELL_GAP = 28
+local ITEMS_PER_ROW = 5
 local HEADER_HEIGHT = 70
 
 ItemBrowser.isOpen = false
@@ -252,9 +252,9 @@ function ItemBrowser.drawItemGrid(px, py)
 
         Textures.draw(item.material, cellX + 5, cellY + 5, ITEM_CELL_SIZE - 10, ITEM_CELL_SIZE - 10)
 
-        love.graphics.setFont(love.graphics.newFont("fonts/Gamer.ttf", 14))
+        love.graphics.setFont(love.graphics.newFont("fonts/Gamer.ttf", 18))
         love.graphics.setColor(0.8, 0.8, 0.8)
-        love.graphics.print(item.name, cellX + 2, cellY + ITEM_CELL_SIZE + 2)
+        love.graphics.print(item.name, cellX + 2, cellY + ITEM_CELL_SIZE + 4)
 
         col = col + 1
         if col >= ITEMS_PER_ROW then
