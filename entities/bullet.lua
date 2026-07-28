@@ -3,8 +3,8 @@ Bullet = Object:extend()
 function Bullet:new(x, y, dx, dy, damage)
 	self.x = x
 	self.y = y
-	self.width = 4
-	self.height = 4
+	self.width = 8
+	self.height = 8
 	self.dx = dx
 	self.dy = dy
 	self.damage = damage

@@ -224,6 +224,13 @@ function MapBuilder.handleKey(key, action)
             ItemBrowser.consumeNextText = true
             return true
         end
+
+        local slot = tonumber(key)
+        if slot and slot >= 1 and slot <= QUICK_ACCESS_COUNT then
+            MapBuilder.selectedSlot = slot
+            return true
+        end
+
         return false
     end
 

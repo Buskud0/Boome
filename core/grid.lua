@@ -11,7 +11,7 @@ function Grid:draw()
     for y = 1, self.cols do
         for x = 1, self.rows do
             local i = self:index(x, y, self.cols)
-            Textures.draw(self.grid[i] or "empty", (x-1)*self.tileSize, (y-1)*self.tileSize)
+            Textures.draw(self.grid[i] or "grass", (x-1)*self.tileSize, (y-1)*self.tileSize)
         end
     end
 end
@@ -39,8 +39,12 @@ function Grid:isBlocked(px, py, w, h)
         local col = math.floor(corner[1] / self.tileSize) + 1
         local row = math.floor(corner[2] / self.tileSize) + 1
         if col >= 1 and col <= self.cols and row >= 1 and row <= self.rows then
-            if self.grid[(row-1) * self.cols + col] == "wall" then
-                return true
+            local material = self.grid[(row-1) * self.cols + col]
+            if material then
+                local item = BUILDING_ITEMS[material]
+                if item and item.blocksMovement then
+                    return true
+                end
             end
         end
     end

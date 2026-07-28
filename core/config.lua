@@ -12,7 +12,17 @@ PLAYER_SPRINT_THRESHOLD = 30
 WEAPON_BULLET_SPEED = 1500
 
 BUILDING_ITEMS = {
-    wall = { name = "Wall", material = "wall" },
+    wood_wall = { name = "Wood Wall", material = "wood_wall", destructable = true, blocksMovement = true },
+    barrel = { name = "Barrel", material = "barrel", destructable = true, blocksMovement = true },
+    bush = { name = "Bush", material = "bush", destructable = true, blocksMovement = false },
+    stone = { name = "Stone", material = "stone", destructable = true, blocksMovement = true },
+    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", destructable = true, blocksMovement = true },
+    tree = { name = "Tree", material = "tree", destructable = true, blocksMovement = true },
+    shop = { name = "Shop", material = "shop", destructable = false, blocksMovement = true },
+    dirt = { name = "Dirt", material = "dirt", destructable = false, blocksMovement = false },
+    grass = { name = "Grass", material = "grass", destructable = false, blocksMovement = false },
+    rock_path = { name = "Rock Path", material = "rock_path", destructable = false, blocksMovement = false },
+    water = { name = "Water", material = "water", destructable = false, blocksMovement = false },
 }
 
 WEAPONS = {
