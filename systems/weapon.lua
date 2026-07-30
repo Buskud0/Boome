@@ -90,8 +90,7 @@ function Weapon:_getMuzzlePosition()
 end
 
 function Weapon:_calculateBulletDirection(startX, startY)
-    local mouseX = love.mouse.getX() + camera.x
-    local mouseY = love.mouse.getY() + camera.y
+    local mouseX, mouseY = screenToWorld(love.mouse.getX(), love.mouse.getY())
     local dx = mouseX - startX
     local dy = mouseY - startY
     local length = math.sqrt(dx * dx + dy * dy)

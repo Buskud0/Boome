@@ -50,6 +50,12 @@ function updateCursor()
     end
 end
 
+function screenToWorld(sx, sy)
+    local cx, cy = scrWidth / 2, scrHeight / 2
+    return (sx + camera.x - cx) / camera.zoom + cx,
+           (sy + camera.y - cy) / camera.zoom + cy
+end
+
 function love.load()
     scrWidth, scrHeight = love.graphics.getDimensions()
     love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
@@ -91,7 +97,7 @@ function resetGame()
     currentWeaponIndex = 1
     gameMode = "horde"
     Horde.reset()
-    camera = {x=0, y=0, zoom=1}
+    camera = {x=0, y=0, zoom=1.5}
     grid = Grid()
     MapBuilder.load()
     menu = Menu()
@@ -108,18 +114,76 @@ end
 
 function tryMove(entity, dx, dy, constrainToMap)
     if constrainToMap == nil then constrainToMap = true end
-    local cx, cy = entity:getCenter()
     local r = entity.radius
-    local newX = entity.x + dx
-    local newY = entity.y + dy
+    local hw = entity.width / 2
+    local hh = entity.height / 2
 
-    if not grid:isCircleBlocked(newX + entity.width / 2, cy, r) and (not constrainToMap or (newX >= 0 and newX <= mapWidth - entity.width)) then
-        entity.x = newX
-        cx = newX + entity.width / 2
+    local function canMoveTo(x, y)
+        if constrainToMap then
+            if x < 0 or x > mapWidth - entity.width then return false end
+            if y < 0 or y > mapHeight - entity.height then return false end
+        end
+        return not grid:isCircleBlocked(x + hw, y + hh, r)
     end
-    if not grid:isCircleBlocked(cx, newY + entity.height / 2, r) and (not constrainToMap or (newY >= 0 and newY <= mapHeight - entity.height)) then
-        entity.y = newY
+
+    local nx, ny = entity.x + dx, entity.y + dy
+
+    if canMoveTo(nx, ny) then
+        entity.x, entity.y = nx, ny
+        resolveStuck(entity)
+        return
     end
+
+    local bx, by = entity.x, entity.y
+
+    local hx, hy = bx, by
+    if canMoveTo(nx, hy) then hx = nx end
+    if canMoveTo(hx, ny) then hy = ny end
+
+    local vx, vy = bx, by
+    if canMoveTo(vx, ny) then vy = ny end
+    if canMoveTo(nx, vy) then vx = nx end
+
+    local slideX, slideY
+    if math.abs(vx - bx) + math.abs(vy - by) > math.abs(hx - bx) + math.abs(hy - by) then
+        slideX, slideY = vx, vy
+    else
+        slideX, slideY = hx, hy
+    end
+
+    local movedX = slideX ~= bx
+    local movedY = slideY ~= by
+
+    if (dx ~= 0 and not movedX) or (dy ~= 0 and not movedY) then
+        local maxNudge = 1
+        for nudge = 1, maxNudge do
+            local found = false
+            if dx ~= 0 and not movedX then
+                for _, yn in ipairs({nudge, -nudge}) do
+                    local ty = by + yn
+                    if canMoveTo(nx, ty) then
+                        slideX, slideY = nx, ty
+                        found = true
+                        break
+                    end
+                end
+                if found then break end
+            end
+            if dy ~= 0 and not movedY then
+                for _, xn in ipairs({nudge, -nudge}) do
+                    local tx = bx + xn
+                    if canMoveTo(tx, ny) then
+                        slideX, slideY = tx, ny
+                        found = true
+                        break
+                    end
+                end
+                if found then break end
+            end
+        end
+    end
+
+    entity.x, entity.y = slideX, slideY
     resolveStuck(entity)
 end
 
@@ -135,18 +199,16 @@ function resolveStuck(entity)
 
     local maxOffset = math.max(grid.tileSize, math.ceil(r))
     for offset = 1, maxOffset do
-        if not grid:isCircleBlocked(cx + offset, cy, r) then
-            entity.x = entity.x + offset
-            break
-        elseif not grid:isCircleBlocked(cx - offset, cy, r) then
-            entity.x = entity.x - offset
-            break
-        elseif not grid:isCircleBlocked(cx, cy + offset, r) then
-            entity.y = entity.y + offset
-            break
-        elseif not grid:isCircleBlocked(cx, cy - offset, r) then
-            entity.y = entity.y - offset
-            break
+        local dirs = {
+            {offset, 0}, {-offset, 0}, {0, offset}, {0, -offset},
+            {offset, offset}, {offset, -offset}, {-offset, offset}, {-offset, -offset},
+        }
+        for _, d in ipairs(dirs) do
+            if not grid:isCircleBlocked(cx + d[1], cy + d[2], r) then
+                entity.x = entity.x + d[1]
+                entity.y = entity.y + d[2]
+                return
+            end
         end
     end
 end
@@ -172,7 +234,14 @@ function love.draw()
         MapBuilder.draw()
     end
 
-    if debugDraw then grid:debugDraw() end
+    if debugDraw then
+        love.graphics.push()
+        love.graphics.translate(scrWidth / 2, scrHeight / 2)
+        love.graphics.scale(camera.zoom)
+        love.graphics.translate(-scrWidth / 2, -scrHeight / 2)
+        grid:debugDraw()
+        love.graphics.pop()
+    end
     if paused then menu:draw() end
     Toast.draw()
 end
@@ -180,8 +249,8 @@ end
 function love.keypressed(key)
     if key == "f3" then debugDraw = not debugDraw; return end
     if key == "f2" and gameMode == "horde" then
-        local mx, my = love.mouse.getPosition()
-        local zombie = Zombie("normal", mx + camera.x, my + camera.y)
+        local wx, wy = screenToWorld(love.mouse.getPosition())
+        local zombie = Zombie("normal", wx, wy)
         resolveStuck(zombie)
         table.insert(zombies, zombie)
         return

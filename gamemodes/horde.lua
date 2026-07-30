@@ -121,12 +121,19 @@ function Horde.updateDamageTexts(dt)
 end
 
 function Horde.updateCamera()
-    camera.x = player.x - scrWidth / 2
-    camera.y = player.y - scrHeight / 2
-    if camera.x < 0 then camera.x = 0 end
-    if camera.y < 0 then camera.y = 0 end
-    if camera.x > mapWidth - scrWidth then camera.x = mapWidth - scrWidth end
-    if camera.y > mapHeight - scrHeight then camera.y = mapHeight - scrHeight end
+    local cx, cy = scrWidth / 2, scrHeight / 2
+    camera.x = (player.x - cx) * camera.zoom
+    camera.y = (player.y - cy) * camera.zoom
+
+    local minCamX = cx * (1 - camera.zoom)
+    local minCamY = cy * (1 - camera.zoom)
+    local maxCamX = (mapWidth - cx) * camera.zoom - cx
+    local maxCamY = (mapHeight - cy) * camera.zoom - cy
+
+    if camera.x < minCamX then camera.x = minCamX end
+    if camera.y < minCamY then camera.y = minCamY end
+    if camera.x > maxCamX then camera.x = maxCamX end
+    if camera.y > maxCamY then camera.y = maxCamY end
 end
 
 function Horde.cycleWeapon(direction)
@@ -188,6 +195,10 @@ function Horde.mainUpdate(dt)
 end
 
 function Horde.draw()
+    love.graphics.push()
+    love.graphics.translate(scrWidth / 2, scrHeight / 2)
+    love.graphics.scale(camera.zoom)
+    love.graphics.translate(-scrWidth / 2, -scrHeight / 2)
     love.graphics.setColor(0.2, 0.2, 0.2)
     love.graphics.rectangle("fill", 0, 0, mapWidth, mapHeight)
     grid:drawBlocks()
@@ -202,10 +213,11 @@ function Horde.draw()
     end
     player:draw()
     grid:drawObjects()
-    weapon:draw()
     for _, damageText in ipairs(damageTexts) do
         damageText:draw()
     end
+    love.graphics.pop()
+    weapon:draw()
     HUD.draw()
     Inventory.draw()
     Horde.drawOverlay()

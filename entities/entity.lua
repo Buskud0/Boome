@@ -3,9 +3,9 @@ Entity = Object:extend()
 function Entity:new(x, y)
     self.x = x
     self.y = y
-    self.width = 40
-    self.height = 40
-    self.radius = 18
+    self.width = 30
+    self.height = 30
+    self.radius = 15
     self.health = 100
     self.color = {1, 1, 1}
 end
