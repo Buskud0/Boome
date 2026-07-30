@@ -11,19 +11,26 @@ PLAYER_SPRINT_THRESHOLD = 30
 
 WEAPON_BULLET_SPEED = 1500
 
-BUILDING_ITEMS = {
-    wood_wall = { name = "Wood Wall", material = "wood_wall", destructable = true, blocksMovement = true },
-    barrel = { name = "Barrel", material = "barrel", destructable = true, blocksMovement = true },
-    bush = { name = "Bush", material = "bush", destructable = true, blocksMovement = false },
-    stone = { name = "Stone", material = "stone", destructable = true, blocksMovement = true },
-    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", destructable = true, blocksMovement = true },
-    tree = { name = "Tree", material = "tree", destructable = true, blocksMovement = true },
-    shop = { name = "Shop", material = "shop", destructable = false, blocksMovement = true },
-    dirt = { name = "Dirt", material = "dirt", destructable = false, blocksMovement = false },
-    grass = { name = "Grass", material = "grass", destructable = false, blocksMovement = false },
-    rock_path = { name = "Rock Path", material = "rock_path", destructable = false, blocksMovement = false },
-    water = { name = "Water", material = "water", destructable = false, blocksMovement = false },
+BLOCK_ITEMS = {
+    dirt = { name = "Dirt", material = "dirt", destructable = false, blocksMovement = false, speedMultiplier = 0.85 },
+    grass = { name = "Grass", material = "grass", destructable = false, blocksMovement = false, speedMultiplier = 1 },
+    rock_path = { name = "Rock Path", material = "rock_path", destructable = false, blocksMovement = false, speedMultiplier = 1 },
+    shop = { name = "Shop", material = "shop", destructable = false, blocksMovement = true, speedMultiplier = 1 },
+    stone = { name = "Stone", material = "stone", destructable = true, blocksMovement = true, speedMultiplier = 1 },
+    water = { name = "Water", material = "water", destructable = false, blocksMovement = false, speedMultiplier = 0.5 },
+    wood_wall = { name = "Wood Wall", material = "wood_wall", destructable = true, blocksMovement = true, speedMultiplier = 1 },
 }
+
+OBJECT_ITEMS = {
+    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", destructable = true, blocksMovement = true },
+    barrel = { name = "Barrel", material = "barrel", destructable = true, blocksMovement = true },
+    bush = { name = "Bush", material = "bush", destructable = true, blocksMovement = false, speedMultiplier = 0.3 },
+    tree = { name = "Tree", material = "tree", destructable = true, blocksMovement = true },
+}
+
+BUILDING_ITEMS = {}
+for k, v in pairs(BLOCK_ITEMS) do BUILDING_ITEMS[k] = v end
+for k, v in pairs(OBJECT_ITEMS) do BUILDING_ITEMS[k] = v end
 
 WEAPONS = {
     M9 = {
@@ -75,5 +82,15 @@ WEAPONS = {
         bulletAmount = 1,
         spread = 3,
         price = 5,
+    },
+    knife = {
+        automatic = false,
+        damage = 34,
+        magSize = 0,
+        reloadTime = 0,
+        firerate = 0.5,
+        bulletAmount = 0,
+        spread = 0,
+        price = 0,
     },
 }

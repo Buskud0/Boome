@@ -23,7 +23,10 @@ local allItems = {}
 
 local function buildItemList()
     allItems = {}
-    for key, item in pairs(BUILDING_ITEMS) do
+    for key, item in pairs(BLOCK_ITEMS) do
+        table.insert(allItems, { key = key, name = item.name, material = item.material })
+    end
+    for key, item in pairs(OBJECT_ITEMS) do
         table.insert(allItems, { key = key, name = item.name, material = item.material })
     end
     table.sort(allItems, function(a, b) return a.name < b.name end)
@@ -62,6 +65,7 @@ local function filterItems()
 end
 
 function ItemBrowser.open()
+    ignoreMouseUntilRelease = true
     if #allItems == 0 then buildItemList() end
     ItemBrowser.isOpen = true
     ItemBrowser.searchQuery = ""

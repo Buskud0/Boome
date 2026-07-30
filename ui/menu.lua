@@ -72,6 +72,7 @@ function Menu:currentScreen()
 end
 
 function Menu:openSubmenu(name)
+    ignoreMouseUntilRelease = true
     table.insert(self.stack, name)
     self:resetFocus()
 end

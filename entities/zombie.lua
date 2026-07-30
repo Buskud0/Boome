@@ -1,10 +1,9 @@
 Zombie = Entity:extend()
+local Pathfinding = require "core.pathfinding"
 
 function Zombie:new(type, x, y)
     Zombie.super.new(self, x, y)
     self.type = type or "normal"
-    self.dx = 0
-    self.dy = 0
     if self.type == "normal" then
         self.speed = 50
         self.maxHealth = 100
@@ -26,21 +25,53 @@ function Zombie:new(type, x, y)
     self.health = self.maxHealth
     self.hasHitPlayer = false
     self.sprite = "zombie_" .. self.type
+    self.path = {}
 end
 
 function Zombie:update(dt)
-    self:_moveTowardPlayer(dt)
-end
+    local cx, cy = self:getCenter()
+    local px, py = player:getCenter()
+    local dx = px - cx
+    local dy = py - cy
+    local dist = math.sqrt(dx * dx + dy * dy)
+    if dist == 0 then return end
 
-function Zombie:_moveTowardPlayer(dt)
-    self.dx = player.x - self.x
-    self.dy = player.y - self.y
-    local dist = math.sqrt(self.dx^2 + self.dy^2)
-    if dist ~= 0 then
-        self.dx = self.dx / dist
-        self.dy = self.dy / dist
+    local nx = dx / dist
+    local ny = dy / dist
+    local step = self.speed * dt
+    local moveX, moveY
+
+    if not grid:isCircleBlocked(cx + nx * step, cy + ny * step, self.radius) then
+        self.path = {}
+        moveX, moveY = nx, ny
+    else
+        if #self.path < 2 then
+            local startCol = math.floor(cx / grid.tileSize) + 1
+            local startRow = math.floor(cy / grid.tileSize) + 1
+            local endCol = math.floor(px / grid.tileSize) + 1
+            local endRow = math.floor(py / grid.tileSize) + 1
+            self.path = Pathfinding.findPath(startCol, startRow, endCol, endRow, grid, 2)
+        end
+
+        if #self.path >= 2 then
+            local target = self.path[2]
+            local targetX = (target.col - 1) * grid.tileSize + grid.tileSize / 2
+            local targetY = (target.row - 1) * grid.tileSize + grid.tileSize / 2
+            local tdx = targetX - cx
+            local tdy = targetY - cy
+            if tdx * tdx + tdy * tdy < 9 then
+                table.remove(self.path, 1)
+            else
+                local tdist = math.sqrt(tdx * tdx + tdy * tdy)
+                moveX = tdx / tdist
+                moveY = tdy / tdist
+            end
+        end
     end
-    tryMove(self, self.dx * self.speed * dt, self.dy * self.speed * dt, false)
+
+    if moveX and moveY then
+        tryMove(self, moveX * step, moveY * step, false)
+    end
 end
 
 function Zombie:draw()

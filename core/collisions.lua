@@ -1,10 +1,13 @@
 local Collisions = {}
 
 function Collisions.check(a, b)
-    return a.x < b.x + b.width and
-           b.x < a.x + a.width and
-           a.y < b.y + b.height and
-           b.y < a.y + a.height
+    local ax, ay = a.x + a.width / 2, a.y + a.height / 2
+    local bx, by = b.x + b.width / 2, b.y + b.height / 2
+    local ar = a.radius or math.min(a.width, a.height) / 2
+    local br = b.radius or math.min(b.width, b.height) / 2
+    local dx = ax - bx
+    local dy = ay - by
+    return dx * dx + dy * dy < (ar + br) * (ar + br)
 end
 
 function Collisions.bulletVsZombie()
@@ -53,7 +56,8 @@ end
 
 function Collisions.bulletVsWalls()
     for i, bullet in ipairs(bullets) do
-        if grid:isBlocked(bullet.x, bullet.y, bullet.width, bullet.height) then
+        local cx, cy = bullet.x + bullet.width / 2, bullet.y + bullet.height / 2
+        if grid:isCircleBlocked(cx, cy, bullet.radius or math.min(bullet.width, bullet.height) / 2) then
             table.remove(bullets, i)
         end
     end

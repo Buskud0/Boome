@@ -34,14 +34,14 @@ function Horde.waveUpdate(dt)
         Horde.introTimer = Horde.introTimer - dt
         if Horde.introTimer <= 0 then
             Horde.state = "spawning"
-            Horde.spawnTimer = 1
+            Horde.spawnTimer = 2
         end
     elseif Horde.state == "spawning" then
         Horde.spawnTimer = Horde.spawnTimer - dt
         if Horde.spawnTimer <= 0 and #Horde.spawnQueue > 0 then
             local zombieType = table.remove(Horde.spawnQueue, 1)
             Horde.spawnZombie(zombieType)
-            Horde.spawnTimer = 1
+            Horde.spawnTimer = 2
         end
         if #Horde.spawnQueue == 0 then
             Horde.state = "waiting"
@@ -131,7 +131,7 @@ end
 
 function Horde.cycleWeapon(direction)
     local target = currentWeaponIndex + direction
-    while target >= 1 and target <= #weapons do
+    while target >= 1 and target <= 5 do
         if weapons[target] then
             currentWeaponIndex = target
             return
@@ -190,7 +190,7 @@ end
 function Horde.draw()
     love.graphics.setColor(0.2, 0.2, 0.2)
     love.graphics.rectangle("fill", 0, 0, mapWidth, mapHeight)
-    grid:draw()
+    grid:drawBlocks()
     for _, powerUp in ipairs(powerUps) do
         powerUp:draw()
     end
@@ -201,6 +201,7 @@ function Horde.draw()
         zombie:draw()
     end
     player:draw()
+    grid:drawObjects()
     weapon:draw()
     for _, damageText in ipairs(damageTexts) do
         damageText:draw()

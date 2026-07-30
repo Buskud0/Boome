@@ -17,13 +17,37 @@ function Player:takeDamage(amount)
 end
 
 function Player:update(dt)
-    local isSprinting = self:_updateStamina(dt)
-    self:_handleMovement(dt, isSprinting)
+    local wantToSprint = Input.isDown("sprint")
+    local currentSprinting = wantToSprint and (self.stamina > 0 and self.isSprinting or self.stamina > PLAYER_SPRINT_THRESHOLD)
+
+    local oldX, oldY = self.x, self.y
+    self:_handleMovement(dt, currentSprinting)
+
+    local actuallyMoved = self.x ~= oldX or self.y ~= oldY
+    local isSprinting = currentSprinting and actuallyMoved
+    self:_applyStamina(dt, isSprinting)
+    self.isSprinting = isSprinting
+
     if self.health <= 0 then resetGame() end
+end
+
+function Player:_applyStamina(dt, isSprinting)
+    if isSprinting then
+        self.stamina = math.max(0, self.stamina - PLAYER_SPRINT_DRAIN_RATE * dt)
+    else
+        self.stamina = math.min(self.maxStamina, self.stamina + PLAYER_STAMINA_RECOVERY_RATE * dt)
+    end
 end
 
 function Player:_handleMovement(dt, isSprinting)
     local speed = isSprinting and self.speed * PLAYER_SPRINT_MULTIPLIER or self.speed
+    local material = grid:getMaterialAt(self.x + self.width / 2, self.y + self.height / 2)
+    if material then
+        local item = BUILDING_ITEMS[material]
+        if item then
+            speed = speed * (item.speedMultiplier or 1)
+        end
+    end
 
     local dx, dy = 0, 0
     if Input.isDown("move_up") then dy = dy - speed * dt end
@@ -31,20 +55,4 @@ function Player:_handleMovement(dt, isSprinting)
     if Input.isDown("move_left") then dx = dx - speed * dt end
     if Input.isDown("move_right") then dx = dx + speed * dt end
     tryMove(self, dx, dy)
-end
-
-function Player:_updateStamina(dt)
-    local wantToSprint = Input.isDown("sprint")
-    local canKeepSprinting = self.stamina > 0 and self.isSprinting
-    local canStartSprinting = self.stamina > PLAYER_SPRINT_THRESHOLD
-    local isSprinting = wantToSprint and (canKeepSprinting or canStartSprinting)
-
-    if isSprinting then
-        self.stamina = math.max(0, self.stamina - PLAYER_SPRINT_DRAIN_RATE * dt)
-    else
-        self.stamina = math.min(self.maxStamina, self.stamina + PLAYER_STAMINA_RECOVERY_RATE * dt)
-    end
-
-    self.isSprinting = isSprinting
-    return isSprinting
 end

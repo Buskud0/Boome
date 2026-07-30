@@ -16,6 +16,7 @@ local lastMouseY = -1
 local useMouseSelection = true
 
 function BuyMenu.open()
+    ignoreMouseUntilRelease = true
     sortedWeapons = buildAllWeaponsSorted()
     isOpen = true
     selection = 1
@@ -84,6 +85,10 @@ end
 function BuyMenu:confirmPurchase()
     local model = sortedWeapons[selection]
     if not model or playerHasWeapon(model) then return end
+    if #weapons >= 5 then
+        Toast.show("Inventory full!", 2)
+        return
+    end
     local stats = WEAPONS[model]
     if player.money >= stats.price then
         player.money = player.money - stats.price

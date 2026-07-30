@@ -5,6 +5,7 @@ function Bullet:new(x, y, dx, dy, damage)
 	self.y = y
 	self.width = 8
 	self.height = 8
+	self.radius = 4
 	self.dx = dx
 	self.dy = dy
 	self.damage = damage

@@ -40,6 +40,7 @@ function Weapon:_updateFirerateCooldown(dt)
 end
 
 function Weapon:_tryShoot()
+    if Inventory.dragSlot or ignoreMouseUntilRelease then return end
     if not Input.isDown("shoot") then
         self.shotFirstBullet = false
         return

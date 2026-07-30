@@ -5,6 +5,7 @@ function PowerUp:new(x, y, type)
 	self.y = y
 	self.width = 20
 	self.height = 20
+    self.radius = 10
     self.type = type
     self.lifetime = 6
     self.opacity = 1

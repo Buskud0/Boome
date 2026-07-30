@@ -24,12 +24,15 @@ Inventory = require "ui.inventory"
 BuyMenu = require "ui.buymenu"
 MapBuilderHUD = require "ui.mapbuilder_hud"
 ItemBrowser = require "ui.item_browser"
+Toast = require "ui.toast"
 
 gameMode = "horde"
+ignoreMouseUntilRelease = false
+debugDraw = false
 
 function loadCursor()
     local img = love.graphics.newImage("images/crosshair.png")
-    local cursorSize = 32
+    local cursorSize = 20
     local canvas = love.graphics.newCanvas(cursorSize, cursorSize)
     love.graphics.setCanvas(canvas)
     love.graphics.draw(img, 0, 0, 0, cursorSize / img:getWidth(), cursorSize / img:getHeight())
@@ -53,20 +56,21 @@ function love.load()
     Horde.loadScoreRecord()
     loadCursor()
     Input.load()
-    Textures.load("images/spritesheet.png", 40)
+    Textures.load("images/block_spritesheet.png", 40)
     Textures.define("empty", 1)
+    Textures.define("dirt", 2)
+    Textures.define("grass", 3)
+    Textures.define("shop", 4)
+    Textures.define("stone", 5)
+    Textures.define("rock_path", 6)
+    Textures.define("water", 7)
+    Textures.define("wood_wall", 8)
+    Textures.load("images/object_spritesheet.png", 40)
+    Textures.define("toxic_barrel", 1)
     Textures.define("barrel", 2)
     Textures.define("bush", 3)
-    Textures.define("dirt", 4)
-    Textures.define("grass", 5)
-    Textures.define("shop", 6)
-    Textures.define("stone", 7)
-    Textures.define("rock_path", 8)
-    Textures.define("toxic_barrel", 9)
-    Textures.define("tree", 10)
-    Textures.define("water", 11)
-    Textures.define("wood_wall", 12)
-    Textures.load("images/spritesheet_entities.png", 40)
+    Textures.define("tree", 4)
+    Textures.load("images/entity_spritesheet.png", 40)
     Textures.define("player", 1)
     Textures.define("zombie_normal", 2)
     Textures.define("zombie_heavy", 3)
@@ -74,7 +78,7 @@ function love.load()
     Textures.define("bullet", 5)
     Textures.define("powerup_health", 6)
     Textures.define("powerup_money", 7)
-    Textures.load("images/itemSpriteSheet.png", 40)
+    Textures.load("images/item_spritesheet.png", 40)
     Inventory.load()
     resetGame()
     MapBuilder.load()
@@ -104,12 +108,16 @@ end
 
 function tryMove(entity, dx, dy, constrainToMap)
     if constrainToMap == nil then constrainToMap = true end
+    local cx, cy = entity:getCenter()
+    local r = entity.radius
     local newX = entity.x + dx
     local newY = entity.y + dy
-    if not grid:isBlocked(newX, entity.y, entity.width, entity.height) and (not constrainToMap or (newX >= 0 and newX <= mapWidth - entity.width)) then
+
+    if not grid:isCircleBlocked(newX + entity.width / 2, cy, r) and (not constrainToMap or (newX >= 0 and newX <= mapWidth - entity.width)) then
         entity.x = newX
+        cx = newX + entity.width / 2
     end
-    if not grid:isBlocked(entity.x, newY, entity.width, entity.height) and (not constrainToMap or (newY >= 0 and newY <= mapHeight - entity.height)) then
+    if not grid:isCircleBlocked(cx, newY + entity.height / 2, r) and (not constrainToMap or (newY >= 0 and newY <= mapHeight - entity.height)) then
         entity.y = newY
     end
     resolveStuck(entity)
@@ -121,23 +129,22 @@ function resolveStuck(entity)
     if entity.y < 0 then entity.y = 0
     elseif entity.y > mapHeight - entity.height then entity.y = mapHeight - entity.height end
 
-    if not grid:isBlocked(entity.x, entity.y, entity.width, entity.height) then return end
+    local cx, cy = entity:getCenter()
+    local r = entity.radius
+    if not grid:isCircleBlocked(cx, cy, r) then return end
 
-    local tileSize = Textures.getTileSize()
-    for offset = 1, tileSize do
-        if not grid:isBlocked(entity.x + offset, entity.y, entity.width, entity.height) then
+    local maxOffset = math.max(grid.tileSize, math.ceil(r))
+    for offset = 1, maxOffset do
+        if not grid:isCircleBlocked(cx + offset, cy, r) then
             entity.x = entity.x + offset
             break
-        end
-        if not grid:isBlocked(entity.x - offset, entity.y, entity.width, entity.height) then
+        elseif not grid:isCircleBlocked(cx - offset, cy, r) then
             entity.x = entity.x - offset
             break
-        end
-        if not grid:isBlocked(entity.x, entity.y + offset, entity.width, entity.height) then
+        elseif not grid:isCircleBlocked(cx, cy + offset, r) then
             entity.y = entity.y + offset
             break
-        end
-        if not grid:isBlocked(entity.x, entity.y - offset, entity.width, entity.height) then
+        elseif not grid:isCircleBlocked(cx, cy - offset, r) then
             entity.y = entity.y - offset
             break
         end
@@ -152,6 +159,7 @@ function love.update(dt)
             MapBuilder.update(dt)
         end
     end
+    Toast.update(dt)
     menu:update(dt)
 end
 
@@ -164,10 +172,21 @@ function love.draw()
         MapBuilder.draw()
     end
 
+    if debugDraw then grid:debugDraw() end
     if paused then menu:draw() end
+    Toast.draw()
 end
 
 function love.keypressed(key)
+    if key == "f3" then debugDraw = not debugDraw; return end
+    if key == "f2" and gameMode == "horde" then
+        local mx, my = love.mouse.getPosition()
+        local zombie = Zombie("normal", mx + camera.x, my + camera.y)
+        resolveStuck(zombie)
+        table.insert(zombies, zombie)
+        return
+    end
+
     local action = Input.getActionForKey(key)
 
     if gameMode == "mapbuilder" and MapBuilder.handleKey(key, action) then
@@ -205,6 +224,8 @@ function love.mousepressed(x, y, button)
         paused = menu:isOpen()
     elseif button == 1 and BuyMenu.isOpen() then
         BuyMenu.mousepressed(x + camera.x, y + camera.y)
+    elseif gameMode == "horde" then
+        Inventory.mousepressed(x + camera.x, y + camera.y, button)
     elseif gameMode == "mapbuilder" then
         MapBuilder.handleClick(x, y, button)
     end
@@ -212,6 +233,10 @@ function love.mousepressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
+    ignoreMouseUntilRelease = false
+    if gameMode == "horde" and not menu:isOpen() and not BuyMenu.isOpen() then
+        Inventory.mousereleased(x + camera.x, y + camera.y, button)
+    end
     if gameMode == "mapbuilder" then
         MapBuilder.handleMouseRelease(x, y, button)
     end
@@ -249,6 +274,7 @@ function love.quit()
 end
 
 function enterMapBuilder()
+    ignoreMouseUntilRelease = true
     gameMode = "mapbuilder"
     paused = false
     updateCursor()
@@ -256,6 +282,7 @@ function enterMapBuilder()
 end
 
 function enterHordeMode()
+    ignoreMouseUntilRelease = true
     gameMode = "horde"
     updateCursor()
     camera.zoom = 1
