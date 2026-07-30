@@ -1,5 +1,4 @@
 Zombie = Entity:extend()
-local Pathfinding = require "core.pathfinding"
 
 function Zombie:new(type, x, y)
     Zombie.super.new(self, x, y)
@@ -25,7 +24,6 @@ function Zombie:new(type, x, y)
     self.health = self.maxHealth
     self.hasHitPlayer = false
     self.sprite = "zombie_" .. self.type
-    self.path = {}
 end
 
 function Zombie:update(dt)
@@ -39,39 +37,7 @@ function Zombie:update(dt)
     local nx = dx / dist
     local ny = dy / dist
     local step = self.speed * dt
-    local moveX, moveY
-
-    if not grid:isCircleBlocked(cx + nx * step, cy + ny * step, self.radius) then
-        self.path = {}
-        moveX, moveY = nx, ny
-    else
-        if #self.path < 2 then
-            local startCol = math.floor(cx / grid.tileSize) + 1
-            local startRow = math.floor(cy / grid.tileSize) + 1
-            local endCol = math.floor(px / grid.tileSize) + 1
-            local endRow = math.floor(py / grid.tileSize) + 1
-            self.path = Pathfinding.findPath(startCol, startRow, endCol, endRow, grid, 2)
-        end
-
-        if #self.path >= 2 then
-            local target = self.path[2]
-            local targetX = (target.col - 1) * grid.tileSize + grid.tileSize / 2
-            local targetY = (target.row - 1) * grid.tileSize + grid.tileSize / 2
-            local tdx = targetX - cx
-            local tdy = targetY - cy
-            if tdx * tdx + tdy * tdy < 9 then
-                table.remove(self.path, 1)
-            else
-                local tdist = math.sqrt(tdx * tdx + tdy * tdy)
-                moveX = tdx / tdist
-                moveY = tdy / tdist
-            end
-        end
-    end
-
-    if moveX and moveY then
-        tryMove(self, moveX * step, moveY * step, false)
-    end
+    tryMove(self, nx * step, ny * step, false)
 end
 
 function Zombie:draw()
