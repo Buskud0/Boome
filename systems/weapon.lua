@@ -76,33 +76,36 @@ function Gun:update(dt)
 end
 
 function Gun:_tryAttack()
-    if Inventory.dragSlot or ignoreMouseUntilRelease then return end
+    if not self:_isAttackPermitted() then return end
+    self:_fireBullets()
+    self:_registerShot()
+end
+
+function Gun:_isAttackPermitted()
+    if Inventory.dragSlot or ignoreMouseUntilRelease then return false end
     if not Input.isDown("shoot") then
         self.shotFirstBullet = false
-        return
+        return false
     end
-    if self.firerateCooldown > 0 or self.reloading or self.shotFirstBullet then
-        return
-    end
+    if self.firerateCooldown > 0 or self.reloading or self.shotFirstBullet then return false end
+    return true
+end
+
+function Gun:_fireBullets()
     for i = 1, self.bulletAmount do
         self:shootBullet()
     end
+end
+
+function Gun:_registerShot()
     self.firerateCooldown = self.firerate
     if not self.automatic then self.shotFirstBullet = true end
     self.capacity = self.capacity - 1
 end
 
 function Gun:draw()
-    self:_drawAmmoText()
     self:_drawReloadArc()
     self:_drawFirerateArc()
-end
-
-function Gun:_drawAmmoText()
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 40)
-    love.graphics.setFont(font)
-    love.graphics.setColor({1, 1, 1})
-    love.graphics.print(self.model .. " " .. self.capacity .. "/" .. self.magSize .. " ", 10 + camera.x, 0 + camera.y)
 end
 
 function Gun:_drawReloadArc()

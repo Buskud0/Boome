@@ -28,18 +28,34 @@ function Melee:drawWorld()
 end
 
 function Melee:_tryAttack()
-    if Inventory.dragSlot or ignoreMouseUntilRelease then return end
-    if not Input.isDown("shoot") then
-        self.shotFirstBullet = false
-        return
-    end
-    if self.firerateCooldown > 0 or self.shotFirstBullet then return end
+    if not self:_isMeleeInputReady("shoot", "shotFirstBullet") then return end
     if not self:_spendStamina(MELEE_STAB_STAMINA_COST) then return end
 
     self:_performStab()
+    self:_startMeleeCooldown("shotFirstBullet")
+end
 
+function Melee:_trySwing()
+    if not self:_isMeleeInputReady("swing", "swingShotFirst") then return end
+    if not self:_spendStamina(MELEE_SWING_STAMINA_COST) then return end
+
+    self:_performSwing()
+    self:_startMeleeCooldown("swingShotFirst")
+end
+
+function Melee:_isMeleeInputReady(inputAction, wasPressedFlag)
+    if Inventory.dragSlot or ignoreMouseUntilRelease then return false end
+    if not Input.isDown(inputAction) then
+        self[wasPressedFlag] = false
+        return false
+    end
+    if self.firerateCooldown > 0 or self[wasPressedFlag] then return false end
+    return true
+end
+
+function Melee:_startMeleeCooldown(wasPressedFlag)
     self.firerateCooldown = self.firerate
-    if not self.automatic then self.shotFirstBullet = true end
+    if not self.automatic then self[wasPressedFlag] = true end
 end
 
 function Melee:_updateStab(dt)
@@ -48,33 +64,16 @@ function Melee:_updateStab(dt)
     end
 end
 
-function Melee:_trySwing()
-    if Inventory.dragSlot or ignoreMouseUntilRelease then return end
-    if not Input.isDown("swing") then
-        self.swingShotFirst = false
-        return
-    end
-    if self.firerateCooldown > 0 or self.swingShotFirst then return end
-    if not self:_spendStamina(MELEE_SWING_STAMINA_COST) then return end
-
-    self:_performSwing()
-
-    self.firerateCooldown = self.firerate
-    if not self.automatic then self.swingShotFirst = true end
-end
-
-function Melee:_spendStamina(cost)
-    if player.stamina >= STAMINA_USE_THRESHOLD then
-        player:spendStamina(cost)
-        return true
-    end
-    return false
-end
-
 function Melee:_updateSwing(dt)
     if self.swingTimer > 0 then
         self.swingTimer = math.max(0, self.swingTimer - dt)
     end
+end
+
+function Melee:_spendStamina(cost)
+    if player.stamina < cost then return false end
+    player:spendStamina(cost)
+    return true
 end
 
 function Melee:_performSwing()
@@ -82,16 +81,8 @@ function Melee:_performSwing()
     local dirX, dirY = self:_getAimDirection(px, py)
     if dirX == 0 and dirY == 0 then return end
 
-    self.swingTimer = MELEE_SWING_DURATION
-    self.swingDirX, self.swingDirY = dirX, dirY
-
-    for _, zombie in ipairs(zombies) do
-        local zx, zy = zombie:getCenter()
-        if Collisions.circleHitsSector(px, py, dirX, dirY, self.swingHalfAngle, self.swingRange, zx, zy, zombie.radius) then
-            zombie:takeDamage(self.damage)
-            table.insert(damageTexts, DamageText(-self.damage, zombie.x, zombie.y))
-        end
-    end
+    self:_startSwingAnimation(dirX, dirY)
+    self:_damageZombiesInSector(px, py, dirX, dirY)
 end
 
 function Melee:_performStab()
@@ -99,19 +90,43 @@ function Melee:_performStab()
     local dirX, dirY = self:_getAimDirection(px, py)
     if dirX == 0 and dirY == 0 then return end
 
+    self:_startStabAnimation(dirX, dirY)
+    self:_damageZombiesAlongSegment(px, py, dirX, dirY)
+end
+
+function Melee:_startSwingAnimation(dirX, dirY)
+    self.swingTimer = MELEE_SWING_DURATION
+    self.swingDirX, self.swingDirY = dirX, dirY
+end
+
+function Melee:_startStabAnimation(dirX, dirY)
     self.stabTimer = MELEE_STAB_DURATION
     self.stabDirX, self.stabDirY = dirX, dirY
+end
 
+function Melee:_damageZombiesAlongSegment(px, py, dirX, dirY)
     local tx = px + dirX * self.range
     local ty = py + dirY * self.range
-
     for _, zombie in ipairs(zombies) do
         local zx, zy = zombie:getCenter()
         if Collisions.segmentHitsCircle(px, py, tx, ty, zx, zy, zombie.radius) then
-            zombie:takeDamage(self.damage)
-            table.insert(damageTexts, DamageText(-self.damage, zombie.x, zombie.y))
+            self:_damageZombie(zombie)
         end
     end
+end
+
+function Melee:_damageZombiesInSector(px, py, dirX, dirY)
+    for _, zombie in ipairs(zombies) do
+        local zx, zy = zombie:getCenter()
+        if Collisions.circleHitsSector(px, py, dirX, dirY, self.swingHalfAngle, self.swingRange, zx, zy, zombie.radius) then
+            self:_damageZombie(zombie)
+        end
+    end
+end
+
+function Melee:_damageZombie(zombie)
+    zombie:takeDamage(self.damage)
+    table.insert(damageTexts, DamageText(-self.damage, zombie.x, zombie.y))
 end
 
 function Melee:_drawStab()

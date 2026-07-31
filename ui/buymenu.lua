@@ -6,6 +6,7 @@ local OPTION_GAP = 50
 local TITLE_OFFSET_Y = 10
 local MONEY_OFFSET_Y = 48
 local OPTIONS_OFFSET_Y = 85
+local MAX_INVENTORY_SLOTS = 5
 
 local isOpen = false
 local selection = 1
@@ -15,18 +16,7 @@ local lastMouseX = -1
 local lastMouseY = -1
 local useMouseSelection = true
 
-function BuyMenu.open()
-    ignoreMouseUntilRelease = true
-    sortedWeapons = buildAllWeaponsSorted()
-    isOpen = true
-    selection = 1
-    optionRects = {}
-    useMouseSelection = true
-    lastMouseX = -1
-    lastMouseY = -1
-end
-
-function buildAllWeaponsSorted()
+local function getWeaponsSortedByPrice()
     local all = {}
     for model in pairs(WEAPONS) do
         table.insert(all, model)
@@ -37,11 +27,149 @@ function buildAllWeaponsSorted()
     return all
 end
 
-function playerHasWeapon(model)
+local function playerHasWeapon(model)
     for _, weapon in ipairs(weapons) do
         if weapon.model == model then return true end
     end
     return false
+end
+
+local function canAffordWeapon(model)
+    return player.money >= WEAPONS[model].price
+end
+
+local function wrapSelection(index)
+    if index < 1 then return #sortedWeapons end
+    if index > #sortedWeapons then return 1 end
+    return index
+end
+
+local function isPointInRect(x, y, rect)
+    return x >= rect.x and x <= rect.x + rect.w and
+           y >= rect.y and y <= rect.y + rect.h
+end
+
+local function buyWeapon(model)
+    player.money = player.money - WEAPONS[model].price
+    table.insert(weapons, Weapon.create(model))
+    currentWeaponIndex = #weapons
+end
+
+local function getMouseSelectionState()
+    local mouseX = love.mouse.getX() + camera.x
+    local mouseY = love.mouse.getY() + camera.y
+    local mouseMoved = mouseX ~= lastMouseX or mouseY ~= lastMouseY
+    if mouseMoved then
+        lastMouseX = mouseX
+        lastMouseY = mouseY
+    end
+    return mouseX, mouseY, mouseMoved
+end
+
+local function updateHover(rect, mouseX, mouseY, index)
+    if isPointInRect(mouseX, mouseY, rect) then
+        selection = index
+    end
+end
+
+local function drawPanel(px, py, panelHeight)
+    love.graphics.setColor(0.15, 0.15, 0.15, 0.95)
+    love.graphics.rectangle("fill", px, py, PANEL_WIDTH, panelHeight)
+    love.graphics.setColor(0.4, 0.4, 0.4)
+    love.graphics.rectangle("line", px, py, PANEL_WIDTH, panelHeight)
+end
+
+local function drawTitle(px, py)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 36)
+    love.graphics.setFont(font)
+    love.graphics.setColor(1, 1, 1)
+    local title = "WEAPON SHOP"
+    local titleW = font:getWidth(title)
+    love.graphics.print(title, px + PANEL_WIDTH / 2 - titleW / 2, py + TITLE_OFFSET_Y)
+end
+
+local function drawMoney(px, py)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 20)
+    love.graphics.setFont(font)
+    love.graphics.setColor(1, 0.8, 0.2)
+    local text = "$" .. player.money
+    local textW = font:getWidth(text)
+    love.graphics.print(text, px + PANEL_WIDTH / 2 - textW / 2, py + MONEY_OFFSET_Y)
+end
+
+local function drawSelectionHighlight(rect, index)
+    if index == selection then
+        love.graphics.setColor(0.3, 0.5, 0.7)
+        love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
+    end
+end
+
+local function drawWeaponIcon(rect, model)
+    if playerHasWeapon(model) then
+        love.graphics.setColor(0.4, 0.4, 0.4)
+    else
+        love.graphics.setColor(1, 1, 1)
+    end
+    Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28)
+end
+
+local function drawWeaponName(rect, model)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
+    love.graphics.setFont(font)
+    love.graphics.print(model, rect.x + 40, rect.y + 6)
+end
+
+local function drawWeaponPrice(rect, model)
+    if canAffordWeapon(model) then
+        love.graphics.setColor(1, 0.8, 0.2)
+    else
+        love.graphics.setColor(0.8, 0.3, 0.3)
+    end
+    love.graphics.print("$" .. WEAPONS[model].price, rect.x + rect.w - 74, rect.y + 8)
+end
+
+local function drawWeaponStatus(rect, model)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 18)
+    love.graphics.setFont(font)
+    if playerHasWeapon(model) then
+        love.graphics.setColor(0.4, 0.4, 0.4)
+        love.graphics.print("OWNED", rect.x + rect.w - 80, rect.y + 8)
+    else
+        drawWeaponPrice(rect, model)
+    end
+end
+
+local function drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
+    local rect = { x = px + 15, y = optionY, w = PANEL_WIDTH - 30, h = OPTION_HEIGHT }
+    table.insert(optionRects, rect)
+
+    if mouseMoved and useMouseSelection then
+        updateHover(rect, mouseX, mouseY, i)
+    end
+
+    drawSelectionHighlight(rect, i)
+    drawWeaponIcon(rect, model)
+    drawWeaponName(rect, model)
+    drawWeaponStatus(rect, model)
+end
+
+local function drawWeaponOptions(px, py, mouseX, mouseY, mouseMoved)
+    local optionY = py + OPTIONS_OFFSET_Y
+    for i, model in ipairs(sortedWeapons) do
+        drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
+        optionY = optionY + OPTION_GAP
+    end
+end
+
+function BuyMenu.open()
+    ignoreMouseUntilRelease = true
+    sortedWeapons = getWeaponsSortedByPrice()
+    isOpen = true
+    selection = 1
+    optionRects = {}
+    useMouseSelection = true
+    lastMouseX = -1
+    lastMouseY = -1
 end
 
 function BuyMenu.close()
@@ -61,12 +189,10 @@ end
 function BuyMenu.handleAction(action)
     if action == "menu_up" then
         useMouseSelection = false
-        selection = selection - 1
-        if selection < 1 then selection = #sortedWeapons end
+        selection = wrapSelection(selection - 1)
     elseif action == "menu_down" then
         useMouseSelection = false
-        selection = selection + 1
-        if selection > #sortedWeapons then selection = 1 end
+        selection = wrapSelection(selection + 1)
     elseif action == "menu_confirm" then
         BuyMenu:confirmPurchase()
     end
@@ -74,33 +200,27 @@ end
 
 function BuyMenu.wheelmoved(direction)
     if direction > 0 then
-        selection = selection - 1
-        if selection < 1 then selection = #sortedWeapons end
+        selection = wrapSelection(selection - 1)
     elseif direction < 0 then
-        selection = selection + 1
-        if selection > #sortedWeapons then selection = 1 end
+        selection = wrapSelection(selection + 1)
     end
 end
 
 function BuyMenu:confirmPurchase()
     local model = sortedWeapons[selection]
     if not model or playerHasWeapon(model) then return end
-    if #weapons >= 5 then
+    if #weapons >= MAX_INVENTORY_SLOTS then
         Toast.show("Inventory full!", 2)
         return
     end
-    local stats = WEAPONS[model]
-    if player.money >= stats.price then
-        player.money = player.money - stats.price
-        table.insert(weapons, Weapon.create(model))
-        currentWeaponIndex = #weapons
+    if canAffordWeapon(model) then
+        buyWeapon(model)
     end
 end
 
 function BuyMenu.mousepressed(worldX, worldY)
     for i, rect in ipairs(optionRects) do
-        if worldX >= rect.x and worldX <= rect.x + rect.w and
-           worldY >= rect.y and worldY <= rect.y + rect.h then
+        if isPointInRect(worldX, worldY, rect) then
             selection = i
             BuyMenu:confirmPurchase()
             return
@@ -118,101 +238,11 @@ function BuyMenu.draw()
     local px = math.floor(scrWidth / 2 - PANEL_WIDTH / 2 + camera.x)
     local py = math.floor(scrHeight / 2 - panelHeight / 2 + camera.y)
 
-    local mouseX = love.mouse.getX() + camera.x
-    local mouseY = love.mouse.getY() + camera.y
-    local mouseMoved = mouseX ~= lastMouseX or mouseY ~= lastMouseY
-    if mouseMoved then
-        lastMouseX = mouseX
-        lastMouseY = mouseY
-    end
-
+    local mouseX, mouseY, mouseMoved = getMouseSelectionState()
     drawPanel(px, py, panelHeight)
     drawTitle(px, py)
     drawMoney(px, py)
     drawWeaponOptions(px, py, mouseX, mouseY, mouseMoved)
-end
-
-function drawPanel(px, py, panelHeight)
-    love.graphics.setColor(0.15, 0.15, 0.15, 0.95)
-    love.graphics.rectangle("fill", px, py, PANEL_WIDTH, panelHeight)
-    love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.rectangle("line", px, py, PANEL_WIDTH, panelHeight)
-end
-
-function drawTitle(px, py)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 36)
-    love.graphics.setFont(font)
-    love.graphics.setColor(1, 1, 1)
-    local title = "WEAPON SHOP"
-    local titleW = font:getWidth(title)
-    love.graphics.print(title, px + PANEL_WIDTH / 2 - titleW / 2, py + TITLE_OFFSET_Y)
-end
-
-function drawMoney(px, py)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 20)
-    love.graphics.setFont(font)
-    love.graphics.setColor(1, 0.8, 0.2)
-    local text = "$" .. player.money
-    local textW = font:getWidth(text)
-    love.graphics.print(text, px + PANEL_WIDTH / 2 - textW / 2, py + MONEY_OFFSET_Y)
-end
-
-function drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
-    local stats = WEAPONS[model]
-    local isOwned = playerHasWeapon(model)
-    local canAfford = player.money >= stats.price
-    local rect = { x = px + 15, y = optionY, w = PANEL_WIDTH - 30, h = OPTION_HEIGHT }
-
-    table.insert(optionRects, rect)
-
-    if mouseMoved and useMouseSelection then
-        updateHover(rect, mouseX, mouseY, i)
-    end
-
-    if i == selection then
-        love.graphics.setColor(0.3, 0.5, 0.7)
-        love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
-    end
-
-    if isOwned then
-        love.graphics.setColor(0.4, 0.4, 0.4)
-    else
-        love.graphics.setColor(1, 1, 1)
-    end
-    Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28)
-
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
-    love.graphics.setFont(font)
-    love.graphics.print(model, rect.x + 40, optionY + 6)
-
-    local smallFont = love.graphics.newFont("fonts/Gamer.ttf", 18)
-    love.graphics.setFont(smallFont)
-    if isOwned then
-        love.graphics.setColor(0.4, 0.4, 0.4)
-        love.graphics.print("OWNED", rect.x + rect.w - 80, optionY + 8)
-    elseif canAfford then
-        love.graphics.setColor(1, 0.8, 0.2)
-        love.graphics.print("$" .. stats.price, rect.x + rect.w - 74, optionY + 8)
-    else
-        love.graphics.setColor(0.8, 0.3, 0.3)
-        love.graphics.print("$" .. stats.price, rect.x + rect.w - 74, optionY + 8)
-    end
-end
-
-function drawWeaponOptions(px, py, mouseX, mouseY, mouseMoved)
-    local optionY = py + OPTIONS_OFFSET_Y
-
-    for i, model in ipairs(sortedWeapons) do
-        drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
-        optionY = optionY + OPTION_GAP
-    end
-end
-
-function updateHover(rect, mouseX, mouseY, index)
-    if mouseX >= rect.x and mouseX <= rect.x + rect.w and
-       mouseY >= rect.y and mouseY <= rect.y + rect.h then
-        selection = index
-    end
 end
 
 return BuyMenu

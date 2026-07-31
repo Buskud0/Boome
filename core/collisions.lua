@@ -46,8 +46,8 @@ function Collisions.circleHitsSector(px, py, dx, dy, halfAngle, radius, cx, cy, 
     local edgeX2 = dx * cosHalf + dy * sinHalf
     local edgeY2 = -dx * sinHalf + dy * cosHalf
 
-    return segmentHitsCircle(px, py, px + edgeX1 * radius, py + edgeY1 * radius, cx, cy, r)
-        or segmentHitsCircle(px, py, px + edgeX2 * radius, py + edgeY2 * radius, cx, cy, r)
+    return Collisions.segmentHitsCircle(px, py, px + edgeX1 * radius, py + edgeY1 * radius, cx, cy, r)
+        or Collisions.segmentHitsCircle(px, py, px + edgeX2 * radius, py + edgeY2 * radius, cx, cy, r)
 end
 
 function Collisions.bulletVsZombie()

@@ -1,7 +1,3 @@
---bullets slow down zombies when hit
---add more different kinds of zombies
---work on the menu
-
 require "conf"
 require "core.config"
 Object = require "lib.classic"
@@ -26,10 +22,10 @@ BuyMenu = require "ui.buymenu"
 MapBuilderHUD = require "ui.mapbuilder_hud"
 ItemBrowser = require "ui.item_browser"
 Toast = require "ui.toast"
+Debug = require "core.debug"
 
 gameMode = "horde"
 ignoreMouseUntilRelease = false
-debugDraw = false
 
 function loadCursor()
     local img = love.graphics.newImage("images/crosshair.png")
@@ -58,147 +54,171 @@ function screenToWorld(sx, sy)
 end
 
 function love.load()
-    scrWidth, scrHeight = love.graphics.getDimensions()
-    love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
+    initializeDisplay()
     Horde.loadScoreRecord()
     loadCursor()
     Input.load()
-    Textures.load("images/block_spritesheet.png", 40)
-    Textures.define("empty", 1)
-    Textures.define("dirt", 2)
-    Textures.define("grass", 3)
-    Textures.define("shop", 4)
-    Textures.define("stone", 5)
-    Textures.define("rock_path", 6)
-    Textures.define("water", 7)
-    Textures.define("wood_wall", 8)
-    Textures.load("images/object_spritesheet.png", 40)
-    Textures.define("toxic_barrel", 1)
-    Textures.define("barrel", 2)
-    Textures.define("bush", 3)
-    Textures.define("tree", 4)
-    Textures.load("images/entity_spritesheet.png", 40)
-    Textures.define("player", 1)
-    Textures.define("zombie_normal", 2)
-    Textures.define("zombie_heavy", 3)
-    Textures.define("zombie_light", 4)
-    Textures.define("bullet", 5)
-    Textures.define("powerup_health", 6)
-    Textures.define("powerup_money", 7)
-    Textures.load("images/item_spritesheet.png", 40)
+    Grid.load()
+    Entity.load()
     Inventory.load()
     resetGame()
-    MapBuilder.load()
+end
+
+function initializeDisplay()
+    scrWidth, scrHeight = love.graphics.getDimensions()
+    love.graphics.setBackgroundColor(0.6, 0.6, 0.6)
 end
 
 function resetGame()
+    setWorldConstants()
+    Horde.reset()
+    resetCamera()
+    grid = Grid()
+    MapBuilder.load()
+    menu = Menu()
+    resetPlayer()
+    resetEntityLists()
+    giveStarterWeapon()
+    paused = false
+    BuyMenu.close()
+end
+
+function setWorldConstants()
     mapWidth = MAP_WIDTH
     mapHeight = MAP_HEIGHT
     killCount = 0
     currentWeaponIndex = 1
+    HUD.reset()
     gameMode = "horde"
-    Horde.reset()
-    camera = {x=0, y=0, zoom=1.5}
-    grid = Grid()
-    MapBuilder.load()
-    menu = Menu()
-    player = Player(mapWidth/2 - 20, mapHeight/2 - 20)
+end
+
+function resetCamera()
+    camera = { x = 0, y = 0, zoom = 1.3 }
+end
+
+function resetPlayer()
+    player = Player(mapWidth / 2 - 20, mapHeight / 2 - 20)
+end
+
+function resetEntityLists()
     bullets = {}
     zombies = {}
     weapons = {}
     damageTexts = {}
     powerUps = {}
-    table.insert(weapons, Weapon.create("knife"))
-    paused = false
-    BuyMenu.close()
+end
+
+function giveStarterWeapon()
+    table.insert(weapons, Weapon.create("BAYONET"))
 end
 
 function tryMove(entity, dx, dy, constrainToMap)
     if constrainToMap == nil then constrainToMap = true end
-    local r = entity.radius
-    local hw = entity.width / 2
-    local hh = entity.height / 2
-
-    local function canMoveTo(x, y)
-        if constrainToMap then
-            if x < 0 or x > mapWidth - entity.width then return false end
-            if y < 0 or y > mapHeight - entity.height then return false end
-        end
-        return not grid:isCircleBlocked(x + hw, y + hh, r)
-    end
-
     local nx, ny = entity.x + dx, entity.y + dy
 
-    if canMoveTo(nx, ny) then
-        entity.x, entity.y = nx, ny
-        resolveStuck(entity)
+    if canMoveTo(entity, nx, ny, constrainToMap) then
+        setEntityPosition(entity, nx, ny)
         return
     end
 
-    local bx, by = entity.x, entity.y
+    local slideX, slideY = findBestSlidePosition(entity, nx, ny, dx, dy, constrainToMap)
+    setEntityPosition(entity, slideX, slideY)
+end
 
-    local hx, hy = bx, by
-    if canMoveTo(nx, hy) then hx = nx end
-    if canMoveTo(hx, ny) then hy = ny end
+function setEntityPosition(entity, x, y)
+    entity.x, entity.y = x, y
+    resolveStuck(entity)
+end
 
-    local vx, vy = bx, by
-    if canMoveTo(vx, ny) then vy = ny end
-    if canMoveTo(nx, vy) then vx = nx end
-
-    local slideX, slideY
-    if math.abs(vx - bx) + math.abs(vy - by) > math.abs(hx - bx) + math.abs(hy - by) then
-        slideX, slideY = vx, vy
-    else
-        slideX, slideY = hx, hy
+function canMoveTo(entity, x, y, constrainToMap)
+    if constrainToMap then
+        if x < 0 or x > mapWidth - entity.width then return false end
+        if y < 0 or y > mapHeight - entity.height then return false end
     end
+    local cx = x + entity.width / 2
+    local cy = y + entity.height / 2
+    return not grid:isCircleBlocked(cx, cy, entity.radius)
+end
 
+function findBestSlidePosition(entity, nx, ny, dx, dy, constrainToMap)
+    local bx, by = entity.x, entity.y
+    local hx, hy = findHorizontalSlide(entity, bx, by, nx, ny, constrainToMap)
+    local vx, vy = findVerticalSlide(entity, bx, by, nx, ny, constrainToMap)
+    local slideX, slideY = pickLongerSlide(bx, by, hx, hy, vx, vy)
+    return tryCornerNudge(entity, bx, by, nx, ny, dx, dy, slideX, slideY, constrainToMap)
+end
+
+function findHorizontalSlide(entity, bx, by, nx, ny, constrainToMap)
+    local hx, hy = bx, by
+    if canMoveTo(entity, nx, hy, constrainToMap) then hx = nx end
+    if canMoveTo(entity, hx, ny, constrainToMap) then hy = ny end
+    return hx, hy
+end
+
+function findVerticalSlide(entity, bx, by, nx, ny, constrainToMap)
+    local vx, vy = bx, by
+    if canMoveTo(entity, vx, ny, constrainToMap) then vy = ny end
+    if canMoveTo(entity, nx, vy, constrainToMap) then vx = nx end
+    return vx, vy
+end
+
+function pickLongerSlide(bx, by, hx, hy, vx, vy)
+    if math.abs(vx - bx) + math.abs(vy - by) > math.abs(hx - bx) + math.abs(hy - by) then
+        return vx, vy
+    end
+    return hx, hy
+end
+
+function tryCornerNudge(entity, bx, by, nx, ny, dx, dy, slideX, slideY, constrainToMap)
     local movedX = slideX ~= bx
     local movedY = slideY ~= by
+    if not ((dx ~= 0 and not movedX) or (dy ~= 0 and not movedY)) then
+        return slideX, slideY
+    end
 
-    if (dx ~= 0 and not movedX) or (dy ~= 0 and not movedY) then
-        local maxNudge = 1
-        for nudge = 1, maxNudge do
-            local found = false
-            if dx ~= 0 and not movedX then
-                for _, yn in ipairs({nudge, -nudge}) do
-                    local ty = by + yn
-                    if canMoveTo(nx, ty) then
-                        slideX, slideY = nx, ty
-                        found = true
-                        break
-                    end
-                end
-                if found then break end
-            end
-            if dy ~= 0 and not movedY then
-                for _, xn in ipairs({nudge, -nudge}) do
-                    local tx = bx + xn
-                    if canMoveTo(tx, ny) then
-                        slideX, slideY = tx, ny
-                        found = true
-                        break
-                    end
-                end
-                if found then break end
+    if dx ~= 0 and not movedX then
+        for _, yn in ipairs({1, -1}) do
+            if canMoveTo(entity, nx, by + yn, constrainToMap) then
+                return nx, by + yn
             end
         end
     end
 
-    entity.x, entity.y = slideX, slideY
-    resolveStuck(entity)
+    if dy ~= 0 and not movedY then
+        for _, xn in ipairs({1, -1}) do
+            if canMoveTo(entity, bx + xn, ny, constrainToMap) then
+                return bx + xn, ny
+            end
+        end
+    end
+
+    return slideX, slideY
 end
 
 function resolveStuck(entity)
+    clampEntityToMap(entity)
+    if not isEntityStuck(entity) then return end
+    local bestX, bestY = findNearestClearCenter(entity)
+    if bestX then
+        entity.x = bestX - entity.width / 2
+        entity.y = bestY - entity.height / 2
+    end
+end
+
+function clampEntityToMap(entity)
     if entity.x < 0 then entity.x = 0
     elseif entity.x > mapWidth - entity.width then entity.x = mapWidth - entity.width end
     if entity.y < 0 then entity.y = 0
     elseif entity.y > mapHeight - entity.height then entity.y = mapHeight - entity.height end
+end
 
+function isEntityStuck(entity)
     local cx, cy = entity:getCenter()
-    local r = entity.radius
-    if not grid:isCircleBlocked(cx, cy, r) then return end
+    return grid:isCircleBlocked(cx, cy, entity.radius)
+end
 
-    -- Search outward in rings for the nearest tile the entity circle can fit in.
+function findNearestClearCenter(entity)
+    local cx, cy = entity:getCenter()
     local startCol = math.floor(cx / grid.tileSize) + 1
     local startRow = math.floor(cy / grid.tileSize) + 1
     local bestX, bestY, bestDistSq
@@ -211,7 +231,7 @@ function resolveStuck(entity)
                     if col >= 1 and col <= grid.cols and row >= 1 and row <= grid.rows then
                         local tx = (col - 1) * grid.tileSize + grid.tileSize / 2
                         local ty = (row - 1) * grid.tileSize + grid.tileSize / 2
-                        if not grid:isCircleBlocked(tx, ty, r) then
+                        if not grid:isCircleBlocked(tx, ty, entity.radius) then
                             local distSq = (tx - cx) * (tx - cx) + (ty - cy) * (ty - cy)
                             if not bestDistSq or distSq < bestDistSq then
                                 bestDistSq = distSq
@@ -225,76 +245,107 @@ function resolveStuck(entity)
         if bestX then break end
     end
 
-    if bestX then
-        entity.x = bestX - entity.width / 2
-        entity.y = bestY - entity.height / 2
-    end
+    return bestX, bestY
 end
 
 function love.update(dt)
     if not paused then
-        if gameMode == "horde" then
-            Horde.mainUpdate(dt)
-        elseif gameMode == "mapbuilder" then
-            MapBuilder.update(dt)
-        end
+        updateActiveGameMode(dt)
     end
     Toast.update(dt)
-    menu:update(dt)
+end
+
+function updateActiveGameMode(dt)
+    if gameMode == "horde" then
+        Horde.mainUpdate(dt)
+    elseif gameMode == "mapbuilder" then
+        MapBuilder.update(dt)
+    end
 end
 
 function love.draw()
     love.graphics.translate(-camera.x, -camera.y)
+    drawActiveGameMode()
+    Debug.drawGridOverlay()
+    drawScreenSpaceUI()
+end
 
+function drawActiveGameMode()
     if gameMode == "horde" then
         Horde.draw()
     elseif gameMode == "mapbuilder" then
         MapBuilder.draw()
     end
+end
 
-    if debugDraw then
-        love.graphics.push()
-        love.graphics.translate(scrWidth / 2, scrHeight / 2)
-        love.graphics.scale(camera.zoom)
-        love.graphics.translate(-scrWidth / 2, -scrHeight / 2)
-        grid:debugDraw()
-        love.graphics.pop()
-    end
+function drawScreenSpaceUI()
     if paused then menu:draw() end
     Toast.draw()
 end
 
 function love.keypressed(key)
-    if key == "f3" then debugDraw = not debugDraw; return end
-    if key == "f2" and gameMode == "horde" then
-        local wx, wy = screenToWorld(love.mouse.getPosition())
-        local zombie = Zombie("normal", wx, wy)
-        resolveStuck(zombie)
-        table.insert(zombies, zombie)
-        return
-    end
+    if Debug.handleKey(key) then return end
+    if handleDebugSpawn(key) then return end
 
     local action = Input.getActionForKey(key)
+    if handleGameModeKey(key, action) then return end
 
-    if gameMode == "mapbuilder" and MapBuilder.handleKey(key, action) then
-        return
+    handlePlayerAction(action, key)
+    updateCursor()
+end
+
+function handleDebugSpawn(key)
+    if Input.isActionBoundToKey("debug_spawn", key) and gameMode == "horde" then
+        spawnZombieAtMouse()
+        return true
     end
+    return false
+end
 
+function spawnZombieAtMouse()
+    local wx, wy = screenToWorld(love.mouse.getPosition())
+    local zombie = Zombie("normal", wx, wy)
+    resolveStuck(zombie)
+    table.insert(zombies, zombie)
+end
+
+function handleGameModeKey(key, action)
+    if gameMode == "mapbuilder" and MapBuilder.handleKey(key, action) then
+        return true
+    end
+    return false
+end
+
+function handlePlayerAction(action, key)
     if action == "pause" then
-        if BuyMenu.isOpen() then
-            BuyMenu.close()
-        elseif menu:isOpen() then
-            menu:closeSubmenu()
-            paused = menu:isOpen()
-        else
-            menu:openSubmenu("main")
-            paused = menu:isOpen()
-        end
+        togglePause()
     elseif action == "buy" then
-        if not menu:isOpen() and gameMode == "horde" then
-            BuyMenu.toggle()
-        end
+        toggleBuyMenu()
+    else
+        handleActiveMenuInput(action, key)
+    end
+end
+
+function togglePause()
+    if BuyMenu.isOpen() then
+        BuyMenu.close()
     elseif menu:isOpen() then
+        menu:closeSubmenu()
+        paused = menu:isOpen()
+    else
+        menu:openSubmenu("main")
+        paused = menu:isOpen()
+    end
+end
+
+function toggleBuyMenu()
+    if not menu:isOpen() and gameMode == "horde" then
+        BuyMenu.toggle()
+    end
+end
+
+function handleActiveMenuInput(action, key)
+    if menu:isOpen() then
         menu:handleAction(action)
         paused = menu:isOpen()
     elseif BuyMenu.isOpen() then
@@ -302,25 +353,34 @@ function love.keypressed(key)
     elseif gameMode == "horde" then
         Horde.handleKey(key, action)
     end
-    updateCursor()
 end
 
 function love.mousepressed(x, y, button)
+    dispatchMousePressed(x, y, button)
+    updateCursor()
+end
+
+function dispatchMousePressed(x, y, button)
     if button == 1 and menu:isOpen() then
+        ignoreMouseUntilRelease = true
         menu:mousepressed(x + camera.x, y + camera.y)
         paused = menu:isOpen()
     elseif button == 1 and BuyMenu.isOpen() then
+        ignoreMouseUntilRelease = true
         BuyMenu.mousepressed(x + camera.x, y + camera.y)
     elseif gameMode == "horde" then
         Inventory.mousepressed(x + camera.x, y + camera.y, button)
     elseif gameMode == "mapbuilder" then
         MapBuilder.handleClick(x, y, button)
     end
-    updateCursor()
 end
 
 function love.mousereleased(x, y, button)
     ignoreMouseUntilRelease = false
+    dispatchMouseReleased(x, y, button)
+end
+
+function dispatchMouseReleased(x, y, button)
     if gameMode == "horde" and not menu:isOpen() and not BuyMenu.isOpen() then
         Inventory.mousereleased(x + camera.x, y + camera.y, button)
     end
@@ -341,17 +401,25 @@ end
 
 function love.wheelmoved(x, y)
     if paused then return end
+    dispatchWheel(y)
+end
+
+function dispatchWheel(direction)
     if gameMode == "mapbuilder" then
-        MapBuilder.handleWheel(y)
+        MapBuilder.handleWheel(direction)
         return
     end
     if BuyMenu.isOpen() then
-        BuyMenu.wheelmoved(y)
+        BuyMenu.wheelmoved(direction)
         return
     end
-    if y > 0 then
+    cycleWeaponByWheel(direction)
+end
+
+function cycleWeaponByWheel(direction)
+    if direction > 0 then
         Horde.cycleWeapon(-1)
-    elseif y < 0 then
+    else
         Horde.cycleWeapon(1)
     end
 end

@@ -39,33 +39,14 @@ local OPTION_GAP = 42
 local TITLE_OFFSET_Y = 10
 local OPTIONS_OFFSET_Y = 60
 
--------------------------------------------------------------------
--- Lifecycle
--------------------------------------------------------------------
-
 function Menu:new()
     self.screens = buildScreens()
     self.stack = {}
     self.selection = 1
     self.lastMouseX = -1
     self.lastMouseY = -1
-    self.notification = nil
-    self.notificationTimeLeft = 0
     self.optionRects = {}
 end
-
-function Menu:update(dt)
-    if self.notificationTimeLeft > 0 then
-        self.notificationTimeLeft = self.notificationTimeLeft - dt
-        if self.notificationTimeLeft <= 0 then
-            self.notification = nil
-        end
-    end
-end
-
--------------------------------------------------------------------
--- Screen stack
--------------------------------------------------------------------
 
 function Menu:currentScreen()
     return self.screens[self.stack[#self.stack]]
@@ -90,10 +71,6 @@ function Menu:resetFocus()
     self.selection = 1
     self.optionRects = {}
 end
-
--------------------------------------------------------------------
--- Input
--------------------------------------------------------------------
 
 function Menu:handleAction(action)
     if action == "menu_up" then
@@ -146,10 +123,6 @@ function Menu:confirmCurrentSelection()
     end
 end
 
--------------------------------------------------------------------
--- Actions
--------------------------------------------------------------------
-
 function Menu:doAction(action)
     if action == "resume" then
         self.stack = {}
@@ -163,18 +136,13 @@ function Menu:doAction(action)
             enterMapBuilder()
         end
     elseif action == "coming_soon" then
-        self.notification = "Coming soon!"
-        self.notificationTimeLeft = 2
+        Toast.show("Coming soon!", 2)
     elseif action == "quit" then
         love.event.quit()
     elseif action:match("^screen_") then
         self:openSubmenu(action:match("^screen_(.+)$"))
     end
 end
-
--------------------------------------------------------------------
--- Drawing
--------------------------------------------------------------------
 
 function Menu:draw()
     self.optionRects = {}
@@ -188,7 +156,6 @@ function Menu:draw()
     self:drawPanel(px, py, panelHeight)
     self:drawTitle(screen.title, px, py)
     self:drawOptions(screen, px, py)
-    self:drawNotification(px, py, panelHeight)
 end
 
 function Menu:drawPanel(px, py, panelHeight)
@@ -210,35 +177,50 @@ function Menu:drawOptions(screen, px, py)
     local mouseX, mouseY = Input.getMousePosition()
     mouseX = mouseX + camera.x
     mouseY = mouseY + camera.y
-    local mouseMoved = mouseX ~= self.lastMouseX or mouseY ~= self.lastMouseY
-    if mouseMoved then
-        self.lastMouseX = mouseX
-        self.lastMouseY = mouseY
-    end
+    local mouseMoved = self:_updateMousePosition(mouseX, mouseY)
 
     local font = love.graphics.newFont("fonts/Gamer.ttf", 24)
     local optionY = py + OPTIONS_OFFSET_Y
     for i, entry in ipairs(screen.options) do
-        local label = type(entry.label) == "function" and entry.label() or entry.label
+        local label = self:_resolveLabel(entry.label)
         local rect = { x = px + 15, y = optionY, w = PANEL_WIDTH - 30, h = OPTION_HEIGHT }
 
         if mouseMoved then
             self:updateHover(entry, rect, mouseX, mouseY, i)
         end
 
-        if i == self.selection and entry.action then
-            love.graphics.setColor(0.3, 0.5, 0.7)
-            love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
-        end
-
-        love.graphics.setFont(font)
-        love.graphics.setColor(1, 1, 1)
-        local labelW = font:getWidth(label)
-        love.graphics.print(label, px + PANEL_WIDTH / 2 - labelW / 2, optionY + 6)
-
+        self:drawOption(entry, rect, label, font, i)
         self.optionRects[i] = rect
         optionY = optionY + OPTION_GAP
     end
+end
+
+function Menu:_updateMousePosition(mouseX, mouseY)
+    local mouseMoved = mouseX ~= self.lastMouseX or mouseY ~= self.lastMouseY
+    if mouseMoved then
+        self.lastMouseX = mouseX
+        self.lastMouseY = mouseY
+    end
+    return mouseMoved
+end
+
+function Menu:_resolveLabel(label)
+    if type(label) == "function" then
+        return label()
+    end
+    return label
+end
+
+function Menu:drawOption(entry, rect, label, font, index)
+    if index == self.selection and entry.action then
+        love.graphics.setColor(0.3, 0.5, 0.7)
+        love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
+    end
+
+    love.graphics.setFont(font)
+    love.graphics.setColor(1, 1, 1)
+    local labelW = font:getWidth(label)
+    love.graphics.print(label, rect.x + rect.w / 2 - labelW / 2, rect.y + 6)
 end
 
 function Menu:updateHover(entry, rect, mouseX, mouseY, index)
@@ -247,13 +229,4 @@ function Menu:updateHover(entry, rect, mouseX, mouseY, index)
        mouseY >= rect.y and mouseY <= rect.y + rect.h then
         self.selection = index
     end
-end
-
-function Menu:drawNotification(px, py, panelHeight)
-    if not self.notification then return end
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 20)
-    love.graphics.setFont(font)
-    love.graphics.setColor(1, 0.8, 0.2)
-    local msgW = font:getWidth(self.notification)
-    love.graphics.print(self.notification, px + PANEL_WIDTH / 2 - msgW / 2, py + panelHeight + 10)
 end

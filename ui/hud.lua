@@ -1,5 +1,31 @@
 local HUD = {}
 
+local BAR_WIDTH = 100
+local BAR_HEIGHT = 8
+local MONEY_COUNT_RATE = 20
+
+function HUD.reset()
+    HUD.displayMoney = 0
+end
+
+function HUD.update(dt)
+    HUD.animateMoney(dt)
+end
+
+function HUD.animateMoney(dt)
+    local target = player.money
+    local display = HUD.displayMoney
+    if display == target then return end
+
+    local diff = target - display
+    local step = MONEY_COUNT_RATE * dt
+    if math.abs(diff) <= step then
+        HUD.displayMoney = target
+    else
+        HUD.displayMoney = display + step * (diff > 0 and 1 or -1)
+    end
+end
+
 function HUD.draw()
     HUD.drawHealth()
     HUD.drawStamina()
@@ -7,29 +33,18 @@ function HUD.draw()
 end
 
 function HUD.drawHealth()
-    local barWidth = 100
-    local barHeight = 8
-    local barX = 30 + camera.x
-    local barY = scrHeight - 100 + camera.y
-    local healthRatio = player.health / 100
-
-    love.graphics.setColor(0.3, 0.3, 0.3)
-    love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
-    love.graphics.setColor(1, 0.2, 0.2)
-    love.graphics.rectangle("fill", barX, barY, barWidth * healthRatio, barHeight)
+    HUD.drawBar(30 + camera.x, scrHeight - 100 + camera.y, player.health / 100, {1, 0.2, 0.2})
 end
 
 function HUD.drawStamina()
-    local barWidth = 100
-    local barHeight = 8
-    local barX = 30 + camera.x
-    local barY = scrHeight - 85 + camera.y
-    local staminaRatio = player.stamina / player.maxStamina
+    HUD.drawBar(30 + camera.x, scrHeight - 85 + camera.y, player.stamina / player.maxStamina, {0, 0.7, 1})
+end
 
+function HUD.drawBar(x, y, ratio, fillColor)
     love.graphics.setColor(0.3, 0.3, 0.3)
-    love.graphics.rectangle("fill", barX, barY, barWidth, barHeight)
-    love.graphics.setColor(0, 0.7, 1)
-    love.graphics.rectangle("fill", barX, barY, barWidth * staminaRatio, barHeight)
+    love.graphics.rectangle("fill", x, y, BAR_WIDTH, BAR_HEIGHT)
+    love.graphics.setColor(fillColor)
+    love.graphics.rectangle("fill", x, y, BAR_WIDTH * ratio, BAR_HEIGHT)
 end
 
 function HUD.drawStats()
@@ -38,7 +53,7 @@ function HUD.drawStats()
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("WAVE: " .. currentRound, 30 + camera.x, scrHeight - 70 + camera.y)
     love.graphics.print("KILL COUNT: " .. killCount, 30 + camera.x, scrHeight - 50 + camera.y)
-    love.graphics.print("$" .. player.money, 30 + camera.x, scrHeight - 30 + camera.y)
+    love.graphics.print("$" .. math.floor(HUD.displayMoney + 0.5), 30 + camera.x, scrHeight - 30 + camera.y)
 end
 
 return HUD

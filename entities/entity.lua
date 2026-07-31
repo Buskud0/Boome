@@ -1,5 +1,16 @@
 Entity = Object:extend()
 
+function Entity.load()
+    Textures.load("images/entity_spritesheet.png", 40)
+    Textures.define("player", 1)
+    Textures.define("zombie_normal", 2)
+    Textures.define("zombie_heavy", 3)
+    Textures.define("zombie_light", 4)
+    Textures.define("bullet", 5)
+    Textures.define("powerup_health", 6)
+    Textures.define("powerup_money", 7)
+end
+
 function Entity:new(x, y)
     self.x = x
     self.y = y
@@ -46,13 +57,17 @@ function Entity:getSpeedMultiplier()
 end
 
 function Entity:draw()
+    self:drawBody()
+    if Debug.isEnabled() then self:drawHitbox() end
+end
+
+function Entity:drawBody()
     if self.sprite then
         Textures.draw(self.sprite, self.x, self.y, self.width, self.height)
     else
         love.graphics.setColor(self.color)
         love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
     end
-    if debugDraw then self:drawHitbox() end
 end
 
 function Entity:drawHitbox()

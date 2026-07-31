@@ -12,6 +12,23 @@ function Grid:new()
     self.rows = math.floor(mapHeight / self.tileSize)
 end
 
+function Grid.load()
+    Textures.load("images/block_spritesheet.png", 40)
+    Textures.define("empty", 1)
+    Textures.define("dirt", 2)
+    Textures.define("grass", 3)
+    Textures.define("shop", 4)
+    Textures.define("stone", 5)
+    Textures.define("rock_path", 6)
+    Textures.define("water", 7)
+    Textures.define("wood_wall", 8)
+    Textures.load("images/object_spritesheet.png", 40)
+    Textures.define("toxic_barrel", 1)
+    Textures.define("barrel", 2)
+    Textures.define("bush", 3)
+    Textures.define("tree", 4)
+end
+
 function Grid:rebuildGrid()
     for i = 1, self.cols * self.rows do
         self.grid[i] = nil

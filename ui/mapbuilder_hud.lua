@@ -7,6 +7,11 @@ local HUD_BOTTOM_MARGIN = 12
 local BUTTON_WIDTH = 80
 local BUTTON_HEIGHT = 36
 
+local function isPointInRect(x, y, rect)
+    return x >= rect.x and x <= rect.x + rect.w and
+           y >= rect.y and y <= rect.y + rect.h
+end
+
 function MapBuilderHUD.getSlotRects()
     local totalWidth = SLOT_COUNT * SLOT_SIZE + (SLOT_COUNT - 1) * SLOT_GAP
     local startX = math.floor(scrWidth / 2 - totalWidth / 2 + camera.x)
@@ -29,85 +34,76 @@ function MapBuilderHUD.getRevertButtonRect()
 end
 
 function MapBuilderHUD.isPointerOverHUD(worldX, worldY)
-    local slotRects = MapBuilderHUD.getSlotRects()
-    for _, rect in ipairs(slotRects) do
-        if worldX >= rect.x and worldX <= rect.x + rect.w and
-           worldY >= rect.y and worldY <= rect.y + rect.h then return true end
+    for _, rect in ipairs(MapBuilderHUD.getSlotRects()) do
+        if isPointInRect(worldX, worldY, rect) then return true end
     end
-    local saveRect = MapBuilderHUD.getSaveButtonRect()
-    if worldX >= saveRect.x and worldX <= saveRect.x + saveRect.w and
-       worldY >= saveRect.y and worldY <= saveRect.y + saveRect.h then return true end
-    local revertRect = MapBuilderHUD.getRevertButtonRect()
-    if worldX >= revertRect.x and worldX <= revertRect.x + revertRect.w and
-       worldY >= revertRect.y and worldY <= revertRect.y + revertRect.h then return true end
+    if isPointInRect(worldX, worldY, MapBuilderHUD.getSaveButtonRect()) then return true end
+    if isPointInRect(worldX, worldY, MapBuilderHUD.getRevertButtonRect()) then return true end
     return false
 end
 
 function MapBuilderHUD.drawSlots()
-    local rects = MapBuilderHUD.getSlotRects()
-    for i, rect in ipairs(rects) do
-        local slot = MapBuilder.quickAccess[i]
-        local isSelected = i == MapBuilder.selectedSlot
-
-        if isSelected then
-            love.graphics.setColor(0.3, 0.5, 0.7, 0.9)
-        else
-            love.graphics.setColor(0.15, 0.15, 0.15, 0.8)
-        end
-        love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
-        love.graphics.setColor(0.4, 0.4, 0.4)
-        love.graphics.rectangle("line", rect.x, rect.y, rect.w, rect.h)
-
-        if slot then
-            Textures.draw(slot.material, rect.x + 5, rect.y + 5, rect.w - 10, rect.h - 10)
-        end
-
-        local font = love.graphics.newFont("fonts/Gamer.ttf", 14)
-        love.graphics.setFont(font)
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print(tostring(i), rect.x + 3, rect.y + 3)
+    for i, rect in ipairs(MapBuilderHUD.getSlotRects()) do
+        MapBuilderHUD.drawSlot(rect, i)
     end
+end
+
+function MapBuilderHUD.drawSlot(rect, index)
+    MapBuilderHUD.drawSlotBackground(rect, index == MapBuilder.selectedSlot)
+    MapBuilderHUD.drawSlotIcon(rect, MapBuilder.quickAccess[index])
+    MapBuilderHUD.drawSlotNumber(rect, index)
+end
+
+function MapBuilderHUD.drawSlotBackground(rect, isSelected)
+    if isSelected then
+        love.graphics.setColor(0.3, 0.5, 0.7, 0.9)
+    else
+        love.graphics.setColor(0.15, 0.15, 0.15, 0.8)
+    end
+    love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
+    love.graphics.setColor(0.4, 0.4, 0.4)
+    love.graphics.rectangle("line", rect.x, rect.y, rect.w, rect.h)
+end
+
+function MapBuilderHUD.drawSlotIcon(rect, slot)
+    if slot then
+        Textures.draw(slot.material, rect.x + 5, rect.y + 5, rect.w - 10, rect.h - 10)
+    end
+end
+
+function MapBuilderHUD.drawSlotNumber(rect, index)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", 14)
+    love.graphics.setFont(font)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print(tostring(index), rect.x + 3, rect.y + 3)
 end
 
 function MapBuilderHUD.drawRevertButton()
-    local revertRect = MapBuilderHUD.getRevertButtonRect()
+    local rect = MapBuilderHUD.getRevertButtonRect()
     local canRevert = MapBuilder.hasUnsavedChanges and MapBuilder.hasSavedFile
-
-    if canRevert then
-        love.graphics.setColor(0.6, 0.4, 0.2, 0.9)
-    else
-        love.graphics.setColor(0.3, 0.3, 0.3, 0.9)
-    end
-    love.graphics.rectangle("fill", revertRect.x, revertRect.y, revertRect.w, revertRect.h)
-    love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.rectangle("line", revertRect.x, revertRect.y, revertRect.w, revertRect.h)
-
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 16)
-    love.graphics.setFont(font)
-    love.graphics.setColor(1, 1, 1)
-    local revertLabel = "REVERT"
-    local revertW = font:getWidth(revertLabel)
-    love.graphics.print(revertLabel, revertRect.x + revertRect.w / 2 - revertW / 2, revertRect.y + 10)
+    MapBuilderHUD.drawButton(rect, "REVERT", 16, canRevert, {0.6, 0.4, 0.2, 0.9})
 end
 
 function MapBuilderHUD.drawSaveButton()
-    local saveRect = MapBuilderHUD.getSaveButtonRect()
+    local rect = MapBuilderHUD.getSaveButtonRect()
+    MapBuilderHUD.drawButton(rect, "SAVE", 20, MapBuilder.hasUnsavedChanges, {0.2, 0.6, 0.2, 0.9})
+end
 
-    if MapBuilder.hasUnsavedChanges then
-        love.graphics.setColor(0.2, 0.6, 0.2, 0.9)
+function MapBuilderHUD.drawButton(rect, label, fontSize, isActive, activeColor)
+    if isActive then
+        love.graphics.setColor(activeColor)
     else
         love.graphics.setColor(0.3, 0.3, 0.3, 0.9)
     end
-    love.graphics.rectangle("fill", saveRect.x, saveRect.y, saveRect.w, saveRect.h)
+    love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
     love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.rectangle("line", saveRect.x, saveRect.y, saveRect.w, saveRect.h)
+    love.graphics.rectangle("line", rect.x, rect.y, rect.w, rect.h)
 
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 20)
+    local font = love.graphics.newFont("fonts/Gamer.ttf", fontSize)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
-    local label = "SAVE"
     local labelW = font:getWidth(label)
-    love.graphics.print(label, saveRect.x + saveRect.w / 2 - labelW / 2, saveRect.y + 8)
+    love.graphics.print(label, rect.x + rect.w / 2 - labelW / 2, rect.y + 8)
 end
 
 function MapBuilderHUD.draw()
