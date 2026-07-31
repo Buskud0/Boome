@@ -13,6 +13,7 @@ require "entities.bullet"
 require "entities.zombie"
 require "ui.damagetext"
 require "systems.weapon"
+require "systems.melee"
 require "ui.menu"
 require "core.grid"
 require "entities.PowerUp"
@@ -107,7 +108,7 @@ function resetGame()
     weapons = {}
     damageTexts = {}
     powerUps = {}
-    table.insert(weapons, Weapon("M9"))
+    table.insert(weapons, Weapon.create("knife"))
     paused = false
     BuyMenu.close()
 end
@@ -197,19 +198,36 @@ function resolveStuck(entity)
     local r = entity.radius
     if not grid:isCircleBlocked(cx, cy, r) then return end
 
-    local maxOffset = math.max(grid.tileSize, math.ceil(r))
-    for offset = 1, maxOffset do
-        local dirs = {
-            {offset, 0}, {-offset, 0}, {0, offset}, {0, -offset},
-            {offset, offset}, {offset, -offset}, {-offset, offset}, {-offset, -offset},
-        }
-        for _, d in ipairs(dirs) do
-            if not grid:isCircleBlocked(cx + d[1], cy + d[2], r) then
-                entity.x = entity.x + d[1]
-                entity.y = entity.y + d[2]
-                return
+    -- Search outward in rings for the nearest tile the entity circle can fit in.
+    local startCol = math.floor(cx / grid.tileSize) + 1
+    local startRow = math.floor(cy / grid.tileSize) + 1
+    local bestX, bestY, bestDistSq
+    local maxRadius = 30
+
+    for radius = 1, maxRadius do
+        for row = startRow - radius, startRow + radius do
+            for col = startCol - radius, startCol + radius do
+                if math.max(math.abs(col - startCol), math.abs(row - startRow)) == radius then
+                    if col >= 1 and col <= grid.cols and row >= 1 and row <= grid.rows then
+                        local tx = (col - 1) * grid.tileSize + grid.tileSize / 2
+                        local ty = (row - 1) * grid.tileSize + grid.tileSize / 2
+                        if not grid:isCircleBlocked(tx, ty, r) then
+                            local distSq = (tx - cx) * (tx - cx) + (ty - cy) * (ty - cy)
+                            if not bestDistSq or distSq < bestDistSq then
+                                bestDistSq = distSq
+                                bestX, bestY = tx, ty
+                            end
+                        end
+                    end
+                end
             end
         end
+        if bestX then break end
+    end
+
+    if bestX then
+        entity.x = bestX - entity.width / 2
+        entity.y = bestY - entity.height / 2
     end
 end
 

@@ -51,8 +51,10 @@ function Horde.waveUpdate(dt)
             currentRound = currentRound + 1
             zombieCount = zombieCount + 2
             for i, w in ipairs(weapons) do
-                w.reloadCooldown = 0
-                w.capacity = w.magSize
+                if w.magSize then
+                    w.reloadCooldown = 0
+                    w.capacity = w.magSize
+                end
             end
             Horde:buildQueue()
             Horde.state = "intro"
@@ -149,7 +151,9 @@ end
 
 function Horde.handleKey(key, action)
     if action == "reload" then
-        weapon.capacity = 0
+        if weapon.magSize and weapon.capacity < weapon.magSize then
+            weapon.capacity = 0
+        end
     elseif action == "weapon1" and weapons[1] then
         currentWeaponIndex = 1
     elseif action == "weapon2" and weapons[2] then
@@ -176,7 +180,6 @@ function Horde.mainUpdate(dt)
     end
     Horde.updateCamera()
     Collisions.bulletVsZombie()
-    Collisions.zombieVsPlayer()
     Collisions.seperateZombies()
     for _, bullet in ipairs(bullets) do
         bullet:update(dt)
@@ -212,6 +215,7 @@ function Horde.draw()
         zombie:draw()
     end
     player:draw()
+    weapon:drawWorld()
     grid:drawObjects()
     for _, damageText in ipairs(damageTexts) do
         damageText:draw()

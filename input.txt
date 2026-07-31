@@ -7,6 +7,7 @@ move_left=a
 move_right=d
 sprint=lshift
 shoot=mouse1
+swing=mouse2
 pause=escape
 reload=r
 weapon1=1

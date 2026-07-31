@@ -7,7 +7,16 @@ PLAYER_MAX_STAMINA = 100
 PLAYER_SPRINT_MULTIPLIER = 1.5
 PLAYER_SPRINT_DRAIN_RATE = 80
 PLAYER_STAMINA_RECOVERY_RATE = 40
-PLAYER_SPRINT_THRESHOLD = 30
+STAMINA_USE_THRESHOLD = 30
+STAMINA_REGEN_DELAY = 0.5
+
+ENTITY_HIT_SLOW_DURATION = 0.5
+ENTITY_HIT_SLOW_FACTOR = 0.5
+MELEE_STAB_DURATION = 0.15
+MELEE_SWING_DURATION = 0.2
+MELEE_SWING_HALF_ANGLE = math.rad(45)
+MELEE_STAB_STAMINA_COST = 10
+MELEE_SWING_STAMINA_COST = 25
 
 WEAPON_BULLET_SPEED = 1500
 
@@ -41,7 +50,7 @@ WEAPONS = {
         firerate = 0.15,
         bulletAmount = 1,
         spread = 2,
-        price = 0,
+        price = 5,
     },
     ["MAC-10"] = {
         automatic = true,
@@ -51,17 +60,7 @@ WEAPONS = {
         firerate = 0.06,
         bulletAmount = 1,
         spread = 7,
-        price = 5,
-    },
-    ["REMINGTON-870"] = {
-        automatic = false,
-        damage = 14,
-        magSize = 5,
-        reloadTime = 4,
-        firerate = 1,
-        bulletAmount = 13,
-        spread = 13,
-        price = 5,
+        price = 10,
     },
     AWP = {
         automatic = false,
@@ -71,7 +70,17 @@ WEAPONS = {
         firerate = 1.5,
         bulletAmount = 1,
         spread = 0,
-        price = 5,
+        price = 15,
+    },
+    ["REMINGTON-870"] = {
+        automatic = false,
+        damage = 14,
+        magSize = 5,
+        reloadTime = 4,
+        firerate = 1,
+        bulletAmount = 13,
+        spread = 13,
+        price = 20,
     },
     AK47 = {
         automatic = true,
@@ -81,16 +90,14 @@ WEAPONS = {
         firerate = 0.12,
         bulletAmount = 1,
         spread = 3,
-        price = 5,
+        price = 25,
     },
     knife = {
+        weaponType = "melee",
         automatic = false,
         damage = 34,
-        magSize = 0,
-        reloadTime = 0,
         firerate = 0.5,
-        bulletAmount = 0,
-        spread = 0,
         price = 0,
+        range = 35,
     },
 }

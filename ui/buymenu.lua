@@ -92,7 +92,7 @@ function BuyMenu:confirmPurchase()
     local stats = WEAPONS[model]
     if player.money >= stats.price then
         player.money = player.money - stats.price
-        table.insert(weapons, Weapon(model))
+        table.insert(weapons, Weapon.create(model))
         currentWeaponIndex = #weapons
     end
 end

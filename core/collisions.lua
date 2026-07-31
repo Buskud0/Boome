@@ -10,24 +10,54 @@ function Collisions.check(a, b)
     return dx * dx + dy * dy < (ar + br) * (ar + br)
 end
 
+function Collisions.segmentHitsCircle(px, py, qx, qy, cx, cy, r)
+    local dx = qx - px
+    local dy = qy - py
+    local lenSq = dx * dx + dy * dy
+    if lenSq == 0 then
+        local ex = cx - px
+        local ey = cy - py
+        return ex * ex + ey * ey <= r * r
+    end
+    local t = ((cx - px) * dx + (cy - py) * dy) / lenSq
+    t = math.max(0, math.min(1, t))
+    local closestX = px + t * dx
+    local closestY = py + t * dy
+    local ex = cx - closestX
+    local ey = cy - closestY
+    return ex * ex + ey * ey <= r * r
+end
+
+function Collisions.circleHitsSector(px, py, dx, dy, halfAngle, radius, cx, cy, r)
+    local vx = cx - px
+    local vy = cy - py
+    local dist = math.sqrt(vx * vx + vy * vy)
+    if dist == 0 then return true end
+
+    local nx, ny = vx / dist, vy / dist
+    local cosHalf = math.cos(halfAngle)
+    if nx * dx + ny * dy >= cosHalf then
+        return dist - radius <= r
+    end
+
+    local sinHalf = math.sin(halfAngle)
+    local edgeX1 = dx * cosHalf - dy * sinHalf
+    local edgeY1 = dx * sinHalf + dy * cosHalf
+    local edgeX2 = dx * cosHalf + dy * sinHalf
+    local edgeY2 = -dx * sinHalf + dy * cosHalf
+
+    return segmentHitsCircle(px, py, px + edgeX1 * radius, py + edgeY1 * radius, cx, cy, r)
+        or segmentHitsCircle(px, py, px + edgeX2 * radius, py + edgeY2 * radius, cx, cy, r)
+end
+
 function Collisions.bulletVsZombie()
     for i, bullet in ipairs(bullets) do
         for _, zombie in ipairs(zombies) do
             if Collisions.check(bullet, zombie) then 
                 table.insert(damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
-                zombie.health = zombie.health - bullet.damage
+                zombie:takeDamage(bullet.damage)
                 table.remove(bullets, i)
             end
-        end
-    end
-end
-
-function Collisions.zombieVsPlayer()
-    for i, zombie in ipairs(zombies) do
-        if not zombie.hasHitPlayer and Collisions.check(zombie, player) then 
-            player:takeDamage(zombie.damage)
-            zombie.hasHitPlayer = true
-            table.remove(zombies, i)
         end
     end
 end
