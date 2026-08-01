@@ -63,6 +63,8 @@ function Gun:new(model)
     self.reloadTime = stats.reloadTime
     self.bulletAmount = stats.bulletAmount
     self.spread = stats.spread
+    self.penetrationLoss = stats.penetrationLoss
+    self.scope = stats.scope
 
     self.capacity = self.magSize
     self.reloadCooldown = 0
@@ -110,18 +112,20 @@ end
 
 function Gun:_drawReloadArc()
     if not self.reloading then return end
+    love.graphics.setColor(1, 1, 1)
     love.graphics.arc("fill", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.reloadProgress)
 end
 
 function Gun:_drawFirerateArc()
     if self.firerateCooldown <= 0 or self.reloading then return end
+    love.graphics.setColor(1, 1, 1)
     love.graphics.arc("line", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.firerateProgress)
 end
 
 function Gun:shootBullet()
     local startX, startY = self:_getMuzzlePosition()
     local bulletDx, bulletDy = self:_calculateBulletDirection(startX, startY)
-    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage))
+    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage, self.penetrationLoss))
 end
 
 function Gun:_getMuzzlePosition()

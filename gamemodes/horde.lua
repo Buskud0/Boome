@@ -1,7 +1,9 @@
 local Horde = {}
 
-Horde.maxRounds = 0
-Horde.maxKills = 0
+local SCOPE_SMOOTH_SPEED = 4
+
+Horde.scopeOffsetX = 0
+Horde.scopeOffsetY = 0
 
 function Horde.loadScoreRecord()
     local record = love.filesystem.read("record.txt")
@@ -20,6 +22,9 @@ function Horde.saveScoreRecord()
 end
 
 function Horde.reset()
+    Inventory.close()
+    Horde.scopeOffsetX = 0
+    Horde.scopeOffsetY = 0
     currentRound = 1
     zombieCount = STARTING_ZOMBIE_COUNT
     Horde.state = "intro"
@@ -134,7 +139,6 @@ function Horde.onZombieKilled(zombie, index)
 end
 
 function Horde.removeZombie(zombie, index)
-    print("killed " .. zombie.type .. " zombie")
     table.remove(zombies, index)
 end
 
@@ -157,9 +161,30 @@ function Horde.updateDamageTexts(dt)
     end
 end
 
-function Horde.updateCamera()
+function Horde.updateCamera(dt)
     Horde.followPlayer()
+    Horde.applyScopeOffset(dt)
     Horde.clampCameraToMap()
+end
+
+function Horde.applyScopeOffset(dt)
+    local targetX, targetY = 0, 0
+    if weapon and weapon.scope and Input.isDown("swing") then
+        local mouseX, mouseY = screenToWorld(love.mouse.getPosition())
+        local px, py = player:getCenter()
+        local dx, dy = mouseX - px, mouseY - py
+        local len = math.sqrt(dx * dx + dy * dy)
+        if len > 0 then
+            dx, dy = dx / len, dy / len
+            targetX, targetY = dx * weapon.scope, dy * weapon.scope
+        end
+    end
+
+    local alpha = math.min(1, SCOPE_SMOOTH_SPEED * dt)
+    Horde.scopeOffsetX = Horde.scopeOffsetX + (targetX - Horde.scopeOffsetX) * alpha
+    Horde.scopeOffsetY = Horde.scopeOffsetY + (targetY - Horde.scopeOffsetY) * alpha
+    camera.x = camera.x + Horde.scopeOffsetX
+    camera.y = camera.y + Horde.scopeOffsetY
 end
 
 function Horde.followPlayer()
@@ -182,7 +207,8 @@ function Horde.clampCameraToMap()
 end
 
 function Horde.cycleWeapon(direction)
-    local target = Horde.findNextWeaponSlot(currentWeaponIndex, direction)
+    local start = currentWeaponIndex or (direction > 0 and 0 or 6)
+    local target = Horde.findNextWeaponSlot(start, direction)
     if target then
         currentWeaponIndex = target
     end
@@ -201,6 +227,8 @@ function Horde.handleKey(key, action)
     if Horde.handleWeaponSlotKey(key) then return end
     if action == "reload" then
         Horde.handleReload()
+    elseif action == "inventory" then
+        Inventory.toggle()
     elseif action == "cycle_prev" then
         Horde.cycleWeapon(-1)
     elseif action == "cycle_next" then
@@ -209,15 +237,21 @@ function Horde.handleKey(key, action)
 end
 
 function Horde.handleReload()
-    if weapon.magSize and weapon.capacity < weapon.magSize then
+    if weapon and weapon.magSize and weapon.capacity < weapon.magSize then
         weapon.capacity = 0
     end
 end
 
 function Horde.handleWeaponSlotKey(key)
-    for slot = 1, #weapons do
+    for slot = 1, 5 do
         if Input.isActionBoundToKey("weapon" .. slot, key) then
-            currentWeaponIndex = slot
+            if currentWeaponIndex == slot then
+                currentWeaponIndex = nil
+            elseif weapons[slot] then
+                currentWeaponIndex = slot
+            else
+                currentWeaponIndex = nil
+            end
             return true
         end
     end
@@ -229,7 +263,7 @@ function Horde.mainUpdate(dt)
     Horde.waveUpdate(dt)
     player:update(dt)
     Horde.updateActiveWeapon(dt)
-    Horde.updateCamera()
+    Horde.updateCamera(dt)
     Collisions.bulletVsZombie()
     Collisions.seperateZombies()
     Horde.updateBullets(dt)
@@ -242,11 +276,14 @@ function Horde.mainUpdate(dt)
 end
 
 function Horde.setActiveWeapon()
-    weapon = weapons[currentWeaponIndex]
+    weapon = fists
+    if currentWeaponIndex and currentWeaponIndex <= Inventory.HOTBAR_SLOTS and weapons[currentWeaponIndex] then
+        weapon = weapons[currentWeaponIndex]
+    end
 end
 
 function Horde.updateActiveWeapon(dt)
-    if not BuyMenu.isOpen() then
+    if not BuyMenu.isOpen() and weapon then
         weapon:update(dt)
     end
 end
@@ -290,12 +327,13 @@ end
 
 function Horde.drawWorld()
     Horde.drawMap()
+    grid:drawObjects()
     Horde.drawPowerUps()
-    Horde.drawBullets()
     Horde.drawZombies()
     player:draw()
-    weapon:drawWorld()
-    grid:drawObjects()
+    Horde.drawBullets()
+    if weapon then weapon:drawWorld() end
+    Horde.drawZombieAttacks()
     Horde.drawDamageTexts()
     love.graphics.pop()
 end
@@ -324,6 +362,12 @@ function Horde.drawZombies()
     end
 end
 
+function Horde.drawZombieAttacks()
+    for _, zombie in ipairs(zombies) do
+        zombie:drawStab()
+    end
+end
+
 function Horde.drawDamageTexts()
     for _, damageText in ipairs(damageTexts) do
         damageText:draw()
@@ -331,7 +375,7 @@ function Horde.drawDamageTexts()
 end
 
 function Horde.drawHUD()
-    weapon:draw()
+    if weapon then weapon:draw() end
     HUD.draw()
     Inventory.draw()
     Horde.drawOverlay()
@@ -345,7 +389,7 @@ function Horde.drawOverlay()
 end
 
 function Horde.drawCenteredText(text, centerX, centerY, size, alpha)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", size)
+    local font = Fonts.get(size)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1, alpha)
     local textW = font:getWidth(text)

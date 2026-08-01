@@ -2,30 +2,58 @@ local Inventory = {}
 
 local SLOT_SIZE = 52
 local SLOT_GAP = 8
-local SLOT_COUNT = 5
-local FONT_PATH = "fonts/Gamer.ttf"
+local HOTBAR_SLOTS = 5
+local BACKPACK_SLOTS = 5
+local BACKPACK_ROW_OFFSET = 30
+local BACKPACK_TITLE = "BACKPACK"
+local BACKPACK_TITLE_SIZE = 16
 local DRAG_THRESHOLD = 10
 
+Inventory.MAX_SLOTS = HOTBAR_SLOTS + BACKPACK_SLOTS
+Inventory.HOTBAR_SLOTS = HOTBAR_SLOTS
+Inventory.isOpen = false
 Inventory.dragSlot = nil
 Inventory.dragStartX = 0
 Inventory.dragStartY = 0
 
-local fonts = {}
+function Inventory.getSlotCount()
+    return Inventory.isOpen and Inventory.MAX_SLOTS or HOTBAR_SLOTS
+end
 
-function Inventory.getFont(size)
-    if not fonts[size] then
-        fonts[size] = love.graphics.newFont(FONT_PATH, size)
+function Inventory.findFirstEmptySlot()
+    for i = 1, Inventory.MAX_SLOTS do
+        if not weapons[i] then
+            return i
+        end
     end
-    return fonts[size]
+    return nil
+end
+
+function Inventory.open()
+    Inventory.isOpen = true
+end
+
+function Inventory.close()
+    Inventory.isOpen = false
+end
+
+function Inventory.toggle()
+    Inventory.isOpen = not Inventory.isOpen
+end
+
+function Inventory.getBackpackWidth()
+    return BACKPACK_SLOTS * SLOT_SIZE + (BACKPACK_SLOTS - 1) * SLOT_GAP
 end
 
 function Inventory.getSlotRects()
-    local totalWidth = SLOT_COUNT * SLOT_SIZE + (SLOT_COUNT - 1) * SLOT_GAP
+    local totalWidth = Inventory.getBackpackWidth()
     local startX = math.floor(scrWidth / 2 - totalWidth / 2 + camera.x)
-    local slotY = scrHeight - SLOT_SIZE - 12 + camera.y
     local rects = {}
-    for i = 1, SLOT_COUNT do
-        local slotX = startX + (i - 1) * (SLOT_SIZE + SLOT_GAP)
+    for i = 1, Inventory.getSlotCount() do
+        local slotX = startX + ((i - 1) % HOTBAR_SLOTS) * (SLOT_SIZE + SLOT_GAP)
+        local row = math.floor((i - 1) / HOTBAR_SLOTS)
+        local slotY = (scrHeight - SLOT_SIZE - 12 + camera.y) - row * (SLOT_SIZE + SLOT_GAP)
+            - (row > 0 and BACKPACK_ROW_OFFSET or 0)
         rects[i] = { x = slotX, y = slotY, w = SLOT_SIZE, h = SLOT_SIZE }
     end
     return rects
@@ -40,6 +68,7 @@ function Inventory.load()
         ["REMINGTON-870"] = 4,
         M9 = 5,
         AWP = 6,
+        AXE = 7,
     }
     for model, idx in pairs(weaponSprites) do
         Textures.define("slot_" .. model, idx)
@@ -47,9 +76,10 @@ function Inventory.load()
 end
 
 function Inventory.draw()
+    Inventory.drawBackpackPanel()
     local rects = Inventory.getSlotRects()
 
-    for i = 1, SLOT_COUNT do
+    for i = 1, Inventory.getSlotCount() do
         local rect = rects[i]
         if weapons[i] then
             Inventory:drawSlot(rect.x, rect.y, weapons[i], i == currentWeaponIndex, i)
@@ -62,11 +92,36 @@ function Inventory.draw()
     Inventory.drawDragGhost()
 end
 
+function Inventory.drawBackpackPanel()
+    if not Inventory.isOpen then return end
+    local rects = Inventory.getSlotRects()
+    local backpackRow = rects[HOTBAR_SLOTS + 1]
+    local pad = 6
+    local titleH = 26
+
+    love.graphics.setColor(0, 0, 0, 0.4)
+    love.graphics.rectangle("fill",
+        backpackRow.x - pad, backpackRow.y - titleH - pad,
+        Inventory.getBackpackWidth() + pad * 2,
+        titleH + SLOT_SIZE + pad * 2)
+
+    Inventory:drawCenteredText(BACKPACK_TITLE,
+        backpackRow.x + Inventory.getBackpackWidth() / 2,
+        backpackRow.y - titleH + 4, BACKPACK_TITLE_SIZE, {0.9, 0.9, 0.9})
+end
+
 function Inventory.drawHeldItemName(rects)
     local weapon = weapons[currentWeaponIndex]
-    if not weapon then return end
+    if not weapon then
+        local rect = rects[1]
+        if rect then
+            Inventory:drawCenteredText("FISTS", rect.x + Inventory.getBackpackWidth() / 2, rect.y - 18, 18, {1, 1, 1})
+        end
+        return
+    end
 
     local rect = rects[currentWeaponIndex]
+    if not rect then return end
     Inventory:drawCenteredText(weapon.model, rect.x + rect.w / 2, rect.y - 18, 18, {1, 1, 1})
 end
 
@@ -75,8 +130,7 @@ function Inventory.drawDragGhost()
     local mx, my = love.mouse.getPosition()
     local weapon = weapons[Inventory.dragSlot]
     if not weapon then return end
-    love.graphics.setColor(1, 1, 1, 0.8)
-    Textures.draw("slot_" .. weapon.model, mx + camera.x - 20, my + camera.y - 20, 40, 40)
+    Textures.draw("slot_" .. weapon.model, mx + camera.x - 20, my + camera.y - 20, 40, 40, 0.8)
 end
 
 function Inventory:drawSlot(x, y, weapon, isActive, index)
@@ -116,7 +170,8 @@ function Inventory:drawSlotIcon(x, y, model)
 end
 
 function Inventory:drawSlotIndex(x, y, index, color)
-    local font = Inventory.getFont(16)
+    if index > HOTBAR_SLOTS then return end
+    local font = Fonts.get(16)
     love.graphics.setFont(font)
     love.graphics.setColor(color)
     love.graphics.print(tostring(index), x + 3, y + 2)
@@ -124,7 +179,7 @@ end
 
 function Inventory:drawAmmo(x, y, weapon)
     local ammo = weapon.capacity .. "/" .. weapon.magSize
-    local font = Inventory.getFont(16)
+    local font = Fonts.get(16)
     love.graphics.setFont(font)
     local textW = font:getWidth(ammo)
     local barY = y + SLOT_SIZE - 16
@@ -136,7 +191,7 @@ function Inventory:drawAmmo(x, y, weapon)
 end
 
 function Inventory:drawCenteredText(text, centerX, y, size, color)
-    local font = Inventory.getFont(size)
+    local font = Fonts.get(size)
     love.graphics.setFont(font)
     local textW = font:getWidth(text)
     love.graphics.setColor(color)
@@ -186,8 +241,14 @@ function Inventory.isDragClick(worldX, worldY)
 end
 
 function Inventory.selectWeaponSlot(slotIndex)
-    if weapons[slotIndex] then
-        currentWeaponIndex = slotIndex
+    if slotIndex <= HOTBAR_SLOTS then
+        if currentWeaponIndex == slotIndex then
+            currentWeaponIndex = nil
+        elseif weapons[slotIndex] then
+            currentWeaponIndex = slotIndex
+        else
+            currentWeaponIndex = nil
+        end
     end
     Inventory.dragSlot = nil
 end
@@ -195,12 +256,32 @@ end
 function Inventory.trySwapWithTarget(worldX, worldY)
     local targetIndex = Inventory.slotIndexAtPosition(worldX, worldY)
     if targetIndex then
+        local sourceIndex = Inventory.dragSlot
         local temp = weapons[targetIndex]
-        weapons[targetIndex] = weapons[Inventory.dragSlot]
-        weapons[Inventory.dragSlot] = temp
-        currentWeaponIndex = targetIndex
+        weapons[targetIndex] = weapons[sourceIndex]
+        weapons[sourceIndex] = temp
+        Inventory.keepSelectionValid(sourceIndex, targetIndex)
     end
     Inventory.dragSlot = nil
+end
+
+function Inventory.keepSelectionValid(sourceIndex, targetIndex)
+    if sourceIndex > HOTBAR_SLOTS then
+        return
+    end
+    if targetIndex <= HOTBAR_SLOTS and weapons[targetIndex] then
+        currentWeaponIndex = targetIndex
+    elseif weapons[sourceIndex] then
+        currentWeaponIndex = sourceIndex
+    else
+        for i = 1, HOTBAR_SLOTS do
+            if weapons[i] then
+                currentWeaponIndex = i
+                return
+            end
+        end
+        currentWeaponIndex = 1
+    end
 end
 
 return Inventory

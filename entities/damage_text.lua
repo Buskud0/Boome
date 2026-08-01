@@ -21,7 +21,7 @@ function DamageText:update(dt)
 end
 
 function DamageText:draw()
-	local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
+	local font = Fonts.get(22)
 	love.graphics.setFont(font)
 	love.graphics.setColor({self.color[1], self.color[2], self.color[3], self.opacity})
 	love.graphics.print(self.text, self.x, self.y)

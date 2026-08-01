@@ -29,7 +29,6 @@ function Toast.show(message, duration)
     table.insert(activeToasts, {
         message = message,
         timer = duration,
-        duration = duration,
     })
 end
 
@@ -44,7 +43,7 @@ function Toast.update(dt)
 end
 
 function Toast.draw()
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 20)
+    local font = Fonts.get(20)
     love.graphics.setFont(font)
 
     local posY = scrHeight + camera.y - TOAST_BASE_Y

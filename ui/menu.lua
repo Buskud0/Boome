@@ -166,7 +166,7 @@ function Menu:drawPanel(px, py, panelHeight)
 end
 
 function Menu:drawTitle(title, px, py)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 36)
+    local font = Fonts.get(36)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     local titleW = font:getWidth(title)
@@ -179,7 +179,7 @@ function Menu:drawOptions(screen, px, py)
     mouseY = mouseY + camera.y
     local mouseMoved = self:_updateMousePosition(mouseX, mouseY)
 
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 24)
+    local font = Fonts.get(24)
     local optionY = py + OPTIONS_OFFSET_Y
     for i, entry in ipairs(screen.options) do
         local label = self:_resolveLabel(entry.label)

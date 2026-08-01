@@ -7,6 +7,8 @@ function Melee:new(model)
     self.range = stats.range or 50
     self.swingRange = self.range
     self.swingHalfAngle = MELEE_SWING_HALF_ANGLE
+    self.stabStaminaCost = stats.stabStaminaCost or MELEE_STAB_STAMINA_COST
+    self.swingStaminaCost = stats.swingStaminaCost or MELEE_SWING_STAMINA_COST
 
     self.stabTimer = 0
     self.stabDirX, self.stabDirY = 0, 0
@@ -29,7 +31,7 @@ end
 
 function Melee:_tryAttack()
     if not self:_isMeleeInputReady("shoot", "shotFirstBullet") then return end
-    if not self:_spendStamina(MELEE_STAB_STAMINA_COST) then return end
+    if not self:_spendStamina(self.stabStaminaCost) then return end
 
     self:_performStab()
     self:_startMeleeCooldown("shotFirstBullet")
@@ -37,7 +39,7 @@ end
 
 function Melee:_trySwing()
     if not self:_isMeleeInputReady("swing", "swingShotFirst") then return end
-    if not self:_spendStamina(MELEE_SWING_STAMINA_COST) then return end
+    if not self:_spendStamina(self.swingStaminaCost) then return end
 
     self:_performSwing()
     self:_startMeleeCooldown("swingShotFirst")

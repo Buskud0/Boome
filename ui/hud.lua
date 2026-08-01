@@ -48,7 +48,7 @@ function HUD.drawBar(x, y, ratio, fillColor)
 end
 
 function HUD.drawStats()
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 30)
+    local font = Fonts.get(30)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("WAVE: " .. currentRound, 30 + camera.x, scrHeight - 70 + camera.y)

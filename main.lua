@@ -3,16 +3,17 @@ require "core.config"
 Object = require "lib.classic"
 Input = require "core.input"
 Textures = require "core.textures"
+Fonts = require "core.fonts"
 require "entities.entity"
 require "entities.player"
 require "entities.bullet"
 require "entities.zombie"
-require "ui.damagetext"
+require "entities.damage_text"
 require "systems.weapon"
 require "systems.melee"
 require "ui.menu"
-require "core.grid"
-require "entities.PowerUp"
+require "world.grid"
+require "entities.powerup"
 Collisions = require "core.collisions"
 HUD = require "ui.hud"
 Horde = require "gamemodes.horde"
@@ -24,7 +25,6 @@ ItemBrowser = require "ui.item_browser"
 Toast = require "ui.toast"
 Debug = require "core.debug"
 
-gameMode = "horde"
 ignoreMouseUntilRelease = false
 
 function loadCursor()
@@ -78,7 +78,6 @@ function resetGame()
     menu = Menu()
     resetPlayer()
     resetEntityLists()
-    giveStarterWeapon()
     paused = false
     BuyMenu.close()
 end
@@ -88,12 +87,13 @@ function setWorldConstants()
     mapHeight = MAP_HEIGHT
     killCount = 0
     currentWeaponIndex = 1
+    fists = Weapon.create("FISTS")
     HUD.reset()
     gameMode = "horde"
 end
 
 function resetCamera()
-    camera = { x = 0, y = 0, zoom = 1.3 }
+    camera = { x = 0, y = 0, zoom = HORDE_CAMERA_ZOOM }
 end
 
 function resetPlayer()
@@ -106,10 +106,6 @@ function resetEntityLists()
     weapons = {}
     damageTexts = {}
     powerUps = {}
-end
-
-function giveStarterWeapon()
-    table.insert(weapons, Weapon.create("BAYONET"))
 end
 
 function tryMove(entity, dx, dy, constrainToMap)
@@ -440,7 +436,7 @@ function enterHordeMode()
     ignoreMouseUntilRelease = true
     gameMode = "horde"
     updateCursor()
-    camera.zoom = 1
+    resetCamera()
 end
 
 function randNegPos(number)

@@ -21,6 +21,7 @@ weapon4=4
 weapon5=5
 cycle_prev=left
 cycle_next=right
+inventory=q
 
 # --- Menus ---
 pause=escape
@@ -30,7 +31,6 @@ menu_down=down
 menu_confirm=return
 
 # --- Map builder ---
-browser=e
 undo=ctrl+z
 redo=ctrl+y
 slot1=1

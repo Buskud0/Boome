@@ -72,7 +72,7 @@ function MapBuilderHUD.drawSlotIcon(rect, slot)
 end
 
 function MapBuilderHUD.drawSlotNumber(rect, index)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 14)
+    local font = Fonts.get(14)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(tostring(index), rect.x + 3, rect.y + 3)
@@ -99,7 +99,7 @@ function MapBuilderHUD.drawButton(rect, label, fontSize, isActive, activeColor)
     love.graphics.setColor(0.4, 0.4, 0.4)
     love.graphics.rectangle("line", rect.x, rect.y, rect.w, rect.h)
 
-    local font = love.graphics.newFont("fonts/Gamer.ttf", fontSize)
+    local font = Fonts.get(fontSize)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     local labelW = font:getWidth(label)

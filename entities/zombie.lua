@@ -14,8 +14,7 @@ function Zombie:new(type, x, y)
     self.sprite = "zombie_" .. self.type
     self.path = {}
     self.pathTimer = 0
-    self.directionX, self.directionY = 0, 0
-    self.weapon = Weapon.create("BAYONET")
+    self.weapon = Weapon.create("FISTS")
     self.attackRange = self.weapon.range
     self.attackCooldown = 1
     self.attackTimer = 0
@@ -65,7 +64,6 @@ function Zombie:_updateAttack(dt, dist)
     if dist > self.attackRange then return false end
 
     local dirX, dirY = self:_getDirectionToPlayer()
-    self.directionX, self.directionY = dirX, dirY
 
     if self.attackTimer > 0 then return true end
 
@@ -112,7 +110,6 @@ function Zombie:_moveTowardPlayer(dt)
 
     moveX, moveY = self:_steerAroundOtherZombies(cx, cy, moveX, moveY)
 
-    self.directionX, self.directionY = moveX, moveY
     tryMove(self, moveX * step, moveY * step, false)
 end
 
@@ -182,11 +179,10 @@ end
 function Zombie:draw()
     Zombie.super.draw(self)
     self:drawHealthBar()
-    self:_drawStab()
     if Debug.isEnabled() then self:drawDebug() end
 end
 
-function Zombie:_drawStab()
+function Zombie:drawStab()
     if self.stabTimer <= 0 then return end
 
     local cx, cy = self:getCenter()

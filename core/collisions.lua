@@ -51,13 +51,26 @@ function Collisions.circleHitsSector(px, py, dx, dy, halfAngle, radius, cx, cy, 
 end
 
 function Collisions.bulletVsZombie()
-    for i, bullet in ipairs(bullets) do
+    for i = #bullets, 1, -1 do
+        local bullet = bullets[i]
+        local consumed = false
         for _, zombie in ipairs(zombies) do
-            if Collisions.check(bullet, zombie) then 
+            if not consumed and not bullet.hitZombies[zombie] and Collisions.check(bullet, zombie) then
+                bullet.hitZombies[zombie] = true
                 table.insert(damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
                 zombie:takeDamage(bullet.damage)
-                table.remove(bullets, i)
+                if bullet.penetrationLoss then
+                    bullet.damage = bullet.damage - bullet.penetrationLoss
+                    if bullet.damage <= 0 then
+                        consumed = true
+                    end
+                else
+                    consumed = true
+                end
             end
+        end
+        if consumed then
+            table.remove(bullets, i)
         end
     end
 end

@@ -1,6 +1,7 @@
 MAP_WIDTH = 1000
 MAP_HEIGHT = 1000
 STARTING_ZOMBIE_COUNT = 2
+HORDE_CAMERA_ZOOM = 1.3
 
 PLAYER_SPEED = 150
 PLAYER_MAX_STAMINA = 100
@@ -50,7 +51,9 @@ WEAPONS = {
         firerate = 0.15,
         bulletAmount = 1,
         spread = 2,
-        price = 5,
+        price = 0,
+        penetrationLoss = 20,
+        scope = 50,
     },
     ["MAC-10"] = {
         automatic = true,
@@ -60,17 +63,21 @@ WEAPONS = {
         firerate = 0.06,
         bulletAmount = 1,
         spread = 7,
-        price = 10,
+        price = 0,
+        penetrationLoss = 9,
+        scope = 50,
     },
     AWP = {
         automatic = false,
-        damage = 307,
+        damage = 299,
         magSize = 5,
         reloadTime = 3,
         firerate = 1.5,
         bulletAmount = 1,
         spread = 0,
-        price = 15,
+        price = 0,
+        penetrationLoss = 75,
+        scope = 200,
     },
     ["REMINGTON-870"] = {
         automatic = false,
@@ -80,7 +87,9 @@ WEAPONS = {
         firerate = 1,
         bulletAmount = 13,
         spread = 13,
-        price = 20,
+        price = 0,
+        penetrationLoss = 14,
+        scope = 50,
     },
     AK47 = {
         automatic = true,
@@ -90,14 +99,39 @@ WEAPONS = {
         firerate = 0.12,
         bulletAmount = 1,
         spread = 3,
-        price = 25,
+        price = 0,
+        penetrationLoss = 17,
+        scope = 100,
     },
     BAYONET = {
         weaponType = "melee",
         automatic = false,
-        damage = 34,
-        firerate = 0.5,
+        damage = 53,
+        firerate = 0.4,
         price = 0,
-        range = 35,
+        range = 30,
+        stabStaminaCost = 10,
+        swingStaminaCost = 15,
+    },
+    FISTS = {
+        weaponType = "melee",
+        automatic = false,
+        damage = 27,
+        firerate = 0.3,
+        price = 0,
+        range = 20,
+        stabStaminaCost = 7,
+        swingStaminaCost = 10,
+        hidden = true,
+    },
+    AXE = {
+        weaponType = "melee",
+        automatic = false,
+        damage = 100,
+        firerate = 0.8,
+        price = 0,
+        range = 40,
+        stabStaminaCost = 45,
+        swingStaminaCost = 60,
     },
 }

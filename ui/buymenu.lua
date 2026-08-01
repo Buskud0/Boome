@@ -6,7 +6,6 @@ local OPTION_GAP = 50
 local TITLE_OFFSET_Y = 10
 local MONEY_OFFSET_Y = 48
 local OPTIONS_OFFSET_Y = 85
-local MAX_INVENTORY_SLOTS = 5
 
 local isOpen = false
 local selection = 1
@@ -18,8 +17,10 @@ local useMouseSelection = true
 
 local function getWeaponsSortedByPrice()
     local all = {}
-    for model in pairs(WEAPONS) do
-        table.insert(all, model)
+    for model, stats in pairs(WEAPONS) do
+        if not stats.hidden then
+            table.insert(all, model)
+        end
     end
     table.sort(all, function(a, b)
         return WEAPONS[a].price < WEAPONS[b].price
@@ -28,8 +29,9 @@ local function getWeaponsSortedByPrice()
 end
 
 local function playerHasWeapon(model)
-    for _, weapon in ipairs(weapons) do
-        if weapon.model == model then return true end
+    for i = 1, Inventory.MAX_SLOTS do
+        local weapon = weapons[i]
+        if weapon and weapon.model == model then return true end
     end
     return false
 end
@@ -51,8 +53,12 @@ end
 
 local function buyWeapon(model)
     player.money = player.money - WEAPONS[model].price
-    table.insert(weapons, Weapon.create(model))
-    currentWeaponIndex = #weapons
+    local slot = Inventory.findFirstEmptySlot()
+    if not slot then return end
+    weapons[slot] = Weapon.create(model)
+    if slot <= Inventory.HOTBAR_SLOTS then
+        currentWeaponIndex = slot
+    end
 end
 
 local function getMouseSelectionState()
@@ -80,7 +86,7 @@ local function drawPanel(px, py, panelHeight)
 end
 
 local function drawTitle(px, py)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 36)
+    local font = Fonts.get(36)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     local title = "WEAPON SHOP"
@@ -89,7 +95,7 @@ local function drawTitle(px, py)
 end
 
 local function drawMoney(px, py)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 20)
+    local font = Fonts.get(20)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 0.8, 0.2)
     local text = "$" .. player.money
@@ -105,16 +111,12 @@ local function drawSelectionHighlight(rect, index)
 end
 
 local function drawWeaponIcon(rect, model)
-    if playerHasWeapon(model) then
-        love.graphics.setColor(0.4, 0.4, 0.4)
-    else
-        love.graphics.setColor(1, 1, 1)
-    end
-    Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28)
+    local alpha = playerHasWeapon(model) and 0.4 or 1
+    Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28, alpha)
 end
 
 local function drawWeaponName(rect, model)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
+    local font = Fonts.get(22)
     love.graphics.setFont(font)
     love.graphics.print(model, rect.x + 40, rect.y + 6)
 end
@@ -129,7 +131,7 @@ local function drawWeaponPrice(rect, model)
 end
 
 local function drawWeaponStatus(rect, model)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 18)
+    local font = Fonts.get(18)
     love.graphics.setFont(font)
     if playerHasWeapon(model) then
         love.graphics.setColor(0.4, 0.4, 0.4)
@@ -209,7 +211,7 @@ end
 function BuyMenu:confirmPurchase()
     local model = sortedWeapons[selection]
     if not model or playerHasWeapon(model) then return end
-    if #weapons >= MAX_INVENTORY_SLOTS then
+    if not Inventory.findFirstEmptySlot() then
         Toast.show("Inventory full!", 2)
         return
     end

@@ -1,6 +1,6 @@
 Bullet = Object:extend()
 
-function Bullet:new(x, y, dx, dy, damage)
+function Bullet:new(x, y, dx, dy, damage, penetrationLoss)
 	self.x = x
 	self.y = y
 	self.width = 8
@@ -9,6 +9,8 @@ function Bullet:new(x, y, dx, dy, damage)
 	self.dx = dx
 	self.dy = dy
 	self.damage = damage
+	self.penetrationLoss = penetrationLoss
+	self.hitZombies = {}
 	self.sprite = "bullet"
 end
 

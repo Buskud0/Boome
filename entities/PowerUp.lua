@@ -48,11 +48,11 @@ end
 function PowerUp:_tryPickup()
     if not Collisions.check(player, self) then return false end
     if self.type == "health" and player.health < 100 then
-        player.health = math.min(player.health + 25, 100)
+        player.health = math.min(player.health + self.amount, 100)
         return true
     end
     if self.type == "money" then
-        player.money = player.money + 100
+        player.money = player.money + self.amount
         return true
     end
     return false
@@ -68,7 +68,6 @@ function PowerUp:_removeFromWorld()
 end
 
 function PowerUp:_collect()
-    print("picked up " .. self.type)
     table.insert(damageTexts, DamageText("+" .. self.amount .. " " .. self.type, self.x, self.y, 1.5, self.color))
     self:_removeFromWorld()
 end

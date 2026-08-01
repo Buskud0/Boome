@@ -7,7 +7,6 @@ local ZOOM_FACTOR = 1.1
 local QUICK_ACCESS_COUNT = 10
 MapBuilder.QUICK_ACCESS_COUNT = QUICK_ACCESS_COUNT
 local PLACE_INTERVAL = 0.08
-MapBuilder.PLACE_INTERVAL = PLACE_INTERVAL
 local BLOCK_SIZE = 4
 
 MapBuilder.quickAccess = {}
@@ -404,15 +403,14 @@ function MapBuilder.drawDragGhost()
     local mx, my = love.mouse.getPosition()
     local item = MapBuilder.quickAccess[MapBuilder.dragSlot]
     if not item then return end
-    love.graphics.setColor(1, 1, 1, 0.8)
-    Textures.draw(item.material, mx + camera.x - 20, my + camera.y - 20, 40, 40)
+    Textures.draw(item.material, mx + camera.x - 20, my + camera.y - 20, 40, 40, 0.8)
 end
 
 function MapBuilder.handleKey(key, action)
     if MapBuilder.handleCtrlShortcut(key) then return true end
 
     if not ItemBrowser.isOpen then
-        if action == "browser" and not paused then
+        if action == "inventory" and not paused then
             ItemBrowser.toggle()
             ItemBrowser.consumeNextText = true
             return true
@@ -450,12 +448,12 @@ function MapBuilder.handleKeyNumberSlot(key)
 end
 
 function MapBuilder.handleItemBrowserKey(key, action)
-    if action == "browser" or action == "pause" then
+    if action == "inventory" or action == "pause" then
         if action == "pause" and ItemBrowser.searchFocused then
             ItemBrowser.searchFocused = false
             return true
         end
-        if action == "browser" and ItemBrowser.searchFocused then
+        if action == "inventory" and ItemBrowser.searchFocused then
             return true
         end
         ItemBrowser.close()
@@ -677,13 +675,11 @@ function MapBuilder.load()
     local content = love.filesystem.read("map.txt")
     if not content then
         MapBuilder.resetGrid()
-        print("Map file not found")
         return
     end
     grid:loadData(content)
     MapBuilder.hasUnsavedChanges = false
     MapBuilder.hasSavedFile = true
-    print("Map loaded: " .. (#grid.blockRecords + #grid.objectRecords) .. " blocks")
 end
 
 function MapBuilder.resetGrid()

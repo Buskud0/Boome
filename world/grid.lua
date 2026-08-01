@@ -14,7 +14,6 @@ end
 
 function Grid.load()
     Textures.load("images/block_spritesheet.png", 40)
-    Textures.define("empty", 1)
     Textures.define("dirt", 2)
     Textures.define("grass", 3)
     Textures.define("shop", 4)
@@ -49,18 +48,6 @@ function Grid:_fillArea(target, col, row, material)
             local r = row + dy
             if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
                 target[(r - 1) * self.cols + c] = material
-            end
-        end
-    end
-end
-
-function Grid:_clearArea(target, col, row)
-    for dy = 0, BLOCK_SIZE - 1 do
-        for dx = 0, BLOCK_SIZE - 1 do
-            local c = col + dx
-            local r = row + dy
-            if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
-                target[(r - 1) * self.cols + c] = nil
             end
         end
     end
@@ -117,23 +104,6 @@ function Grid:isTileBlocked(col, row)
     if self.objects[idx] then
         local item = BUILDING_ITEMS[self.objects[idx]]
         if item and item.blocksMovement then return true end
-    end
-    return false
-end
-
-function Grid:isBlocked(px, py, w, h)
-    local corners = {
-        {px, py},
-        {px + w - 1, py},
-        {px, py + h - 1},
-        {px + w - 1, py + h - 1},
-    }
-    for _, corner in ipairs(corners) do
-        local col = math.floor(corner[1] / self.tileSize) + 1
-        local row = math.floor(corner[2] / self.tileSize) + 1
-        if col >= 1 and col <= self.cols and row >= 1 and row <= self.rows then
-            if self:isTileBlocked(col, row) then return true end
-        end
     end
     return false
 end
@@ -196,12 +166,6 @@ function Grid:getMaterialAt(worldX, worldY)
     return self.objects[idx] or self.grid[idx]
 end
 
-function Grid:getMaterialAtTile(col, row)
-    if col < 1 or col > self.cols or row < 1 or row > self.rows then return nil end
-    local idx = (row - 1) * self.cols + col
-    return self.objects[idx] or self.grid[idx]
-end
-
 function Grid:drawBlocks()
     for _, record in ipairs(self.blockRecords) do
         Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
@@ -217,42 +181,6 @@ end
 function Grid:draw()
     self:drawBlocks()
     self:drawObjects()
-end
-
-function Grid:drawMaterial(material)
-    for _, record in ipairs(self.blockRecords) do
-        if record.material == material then
-            Textures.draw(material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
-        end
-    end
-end
-
-function Grid:getObjectAt(worldX, worldY)
-    local col = math.floor(worldX / self.tileSize) + 1
-    local row = math.floor(worldY / self.tileSize) + 1
-    if col < 1 or col > self.cols or row < 1 or row > self.rows then return nil end
-    local idx = (row - 1) * self.cols + col
-    return self.objects[idx]
-end
-
-function Grid:clearTile(col, row)
-    local idx = (row - 1) * self.cols + col
-    self.grid[idx] = nil
-end
-
-function Grid:colorTile(material, col, row)
-    local idx = (row - 1) * self.cols + col
-    self.grid[idx] = material
-end
-
-function Grid:clearObject(col, row)
-    local idx = (row - 1) * self.cols + col
-    self.objects[idx] = nil
-end
-
-function Grid:placeObjectTile(material, col, row)
-    local idx = (row - 1) * self.cols + col
-    self.objects[idx] = material
 end
 
 function Grid:saveData()

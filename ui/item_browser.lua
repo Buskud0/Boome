@@ -215,7 +215,7 @@ function ItemBrowser.drawPanel(px, py)
 end
 
 function ItemBrowser.drawTitle(px, py)
-    local font = love.graphics.newFont("fonts/Gamer.ttf", 22)
+    local font = Fonts.get(22)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("Building Items", px + 10, py + 8)
@@ -245,7 +245,7 @@ local function getSearchDisplayText()
 end
 
 local function drawSearchText(px, py)
-    love.graphics.setFont(love.graphics.newFont("fonts/Gamer.ttf", 16))
+    love.graphics.setFont(Fonts.get(16))
     love.graphics.setColor(0.8, 0.8, 0.8)
     love.graphics.print(getSearchDisplayText(), px + 14, py + 38)
 end
@@ -269,7 +269,7 @@ function ItemBrowser.drawItemCell(cellX, cellY, item)
 
     Textures.draw(item.material, cellX + 5, cellY + 5, ITEM_CELL_SIZE - 10, ITEM_CELL_SIZE - 10)
 
-    love.graphics.setFont(love.graphics.newFont("fonts/Gamer.ttf", 18))
+    love.graphics.setFont(Fonts.get(18))
     love.graphics.setColor(0.8, 0.8, 0.8)
     love.graphics.print(item.name, cellX + 2, cellY + ITEM_CELL_SIZE + 4)
 end
@@ -277,8 +277,7 @@ end
 function ItemBrowser.drawDragGhost()
     if not ItemBrowser.draggedItem then return end
     local mx, my = love.mouse.getPosition()
-    love.graphics.setColor(1, 1, 1, 0.8)
-    Textures.draw(ItemBrowser.draggedItem.material, mx + camera.x - 20, my + camera.y - 20, 40, 40)
+    Textures.draw(ItemBrowser.draggedItem.material, mx + camera.x - 20, my + camera.y - 20, 40, 40, 0.8)
 end
 
 function ItemBrowser.draw()

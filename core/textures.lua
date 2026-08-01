@@ -10,7 +10,6 @@ function Textures.load(filename, tileSize)
         tileSize = tileSize,
         quads = Textures.buildQuads(image, tileSize),
     }
-    Textures.tileSize = tileSize
 end
 
 function Textures.buildQuads(image, tileSize)
@@ -49,10 +48,6 @@ function Textures.draw(material, x, y, w, h, alpha)
     local sx = (w or entry.tileSize) / entry.tileSize
     local sy = (h or entry.tileSize) / entry.tileSize
     love.graphics.draw(entry.image, entry.quad, x, y, 0, sx, sy)
-end
-
-function Textures.getTileSize()
-    return Textures.tileSize
 end
 
 return Textures
