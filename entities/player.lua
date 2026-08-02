@@ -85,7 +85,7 @@ function Player:_applyMovement(dx, dy, speed, dt)
 end
 
 local PLAYER_FOV = math.rad(100)
-local SCOPED_FOV = math.rad(10)
+local SCOPED_FOV = math.rad(30)
 local LIGHT_DARKNESS = 0.05
 local LIGHT_SEGMENTS = 32
 

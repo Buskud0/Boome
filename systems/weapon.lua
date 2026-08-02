@@ -1,6 +1,6 @@
 Weapon = Object:extend()
 
-local SCOPE_PAN_SPEED = 4
+local SCOPE_PAN_SPEED = 8 
 
 function Weapon:new(model)
     local stats = WEAPONS[model]
