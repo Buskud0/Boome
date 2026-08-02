@@ -86,10 +86,6 @@ end
 
 -- settings (PLAYER_FOV, PERIPHERAL_*, LIGHT_*) are in core/config.lua
 
-function Player:isScoped()
-    return weapon ~= nil and weapon:isScoping()
-end
-
 function Player:getFov()
     local scoped = self:_getScopedFov()
     local progress = weapon and weapon.scopeProgress or 0
