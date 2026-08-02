@@ -1,7 +1,7 @@
 local Pathfinding = {}
 
 local SQRT2 = math.sqrt(2)
-local MAX_ITERATIONS = 10000
+local MAX_ITERATIONS = PATHFINDING_MAX_ITERATIONS
 
 local NEIGHBORS = {
     { dx = 1,  dy = 0,  cost = 1 },

@@ -1,10 +1,10 @@
 Zombie = Entity:extend()
 local Pathfinding = require "core.pathfinding"
 
-local PATH_RECALC_INTERVAL = 0.3
-local WAYPOINT_RADIUS = 6
-local SEPARATION_RADIUS = 30
-local SEPARATION_WEIGHT = 0.7
+local PATH_RECALC_INTERVAL = ZOMBIE_PATH_RECALC_INTERVAL
+local WAYPOINT_RADIUS = ZOMBIE_WAYPOINT_RADIUS
+local SEPARATION_RADIUS = ZOMBIE_SEPARATION_RADIUS
+local SEPARATION_WEIGHT = ZOMBIE_SEPARATION_WEIGHT
 
 function Zombie:new(type, x, y)
     Zombie.super.new(self, x, y)
@@ -177,15 +177,17 @@ function Zombie:_getPathDirection(cx, cy)
 end
 
 function Zombie:draw()
-    if self:_isHiddenFromPlayer() then return end
-    Zombie.super.draw(self)
-    self:drawHealthBar()
+    local alpha = self:_getVisibilityAlpha()
+    if alpha <= 0 then return end
+    Zombie.super.draw(self, alpha)
+    self:drawHealthBar(alpha)
     if Debug.isEnabled() then self:drawDebug() end
 end
 
 function Zombie:drawStab()
     if self.stabTimer <= 0 then return end
-    if self:_isHiddenFromPlayer() then return end
+    local alpha = self:_getVisibilityAlpha()
+    if alpha <= 0 then return end
 
     local cx, cy = self:getCenter()
     local progress = 1 - self.stabTimer / MELEE_STAB_DURATION
@@ -195,17 +197,16 @@ function Zombie:drawStab()
     local ex = cx + self.stabDirX * length
     local ey = cy + self.stabDirY * length
 
-    love.graphics.setColor(1, 0.5, 0.5, 0.8)
+    love.graphics.setColor(1, 0.5, 0.5, 0.8 * alpha)
     love.graphics.setLineWidth(3)
     love.graphics.line(cx, cy, ex, ey)
     love.graphics.setLineWidth(1)
 end
 
-function Zombie:_isHiddenFromPlayer()
+function Zombie:_getVisibilityAlpha()
     local cx, cy = self:getCenter()
-    if self:isOccludedFrom(player:getCenter()) then return true end
-    if not player:isInVisionCone(cx, cy) then return true end
-    return false
+    if self:isOccludedFrom(player:getCenter()) then return 0 end
+    return player:getVisibilityAlphaFor(cx, cy)
 end
 
 function Zombie:drawDebug()
@@ -228,14 +229,15 @@ function Zombie:drawPlannedPath()
     end
 end
 
-function Zombie:drawHealthBar()
+function Zombie:drawHealthBar(alpha)
     local offset = 5
     local height = 3
-    love.graphics.setColor({0, 0, 0})
+    local c = self:_getHealthBarColor()
+    love.graphics.setColor(0, 0, 0, alpha)
     love.graphics.rectangle("line", self.x, self.y+self.height+offset, self.width, height)
-    love.graphics.setColor({1, 1, 1})
+    love.graphics.setColor(1, 1, 1, alpha)
     love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width, height)
-    love.graphics.setColor(self:_getHealthBarColor())
+    love.graphics.setColor(c[1], c[2], c[3], alpha)
     love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width*self.health/self.maxHealth, height)
 end
 

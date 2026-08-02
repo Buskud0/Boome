@@ -1,6 +1,6 @@
 Grid = Object:extend()
 
-local BLOCK_SIZE = 4
+local BLOCK_SIZE = GRID_BLOCK_SIZE
 
 function Grid:new()
     self.grid = {}
@@ -175,6 +175,29 @@ function Grid:isTileVisionBlocked(col, row)
         if item and item.blocksVision then return true end
     end
     return false
+end
+
+function Grid:getVisionCornerAngles(px, py, minAngle, maxAngle)
+    local angles = {}
+    local ts = self.tileSize
+    local size = BLOCK_SIZE * ts
+    for _, record in ipairs(self.blockRecords) do
+        local item = BUILDING_ITEMS[record.material]
+        if item and item.blocksVision then
+            local x1 = (record.col - 1) * ts
+            local y1 = (record.row - 1) * ts
+            local x2 = x1 + size
+            local y2 = y1 + size
+            local corners = { {x1, y1}, {x2, y1}, {x1, y2}, {x2, y2} }
+            for i = 1, 4 do
+                local a = math.atan2(corners[i][2] - py, corners[i][1] - px)
+                if a >= minAngle and a <= maxAngle then
+                    angles[#angles + 1] = a
+                end
+            end
+        end
+    end
+    return angles
 end
 
 function Grid:segmentBlocksVision(x1, y1, x2, y2)

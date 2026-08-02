@@ -1,11 +1,11 @@
 local MapBuilderHUD = {}
 
-local SLOT_SIZE = 52
-local SLOT_GAP = 8
+local SLOT_SIZE = MAPBUILDER_HUD_SLOT_SIZE
+local SLOT_GAP = MAPBUILDER_HUD_SLOT_GAP
 local SLOT_COUNT = MapBuilder.QUICK_ACCESS_COUNT
-local HUD_BOTTOM_MARGIN = 12
-local BUTTON_WIDTH = 80
-local BUTTON_HEIGHT = 36
+local HUD_BOTTOM_MARGIN = MAPBUILDER_HUD_BOTTOM_MARGIN
+local BUTTON_WIDTH = MAPBUILDER_HUD_BUTTON_WIDTH
+local BUTTON_HEIGHT = MAPBUILDER_HUD_BUTTON_HEIGHT
 
 local function isPointInRect(x, y, rect)
     return x >= rect.x and x <= rect.x + rect.w and

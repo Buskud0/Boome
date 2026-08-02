@@ -61,17 +61,18 @@ function Entity:isOccludedFrom(ox, oy)
     return grid:segmentBlocksVision(ox, oy, cx, cy)
 end
 
-function Entity:draw()
-    self:drawBody()
+function Entity:draw(alpha)
+    self:drawBody(alpha)
     if Debug.isEnabled() then self:drawHitbox() end
 end
 
-function Entity:drawBody()
+function Entity:drawBody(alpha)
     if self ~= player and self:isOccludedFrom(player:getCenter()) then return end
     if self.sprite then
-        Textures.draw(self.sprite, self.x, self.y, self.width, self.height)
+        Textures.draw(self.sprite, self.x, self.y, self.width, self.height, alpha)
     else
-        love.graphics.setColor(self.color)
+        local c = self.color
+        love.graphics.setColor(c[1], c[2], c[3], alpha or 1)
         love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
     end
 end

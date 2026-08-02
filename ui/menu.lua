@@ -33,11 +33,11 @@ local function buildScreens()
     }
 end
 
-local PANEL_WIDTH = 350
-local OPTION_HEIGHT = 36
-local OPTION_GAP = 42
-local TITLE_OFFSET_Y = 10
-local OPTIONS_OFFSET_Y = 60
+local PANEL_WIDTH = MENU_PANEL_WIDTH
+local OPTION_HEIGHT = MENU_OPTION_HEIGHT
+local OPTION_GAP = MENU_OPTION_GAP
+local TITLE_OFFSET_Y = MENU_TITLE_OFFSET_Y
+local OPTIONS_OFFSET_Y = MENU_OPTIONS_OFFSET_Y
 
 function Menu:new()
     self.screens = buildScreens()

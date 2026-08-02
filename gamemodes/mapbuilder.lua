@@ -1,13 +1,13 @@
 local MapBuilder = {}
 
-local PAN_SPEED = 300
-local ZOOM_MIN = 0.1
-local ZOOM_MAX = 10
-local ZOOM_FACTOR = 1.1
-local QUICK_ACCESS_COUNT = 10
+local PAN_SPEED = MAPBUILDER_PAN_SPEED
+local ZOOM_MIN = MAPBUILDER_ZOOM_MIN
+local ZOOM_MAX = MAPBUILDER_ZOOM_MAX
+local ZOOM_FACTOR = MAPBUILDER_ZOOM_FACTOR
+local QUICK_ACCESS_COUNT = MAPBUILDER_QUICK_ACCESS_COUNT
 MapBuilder.QUICK_ACCESS_COUNT = QUICK_ACCESS_COUNT
-local PLACE_INTERVAL = 0.08
-local BLOCK_SIZE = 4
+local PLACE_INTERVAL = MAPBUILDER_PLACE_INTERVAL
+local BLOCK_SIZE = MAPBUILDER_BLOCK_SIZE
 
 MapBuilder.quickAccess = {}
 MapBuilder.selectedSlot = 1
@@ -22,8 +22,8 @@ MapBuilder.dragSlot = nil
 MapBuilder.dragStartX = 0
 MapBuilder.dragStartY = 0
 
-local MAX_UNDO = 100
-local DRAG_THRESHOLD = 10
+local MAX_UNDO = MAPBUILDER_MAX_UNDO
+local DRAG_THRESHOLD = MAPBUILDER_DRAG_THRESHOLD
 
 function MapBuilder.enter()
     MapBuilder.resetCamera()

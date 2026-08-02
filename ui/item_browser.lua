@@ -1,11 +1,11 @@
 local ItemBrowser = {}
 
-local PANEL_WIDTH = 500
-local PANEL_HEIGHT = 400
-local ITEM_CELL_SIZE = 60
-local ITEM_CELL_GAP = 28
-local ITEMS_PER_ROW = 5
-local HEADER_HEIGHT = 70
+local PANEL_WIDTH = ITEM_BROWSER_PANEL_WIDTH
+local PANEL_HEIGHT = ITEM_BROWSER_PANEL_HEIGHT
+local ITEM_CELL_SIZE = ITEM_BROWSER_ITEM_CELL_SIZE
+local ITEM_CELL_GAP = ITEM_BROWSER_ITEM_CELL_GAP
+local ITEMS_PER_ROW = ITEM_BROWSER_ITEMS_PER_ROW
+local HEADER_HEIGHT = ITEM_BROWSER_HEADER_HEIGHT
 
 ItemBrowser.isOpen = false
 ItemBrowser.searchQuery = ""
@@ -17,7 +17,7 @@ ItemBrowser.searchFocused = false
 ItemBrowser.dragStartX = 0
 ItemBrowser.dragStartY = 0
 
-local DRAG_THRESHOLD = 10
+local DRAG_THRESHOLD = ITEM_BROWSER_DRAG_THRESHOLD
 
 local allItems = {}
 

@@ -447,5 +447,5 @@ end
 
 function randNegPos(number)
     local number = number or 1
-    return number * (math.random(0, 1) == 0 and -1 or 1)
+    return number * (math.random() * 2 - 1)
 end

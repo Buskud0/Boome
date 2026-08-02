@@ -84,18 +84,22 @@ function Player:_applyMovement(dx, dy, speed, dt)
     end
 end
 
-local PLAYER_FOV = math.rad(100)
-local SCOPED_FOV = math.rad(30)
-local LIGHT_DARKNESS = 0.05
-local LIGHT_SEGMENTS = 32
+-- settings (PLAYER_FOV, PERIPHERAL_*, LIGHT_*) are in core/config.lua
 
 function Player:isScoped()
     return weapon ~= nil and weapon:isScoping()
 end
 
 function Player:getFov()
-    if self:isScoped() then return SCOPED_FOV end
-    return PLAYER_FOV
+    local scoped = self:_getScopedFov()
+    local progress = weapon and weapon.scopeProgress or 0
+    return PLAYER_FOV + (scoped - PLAYER_FOV) * progress
+end
+
+function Player:_getScopedFov()
+    local scope = weapon and weapon.scope or 50
+    local fov = PLAYER_SCOPED_FOV_BASE - PLAYER_SCOPED_FOV_PER_SCOPE * scope
+    return math.max(math.rad(fov), PLAYER_MIN_SCOPED_FOV)
 end
 
 function Player:drawLocalLighting()
@@ -108,7 +112,7 @@ function Player:drawLocalLighting()
     end, "replace", 1)
 
     love.graphics.setStencilTest("less", 1)
-    love.graphics.setColor(0, 0, 0, LIGHT_DARKNESS)
+    love.graphics.setColor(0, 0, 0, PLAYER_LIGHT_DARKNESS)
     love.graphics.rectangle("fill", 0, 0, scrWidth, scrHeight)
     love.graphics.setStencilTest()
 
@@ -117,35 +121,126 @@ end
 
 function Player:_getLightConeVertices()
     local px, py = self:getCenter()
-    local sx, sy = worldToScreen(px, py)
-    local mx, my = love.mouse.getPosition()
-    local dx, dy = mx - sx, my - sy
-    local len = math.sqrt(dx * dx + dy * dy)
-    local angle = -math.pi / 2
-    if len > 0 then
-        angle = math.atan2(dy, dx)
-    end
+    local aimAngle = self:_getAimAngle(px, py)
+    local rayAngles = self:_getRayAngles(px, py, aimAngle)
+    return self:_castVisionRays(px, py, rayAngles, self:_getVisionRadius())
+end
 
-    local radius = math.sqrt(scrWidth * scrWidth + scrHeight * scrHeight)
+function Player:_getAimAngle(px, py)
+    local mx, my = screenToWorld(love.mouse.getPosition())
+    local dx, dy = mx - px, my - py
+    local len = math.sqrt(dx * dx + dy * dy)
+    if len == 0 then return -math.pi / 2 end
+    local step = self:getFov() / PLAYER_LIGHT_SEGMENTS
+    return math.floor(math.atan2(dy, dx) / step + 0.5) * step
+end
+
+function Player:_getVisionRadius()
+    return math.sqrt(mapWidth * mapWidth + mapHeight * mapHeight)
+end
+
+function Player:_getRayAngles(px, py, aimAngle)
     local fov = self:getFov()
     local half = fov / 2
-    local vertices = { sx, sy }
-    for i = 0, LIGHT_SEGMENTS do
-        local a = angle - half + fov * (i / LIGHT_SEGMENTS)
-        vertices[#vertices + 1] = sx + math.cos(a) * radius
-        vertices[#vertices + 1] = sy + math.sin(a) * radius
+    local step = fov / PLAYER_LIGHT_SEGMENTS
+    local minAngle = aimAngle - half
+    local maxAngle = aimAngle + half
+
+    local rayAngles = {}
+    for i = 0, PLAYER_LIGHT_SEGMENTS do
+        rayAngles[#rayAngles + 1] = minAngle + step * i
+    end
+
+    local corners = grid:getVisionCornerAngles(px, py, minAngle - PLAYER_LIGHT_CORNER_EPS, maxAngle + PLAYER_LIGHT_CORNER_EPS)
+    for i = 1, #corners do
+        rayAngles[#rayAngles + 1] = corners[i] - PLAYER_LIGHT_CORNER_EPS
+        rayAngles[#rayAngles + 1] = corners[i] + PLAYER_LIGHT_CORNER_EPS
+    end
+
+    table.sort(rayAngles)
+    return rayAngles
+end
+
+function Player:_castVisionRays(px, py, rayAngles, radius)
+    local vertices = {}
+    local sx, sy = worldToScreen(px, py)
+    vertices[#vertices + 1] = sx
+    vertices[#vertices + 1] = sy
+    for i = 1, #rayAngles do
+        local hx, hy = self:_castVisionRay(px, py, rayAngles[i], radius)
+        local vx, vy = worldToScreen(hx, hy)
+        vertices[#vertices + 1] = vx
+        vertices[#vertices + 1] = vy
     end
     return vertices
 end
 
+function Player:_castVisionRay(x, y, angle, maxDist)
+    local ts = grid.tileSize
+    local dx = math.cos(angle)
+    local dy = math.sin(angle)
+    local maxX = x + dx * maxDist
+    local maxY = y + dy * maxDist
+
+    local col = math.floor(x / ts) + 1
+    local row = math.floor(y / ts) + 1
+    local endCol = math.floor(maxX / ts) + 1
+    local endRow = math.floor(maxY / ts) + 1
+
+    local stepX = 0
+    if dx > 0 then stepX = 1 elseif dx < 0 then stepX = -1 end
+    local stepY = 0
+    if dy > 0 then stepY = 1 elseif dy < 0 then stepY = -1 end
+
+    local tDeltaX = stepX ~= 0 and (ts / math.abs(dx)) or math.huge
+    local tDeltaY = stepY ~= 0 and (ts / math.abs(dy)) or math.huge
+
+    local tMaxX, tMaxY = math.huge, math.huge
+    if stepX == 1 then
+        tMaxX = (col * ts - x) / math.abs(dx)
+    elseif stepX == -1 then
+        tMaxX = (x - (col - 1) * ts) / math.abs(dx)
+    end
+    if stepY == 1 then
+        tMaxY = (row * ts - y) / math.abs(dy)
+    elseif stepY == -1 then
+        tMaxY = (y - (row - 1) * ts) / math.abs(dy)
+    end
+
+    while true do
+        if col == endCol and row == endRow then return maxX, maxY end
+        local tHit
+        if tMaxX < tMaxY - PLAYER_LIGHT_GRID_TIE_BREAK then
+            tHit = tMaxX
+            tMaxX = tMaxX + tDeltaX
+            col = col + stepX
+        else
+            tHit = tMaxY
+            tMaxY = tMaxY + tDeltaY
+            row = row + stepY
+        end
+        if grid:isTileVisionBlocked(col, row) then
+            return x + dx * tHit, y + dy * tHit
+        end
+    end
+end
+
 function Player:isInVisionCone(wx, wy)
     local px, py = self:getCenter()
-    local mx, my = screenToWorld(love.mouse.getPosition())
     local dx, dy = wx - px, wy - py
-    local mdx, mdy = mx - px, my - py
     local dist = math.sqrt(dx * dx + dy * dy)
-    local mdist = math.sqrt(mdx * mdx + mdy * mdy)
-    if dist == 0 or mdist == 0 then return true end
-    local dot = (dx * mdx + dy * mdy) / (dist * mdist)
-    return dot >= math.cos(self:getFov() / 2)
+    if dist == 0 then return true end
+
+    local aimAngle = self:_getAimAngle(px, py)
+    local dot = dx * math.cos(aimAngle) + dy * math.sin(aimAngle)
+    return dot >= dist * math.cos(self:getFov() / 2)
+end
+
+function Player:getVisibilityAlphaFor(wx, wy)
+    if self:isInVisionCone(wx, wy) then return 1 end
+    local px, py = self:getCenter()
+    local dx, dy = wx - px, wy - py
+    local distSq = dx * dx + dy * dy
+    if distSq <= PLAYER_PERIPHERAL_RADIUS * PLAYER_PERIPHERAL_RADIUS then return PLAYER_PERIPHERAL_ALPHA end
+    return 0
 end

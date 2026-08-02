@@ -1,6 +1,6 @@
 Weapon = Object:extend()
 
-local SCOPE_PAN_SPEED = 8 
+local SCOPE_PAN_SPEED = WEAPON_SCOPE_PAN_SPEED
 
 function Weapon:new(model)
     local stats = WEAPONS[model]
@@ -71,6 +71,7 @@ function Gun:new(model)
     self.reloadTime = stats.reloadTime
     self.bulletAmount = stats.bulletAmount
     self.spread = stats.spread
+    self.hipfireSpread = stats.hipfireSpread or stats.spread
     self.penetrationLoss = stats.penetrationLoss
     self.scope = stats.scope
 
@@ -81,6 +82,7 @@ function Gun:new(model)
     self.scopePanSpeed = SCOPE_PAN_SPEED
     self.scopeOffsetX = 0
     self.scopeOffsetY = 0
+    self.scopeProgress = 0
 end
 
 function Gun:isScoping()
@@ -103,6 +105,8 @@ function Gun:updateScope(dt)
     local alpha = math.min(1, self.scopePanSpeed * dt)
     self.scopeOffsetX = self.scopeOffsetX + (targetX - self.scopeOffsetX) * alpha
     self.scopeOffsetY = self.scopeOffsetY + (targetY - self.scopeOffsetY) * alpha
+    local targetProgress = self:isScoping() and 1 or 0
+    self.scopeProgress = self.scopeProgress + (targetProgress - self.scopeProgress) * alpha
     camera.x = camera.x + self.scopeOffsetX
     camera.y = camera.y + self.scopeOffsetY
 end
@@ -167,11 +171,15 @@ function Gun:_getMuzzlePosition()
     return player.x + player.width / 2, player.y + player.height / 2
 end
 
+function Gun:getEffectiveSpread()
+    return self.spread + (self.hipfireSpread - self.spread) * (1 - self.scopeProgress)
+end
+
 function Gun:_calculateBulletDirection(startX, startY)
     local dx, dy = self:_getAimDirection(startX, startY)
     if dx ~= 0 or dy ~= 0 then
-        dx = dx + randNegPos(0.01) * self.spread
-        dy = dy + randNegPos(0.01) * self.spread
+        dx = dx + randNegPos(0.01) * self:getEffectiveSpread()
+        dy = dy + randNegPos(0.01) * self:getEffectiveSpread()
     end
     return dx * self.bulletSpeed, dy * self.bulletSpeed
 end

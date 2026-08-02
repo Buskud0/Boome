@@ -1,8 +1,8 @@
 local HUD = {}
 
-local BAR_WIDTH = 100
-local BAR_HEIGHT = 8
-local MONEY_COUNT_RATE = 20
+local BAR_WIDTH = HUD_BAR_WIDTH
+local BAR_HEIGHT = HUD_BAR_HEIGHT
+local MONEY_COUNT_RATE = HUD_MONEY_COUNT_RATE
 
 function HUD.reset()
     HUD.displayMoney = 0

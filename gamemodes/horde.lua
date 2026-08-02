@@ -21,13 +21,17 @@ function Horde.reset()
     currentRound = 1
     zombieCount = STARTING_ZOMBIE_COUNT
     Horde.state = "intro"
-    Horde.introTimer = 5
+    Horde.introTimer = ROUND_FREEZE_TIME
+    Horde.roundTextTimer = ROUND_TEXT_TIME
     Horde.spawnQueue = {}
     Horde.spawnTimer = 0
     Horde:buildQueue()
 end
 
 function Horde.waveUpdate(dt)
+    if Horde.roundTextTimer and Horde.roundTextTimer > 0 then
+        Horde.roundTextTimer = math.max(0, Horde.roundTextTimer - dt)
+    end
     if Horde.state == "intro" then
         Horde.updateIntro(dt)
     elseif Horde.state == "spawning" then
@@ -67,7 +71,8 @@ function Horde.startNextRound()
     Horde.refillWeaponAmmo()
     Horde:buildQueue()
     Horde.state = "intro"
-    Horde.introTimer = 5
+    Horde.introTimer = ROUND_FREEZE_TIME
+    Horde.roundTextTimer = ROUND_TEXT_TIME
 end
 
 function Horde.refillWeaponAmmo()
@@ -249,9 +254,23 @@ function Horde.mainUpdate(dt)
 end
 
 function Horde.setActiveWeapon()
-    weapon = fists
+    local newWeapon = fists
     if currentWeaponIndex and currentWeaponIndex <= Inventory.HOTBAR_SLOTS and weapons[currentWeaponIndex] then
-        weapon = weapons[currentWeaponIndex]
+        newWeapon = weapons[currentWeaponIndex]
+    end
+    if newWeapon ~= weapon then
+        Horde.resetScope(newWeapon)
+    end
+    weapon = newWeapon
+end
+
+function Horde.resetScope(newWeapon)
+    for _, w in ipairs({weapon, newWeapon}) do
+        if w and w.scopeProgress ~= nil then
+            w.scopeProgress = 0
+            w.scopeOffsetX = 0
+            w.scopeOffsetY = 0
+        end
     end
 end
 
@@ -358,8 +377,8 @@ function Horde.drawHUD()
 end
 
 function Horde.drawOverlay()
-    if Horde.state ~= "intro" then return end
-    local alpha = math.max(0, Horde.introTimer / 5)
+    if not (Horde.roundTextTimer and Horde.roundTextTimer > 0) then return end
+    local alpha = math.max(0, Horde.roundTextTimer / ROUND_TEXT_TIME)
     Horde.drawCenteredText("WAVE " .. currentRound, scrWidth / 2 + camera.x, scrHeight / 2 - 40 + camera.y, 80, alpha)
 end
 
