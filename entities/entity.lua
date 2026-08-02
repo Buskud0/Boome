@@ -56,12 +56,18 @@ function Entity:getSpeedMultiplier()
     return 1
 end
 
+function Entity:isOccludedFrom(ox, oy)
+    local cx, cy = self:getCenter()
+    return grid:segmentBlocksVision(ox, oy, cx, cy)
+end
+
 function Entity:draw()
     self:drawBody()
     if Debug.isEnabled() then self:drawHitbox() end
 end
 
 function Entity:drawBody()
+    if self ~= player and self:isOccludedFrom(player:getCenter()) then return end
     if self.sprite then
         Textures.draw(self.sprite, self.x, self.y, self.width, self.height)
     else

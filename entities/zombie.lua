@@ -177,6 +177,7 @@ function Zombie:_getPathDirection(cx, cy)
 end
 
 function Zombie:draw()
+    if self:_isHiddenFromPlayer() then return end
     Zombie.super.draw(self)
     self:drawHealthBar()
     if Debug.isEnabled() then self:drawDebug() end
@@ -184,6 +185,7 @@ end
 
 function Zombie:drawStab()
     if self.stabTimer <= 0 then return end
+    if self:_isHiddenFromPlayer() then return end
 
     local cx, cy = self:getCenter()
     local progress = 1 - self.stabTimer / MELEE_STAB_DURATION
@@ -197,6 +199,13 @@ function Zombie:drawStab()
     love.graphics.setLineWidth(3)
     love.graphics.line(cx, cy, ex, ey)
     love.graphics.setLineWidth(1)
+end
+
+function Zombie:_isHiddenFromPlayer()
+    local cx, cy = self:getCenter()
+    if self:isOccludedFrom(player:getCenter()) then return true end
+    if not player:isInVisionCone(cx, cy) then return true end
+    return false
 end
 
 function Zombie:drawDebug()

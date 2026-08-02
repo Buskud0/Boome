@@ -1,5 +1,7 @@
 Weapon = Object:extend()
 
+local SCOPE_PAN_SPEED = 4
+
 function Weapon:new(model)
     local stats = WEAPONS[model]
     if not stats then error("unknown weapon model: " .. model) end
@@ -31,6 +33,12 @@ end
 function Weapon:draw() end
 
 function Weapon:drawWorld() end
+
+function Weapon:isScoping()
+    return false
+end
+
+function Weapon:updateScope(dt) end
 
 function Weapon:_tryAttack() end
 
@@ -70,6 +78,33 @@ function Gun:new(model)
     self.reloadCooldown = 0
     self.reloading = false
     self.reloadProgress = 0
+    self.scopePanSpeed = SCOPE_PAN_SPEED
+    self.scopeOffsetX = 0
+    self.scopeOffsetY = 0
+end
+
+function Gun:isScoping()
+    return self.scope ~= nil and not self.reloading and Input.isDown("swing")
+end
+
+function Gun:updateScope(dt)
+    local targetX, targetY = 0, 0
+    if self:isScoping() then
+        local mouseX, mouseY = screenToWorld(love.mouse.getPosition())
+        local px, py = player:getCenter()
+        local dx, dy = mouseX - px, mouseY - py
+        local len = math.sqrt(dx * dx + dy * dy)
+        if len > 0 then
+            dx, dy = dx / len, dy / len
+            targetX, targetY = dx * self.scope, dy * self.scope
+        end
+    end
+
+    local alpha = math.min(1, self.scopePanSpeed * dt)
+    self.scopeOffsetX = self.scopeOffsetX + (targetX - self.scopeOffsetX) * alpha
+    self.scopeOffsetY = self.scopeOffsetY + (targetY - self.scopeOffsetY) * alpha
+    camera.x = camera.x + self.scopeOffsetX
+    camera.y = camera.y + self.scopeOffsetY
 end
 
 function Gun:update(dt)

@@ -166,6 +166,60 @@ function Grid:getMaterialAt(worldX, worldY)
     return self.objects[idx] or self.grid[idx]
 end
 
+function Grid:isTileVisionBlocked(col, row)
+    if col < 1 or col > self.cols or row < 1 or row > self.rows then return false end
+    local idx = (row - 1) * self.cols + col
+    local material = self.objects[idx] or self.grid[idx]
+    if material then
+        local item = BUILDING_ITEMS[material]
+        if item and item.blocksVision then return true end
+    end
+    return false
+end
+
+function Grid:segmentBlocksVision(x1, y1, x2, y2)
+    local ts = self.tileSize
+    local col = math.floor(x1 / ts) + 1
+    local row = math.floor(y1 / ts) + 1
+    local endCol = math.floor(x2 / ts) + 1
+    local endRow = math.floor(y2 / ts) + 1
+
+    local dx = x2 - x1
+    local dy = y2 - y1
+
+    local stepX = 0
+    if col < endCol then stepX = 1 elseif col > endCol then stepX = -1 end
+    local stepY = 0
+    if row < endRow then stepY = 1 elseif row > endRow then stepY = -1 end
+
+    local tDeltaX = stepX ~= 0 and (ts / math.abs(dx)) or math.huge
+    local tDeltaY = stepY ~= 0 and (ts / math.abs(dy)) or math.huge
+
+    local tMaxX, tMaxY = math.huge, math.huge
+    if stepX == 1 then
+        tMaxX = (col * ts - x1) / math.abs(dx)
+    elseif stepX == -1 then
+        tMaxX = (x1 - (col - 1) * ts) / math.abs(dx)
+    end
+    if stepY == 1 then
+        tMaxY = (row * ts - y1) / math.abs(dy)
+    elseif stepY == -1 then
+        tMaxY = (y1 - (row - 1) * ts) / math.abs(dy)
+    end
+
+    while true do
+        if self:isTileVisionBlocked(col, row) then return true end
+        if col == endCol and row == endRow then return false end
+        if tMaxX < tMaxY then
+            tMaxX = tMaxX + tDeltaX
+            col = col + stepX
+        else
+            tMaxY = tMaxY + tDeltaY
+            row = row + stepY
+        end
+    end
+end
+
 function Grid:drawBlocks()
     for _, record in ipairs(self.blockRecords) do
         Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
@@ -174,7 +228,17 @@ end
 
 function Grid:drawObjects()
     for _, record in ipairs(self.objectRecords) do
-        Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
+        if record.material ~= "bush" then
+            Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
+        end
+    end
+end
+
+function Grid:drawBushesAboveEntities()
+    for _, record in ipairs(self.objectRecords) do
+        if record.material == "bush" then
+            Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
+        end
     end
 end
 

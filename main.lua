@@ -53,6 +53,12 @@ function screenToWorld(sx, sy)
            (sy + camera.y - cy) / camera.zoom + cy
 end
 
+function worldToScreen(wx, wy)
+    local cx, cy = scrWidth / 2, scrHeight / 2
+    return (wx - cx) * camera.zoom - camera.x + cx,
+           (wy - cy) * camera.zoom - camera.y + cy
+end
+
 function love.load()
     initializeDisplay()
     Horde.loadScoreRecord()

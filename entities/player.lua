@@ -83,3 +83,69 @@ function Player:_applyMovement(dx, dy, speed, dt)
         tryMove(self, dx, dy)
     end
 end
+
+local PLAYER_FOV = math.rad(100)
+local SCOPED_FOV = math.rad(10)
+local LIGHT_DARKNESS = 0.05
+local LIGHT_SEGMENTS = 32
+
+function Player:isScoped()
+    return weapon ~= nil and weapon:isScoping()
+end
+
+function Player:getFov()
+    if self:isScoped() then return SCOPED_FOV end
+    return PLAYER_FOV
+end
+
+function Player:drawLocalLighting()
+    love.graphics.push()
+    love.graphics.origin()
+
+    love.graphics.stencil(function()
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.polygon("fill", self:_getLightConeVertices())
+    end, "replace", 1)
+
+    love.graphics.setStencilTest("less", 1)
+    love.graphics.setColor(0, 0, 0, LIGHT_DARKNESS)
+    love.graphics.rectangle("fill", 0, 0, scrWidth, scrHeight)
+    love.graphics.setStencilTest()
+
+    love.graphics.pop()
+end
+
+function Player:_getLightConeVertices()
+    local px, py = self:getCenter()
+    local sx, sy = worldToScreen(px, py)
+    local mx, my = love.mouse.getPosition()
+    local dx, dy = mx - sx, my - sy
+    local len = math.sqrt(dx * dx + dy * dy)
+    local angle = -math.pi / 2
+    if len > 0 then
+        angle = math.atan2(dy, dx)
+    end
+
+    local radius = math.sqrt(scrWidth * scrWidth + scrHeight * scrHeight)
+    local fov = self:getFov()
+    local half = fov / 2
+    local vertices = { sx, sy }
+    for i = 0, LIGHT_SEGMENTS do
+        local a = angle - half + fov * (i / LIGHT_SEGMENTS)
+        vertices[#vertices + 1] = sx + math.cos(a) * radius
+        vertices[#vertices + 1] = sy + math.sin(a) * radius
+    end
+    return vertices
+end
+
+function Player:isInVisionCone(wx, wy)
+    local px, py = self:getCenter()
+    local mx, my = screenToWorld(love.mouse.getPosition())
+    local dx, dy = wx - px, wy - py
+    local mdx, mdy = mx - px, my - py
+    local dist = math.sqrt(dx * dx + dy * dy)
+    local mdist = math.sqrt(mdx * mdx + mdy * mdy)
+    if dist == 0 or mdist == 0 then return true end
+    local dot = (dx * mdx + dy * mdy) / (dist * mdist)
+    return dot >= math.cos(self:getFov() / 2)
+end

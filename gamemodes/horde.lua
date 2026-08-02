@@ -1,10 +1,5 @@
 local Horde = {}
 
-local SCOPE_SMOOTH_SPEED = 4
-
-Horde.scopeOffsetX = 0
-Horde.scopeOffsetY = 0
-
 function Horde.loadScoreRecord()
     local record = love.filesystem.read("record.txt")
     if not record then
@@ -23,8 +18,6 @@ end
 
 function Horde.reset()
     Inventory.close()
-    Horde.scopeOffsetX = 0
-    Horde.scopeOffsetY = 0
     currentRound = 1
     zombieCount = STARTING_ZOMBIE_COUNT
     Horde.state = "intro"
@@ -163,28 +156,8 @@ end
 
 function Horde.updateCamera(dt)
     Horde.followPlayer()
-    Horde.applyScopeOffset(dt)
+    if weapon then weapon:updateScope(dt) end
     Horde.clampCameraToMap()
-end
-
-function Horde.applyScopeOffset(dt)
-    local targetX, targetY = 0, 0
-    if weapon and weapon.scope and Input.isDown("swing") then
-        local mouseX, mouseY = screenToWorld(love.mouse.getPosition())
-        local px, py = player:getCenter()
-        local dx, dy = mouseX - px, mouseY - py
-        local len = math.sqrt(dx * dx + dy * dy)
-        if len > 0 then
-            dx, dy = dx / len, dy / len
-            targetX, targetY = dx * weapon.scope, dy * weapon.scope
-        end
-    end
-
-    local alpha = math.min(1, SCOPE_SMOOTH_SPEED * dt)
-    Horde.scopeOffsetX = Horde.scopeOffsetX + (targetX - Horde.scopeOffsetX) * alpha
-    Horde.scopeOffsetY = Horde.scopeOffsetY + (targetY - Horde.scopeOffsetY) * alpha
-    camera.x = camera.x + Horde.scopeOffsetX
-    camera.y = camera.y + Horde.scopeOffsetY
 end
 
 function Horde.followPlayer()
@@ -315,6 +288,7 @@ end
 function Horde.draw()
     Horde.applyCameraZoom()
     Horde.drawWorld()
+    player:drawLocalLighting()
     Horde.drawHUD()
 end
 
@@ -331,6 +305,7 @@ function Horde.drawWorld()
     Horde.drawPowerUps()
     Horde.drawZombies()
     player:draw()
+    grid:drawBushesAboveEntities()
     Horde.drawBullets()
     if weapon then weapon:drawWorld() end
     Horde.drawZombieAttacks()
