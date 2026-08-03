@@ -21,13 +21,31 @@ MapBuilder.lastPlacedRow = 0
 MapBuilder.dragSlot = nil
 MapBuilder.dragStartX = 0
 MapBuilder.dragStartY = 0
+MapBuilder.currentMapName = nil
 
 local MAX_UNDO = MAPBUILDER_MAX_UNDO
 local DRAG_THRESHOLD = MAPBUILDER_DRAG_THRESHOLD
 
-function MapBuilder.enter()
+function MapBuilder.enter(mapName)
+    MapBuilder.currentMapName = mapName or MapBuilder.currentMapName
+    MapBuilder.load()
     MapBuilder.resetCamera()
     MapBuilder.resetEditSession()
+end
+
+function MapBuilder.grassFillData()
+    local tileSize = 10
+    local cols = math.floor(mapWidth / tileSize)
+    local rows = math.floor(mapHeight / tileSize)
+    local blockCols = math.ceil(cols / BLOCK_SIZE)
+    local blockRows = math.ceil(rows / BLOCK_SIZE)
+    local lines = {}
+    for br = 0, blockRows - 1 do
+        for bc = 0, blockCols - 1 do
+            table.insert(lines, (1 + bc * BLOCK_SIZE) .. "," .. (1 + br * BLOCK_SIZE) .. ",grass")
+        end
+    end
+    return table.concat(lines, "\n")
 end
 
 function MapBuilder.resetCamera()
@@ -355,7 +373,7 @@ function MapBuilder.revert()
 end
 
 function MapBuilder.drawBackground()
-    love.graphics.setColor(0.2, 0.2, 0.2)
+    love.graphics.setColor(0.45, 0.45, 0.45)
     love.graphics.rectangle("fill", 0, 0, mapWidth, mapHeight)
     grid:draw()
 end
@@ -665,14 +683,14 @@ function MapBuilder.save()
         Toast.show("Nothing to save", 1)
         return
     end
-    love.filesystem.write("map.txt", content)
+    MapStorage.saveMap(MapBuilder.currentMapName, content)
     MapBuilder.hasUnsavedChanges = false
     MapBuilder.hasSavedFile = true
     Toast.show("Map saved", 1)
 end
 
 function MapBuilder.load()
-    local content = love.filesystem.read("map.txt")
+    local content = MapStorage.loadMap(MapBuilder.currentMapName)
     if not content then
         MapBuilder.resetGrid()
         return

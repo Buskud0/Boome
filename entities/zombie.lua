@@ -61,15 +61,29 @@ function Zombie:_updateAttack(dt, dist)
     if self.attackTimer > 0 then
         self.attackTimer = self.attackTimer - dt
     end
-    if dist > self.attackRange then return false end
 
     local dirX, dirY = self:_getDirectionToPlayer()
 
-    if self.attackTimer > 0 then return true end
+    if dist <= self.attackRange then
+        if self.attackTimer > 0 then return true end
+        self.attackTimer = self.attackCooldown
+        self:_startStabAnimation(dirX, dirY)
+        self:_damagePlayerIfInRange(dirX, dirY)
+        return true
+    end
 
+    return self:_damageBlockInFront(dirX, dirY)
+end
+
+function Zombie:_damageBlockInFront(dirX, dirY)
+    local cx, cy = self:getCenter()
+    local tx = cx + dirX * self.attackRange
+    local ty = cy + dirY * self.attackRange
+    if not grid:hasDestructibleTile(tx, ty) then return false end
+    if self.attackTimer > 0 then return true end
+    grid:damageTile(tx, ty, self.weapon.damage)
     self.attackTimer = self.attackCooldown
     self:_startStabAnimation(dirX, dirY)
-    self:_damagePlayerIfInRange(dirX, dirY)
     return true
 end
 

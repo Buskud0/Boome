@@ -85,6 +85,7 @@ function Melee:_performSwing()
 
     self:_startSwingAnimation(dirX, dirY)
     self:_damageZombiesInSector(px, py, dirX, dirY)
+    self:_damageBlockAtTip(dirX, dirY)
 end
 
 function Melee:_performStab()
@@ -94,6 +95,12 @@ function Melee:_performStab()
 
     self:_startStabAnimation(dirX, dirY)
     self:_damageZombiesAlongSegment(px, py, dirX, dirY)
+    self:_damageBlockAtTip(dirX, dirY)
+end
+
+function Melee:_damageBlockAtTip(dirX, dirY)
+    local px, py = player:getCenter()
+    grid:damageTile(px + dirX * self.range, py + dirY * self.range, self.damage)
 end
 
 function Melee:_startSwingAnimation(dirX, dirY)

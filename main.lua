@@ -15,6 +15,8 @@ require "ui.menu"
 require "world.grid"
 require "entities.powerup"
 Collisions = require "core.collisions"
+MapStorage = require "core.mapstorage"
+MapSelect = require "ui.map_select"
 HUD = require "ui.hud"
 Horde = require "gamemodes.horde"
 MapBuilder = require "gamemodes.mapbuilder"
@@ -67,7 +69,23 @@ function love.load()
     Grid.load()
     Entity.load()
     Inventory.load()
+    setupMapStorage()
     resetGame()
+end
+
+function setupMapStorage()
+    if #MapStorage.listMaps() == 0 then
+        if not MapStorage.migrateLegacyMap("default") then
+            MapStorage.saveMap("default", "")
+        end
+    end
+    local stored = MapStorage.getSelectedMap()
+    if stored and MapStorage.mapExists(stored) then
+        selectedMapName = stored
+    else
+        selectedMapName = MapStorage.listMaps()[1] or "default"
+        MapStorage.setSelectedMap(selectedMapName)
+    end
 end
 
 function initializeDisplay()
@@ -80,6 +98,7 @@ function resetGame()
     Horde.reset()
     resetCamera()
     grid = Grid()
+    MapBuilder.currentMapName = selectedMapName
     MapBuilder.load()
     menu = Menu()
     resetPlayer()
@@ -265,19 +284,21 @@ function updateActiveGameMode(dt)
     end
 end
 
-function love.draw()
-    love.graphics.translate(-camera.x, -camera.y)
-    drawActiveGameMode()
-    Debug.drawGridOverlay()
-    drawScreenSpaceUI()
-end
-
 function drawActiveGameMode()
     if gameMode == "horde" then
         Horde.draw()
     elseif gameMode == "mapbuilder" then
         MapBuilder.draw()
+    elseif gameMode == "select" then
+        MapSelect.draw()
     end
+end
+
+function love.draw()
+    love.graphics.translate(-camera.x, -camera.y)
+    drawActiveGameMode()
+    Debug.drawGridOverlay()
+    drawScreenSpaceUI()
 end
 
 function drawScreenSpaceUI()
@@ -290,6 +311,10 @@ function love.keypressed(key)
     if handleDebugSpawn(key) then return end
 
     local action = Input.getActionForKey(key)
+    if gameMode == "select" and MapSelect.isOpen then
+        if MapSelect.handleKey(key, action) then updateCursor() end
+        return
+    end
     if handleGameModeKey(key, action) then return end
 
     handlePlayerAction(action, key)
@@ -363,7 +388,10 @@ function love.mousepressed(x, y, button)
 end
 
 function dispatchMousePressed(x, y, button)
-    if button == 1 and menu:isOpen() then
+    if gameMode == "select" and MapSelect.isOpen then
+        ignoreMouseUntilRelease = true
+        MapSelect.mousepressed(x, y, button)
+    elseif button == 1 and menu:isOpen() then
         ignoreMouseUntilRelease = true
         menu:mousepressed(x + camera.x, y + camera.y)
         paused = menu:isOpen()
@@ -392,6 +420,10 @@ function dispatchMouseReleased(x, y, button)
 end
 
 function love.textinput(text)
+    if gameMode == "select" and MapSelect.isOpen then
+        MapSelect.handleTextInput(text)
+        return
+    end
     if ItemBrowser.consumeNextText then
         ItemBrowser.consumeNextText = false
         return
@@ -430,19 +462,40 @@ function love.quit()
     Horde.saveScoreRecord()
 end
 
-function enterMapBuilder()
+function enterMapSelect(mode)
+    ignoreMouseUntilRelease = true
+    MapSelect.previousMode = gameMode
+    gameMode = "select"
+    paused = false
+    MapSelect.open(mode)
+    updateCursor()
+end
+
+function leaveMapSelect()
+    MapSelect.close()
+    gameMode = MapSelect.previousMode or "horde"
+    paused = true
+    menu:openSubmenu("main")
+    updateCursor()
+end
+
+function enterBuilderWith(mapName)
+    selectedMapName = mapName
+    MapStorage.setSelectedMap(mapName)
+    MapBuilder.currentMapName = mapName
     ignoreMouseUntilRelease = true
     gameMode = "mapbuilder"
     paused = false
     updateCursor()
-    MapBuilder.enter()
+    MapBuilder.enter(mapName)
 end
 
-function enterHordeMode()
-    ignoreMouseUntilRelease = true
-    gameMode = "horde"
+function startHordeWith(mapName)
+    selectedMapName = mapName
+    MapStorage.setSelectedMap(mapName)
+    MapBuilder.currentMapName = mapName
+    resetGame()
     updateCursor()
-    resetCamera()
 end
 
 function randNegPos(number)

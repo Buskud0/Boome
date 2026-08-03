@@ -28,6 +28,10 @@ function Grid.load()
     Textures.define("tree", 4)
 end
 
+function Grid:_index(col, row)
+    return (row - 1) * self.cols + col
+end
+
 function Grid:rebuildGrid()
     for i = 1, self.cols * self.rows do
         self.grid[i] = nil
@@ -47,7 +51,7 @@ function Grid:_fillArea(target, col, row, material)
             local c = col + dx
             local r = row + dy
             if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
-                target[(r - 1) * self.cols + c] = material
+                target[self:_index(c, r)] = material
             end
         end
     end
@@ -67,7 +71,7 @@ end
 function Grid:placeBlock(col, row, material)
     col = math.max(1, math.min(self.cols - BLOCK_SIZE + 1, col))
     row = math.max(1, math.min(self.rows - BLOCK_SIZE + 1, row))
-    table.insert(self.blockRecords, { col = col, row = row, material = material })
+    table.insert(self.blockRecords, { col = col, row = row, material = material, health = self:_maxHealth(material) })
     self:_fillArea(self.grid, col, row, material)
 end
 
@@ -82,7 +86,7 @@ end
 function Grid:placeObject(col, row, material)
     col = math.max(1, math.min(self.cols - BLOCK_SIZE + 1, col))
     row = math.max(1, math.min(self.rows - BLOCK_SIZE + 1, row))
-    table.insert(self.objectRecords, { col = col, row = row, material = material })
+    table.insert(self.objectRecords, { col = col, row = row, material = material, health = self:_maxHealth(material) })
     self:_fillArea(self.objects, col, row, material)
 end
 
@@ -96,7 +100,7 @@ end
 
 function Grid:isTileBlocked(col, row)
     if col < 1 or col > self.cols or row < 1 or row > self.rows then return true end
-    local idx = (row - 1) * self.cols + col
+    local idx = self:_index(col, row)
     if self.grid[idx] then
         local item = BUILDING_ITEMS[self.grid[idx]]
         if item and item.blocksMovement then return true end
@@ -136,8 +140,7 @@ function Grid:isAreaFreeOfBlocks(col, row, size)
             local c = col + dx
             local r = row + dy
             if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
-                local idx = (r - 1) * self.cols + c
-                if self.grid[idx] then return false end
+                if self.grid[self:_index(c, r)] then return false end
             end
         end
     end
@@ -150,26 +153,70 @@ function Grid:isAreaFreeOfObjects(col, row, size)
             local c = col + dx
             local r = row + dy
             if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
-                local idx = (r - 1) * self.cols + c
-                if self.objects[idx] then return false end
+                if self.objects[self:_index(c, r)] then return false end
             end
         end
     end
     return true
 end
 
-function Grid:getMaterialAt(worldX, worldY)
+function Grid:tileAt(worldX, worldY)
     local col = math.floor(worldX / self.tileSize) + 1
     local row = math.floor(worldY / self.tileSize) + 1
     if col < 1 or col > self.cols or row < 1 or row > self.rows then return nil end
-    local idx = (row - 1) * self.cols + col
-    return self.objects[idx] or self.grid[idx]
+    return col, row
+end
+
+function Grid:_maxHealth(material)
+    local item = BUILDING_ITEMS[material]
+    if item and item.health and item.health > 0 then return item.health end
+    return 0
+end
+
+function Grid:_damageRecord(list, index, record, amount)
+    record.health = record.health - amount
+    if record.health <= 0 then
+        table.remove(list, index)
+        self:rebuildGrid()
+        return true
+    end
+    return false
+end
+
+function Grid:_destructibleRecordAt(col, row)
+    for _, list in ipairs({ self.blockRecords, self.objectRecords }) do
+        local index, record = self:findBlockRecord(col, row, list)
+        if index and record.health > 0 then
+            return list, index, record
+        end
+    end
+    return nil
+end
+
+function Grid:hasDestructibleTile(worldX, worldY)
+    local col, row = self:tileAt(worldX, worldY)
+    if not col then return false end
+    return self:_destructibleRecordAt(col, row) ~= nil
+end
+
+function Grid:damageTile(worldX, worldY, amount)
+    local col, row = self:tileAt(worldX, worldY)
+    if not col then return false end
+    local list, index, record = self:_destructibleRecordAt(col, row)
+    if not list then return false end
+    self:_damageRecord(list, index, record, amount)
+    return true
+end
+
+function Grid:getMaterialAt(worldX, worldY)
+    local col, row = self:tileAt(worldX, worldY)
+    if not col then return nil end
+    return self.objects[self:_index(col, row)] or self.grid[self:_index(col, row)]
 end
 
 function Grid:isTileVisionBlocked(col, row)
     if col < 1 or col > self.cols or row < 1 or row > self.rows then return false end
-    local idx = (row - 1) * self.cols + col
-    local material = self.objects[idx] or self.grid[idx]
+    local material = self.objects[self:_index(col, row)] or self.grid[self:_index(col, row)]
     if material then
         local item = BUILDING_ITEMS[material]
         if item and item.blocksVision then return true end
@@ -243,16 +290,26 @@ function Grid:segmentBlocksVision(x1, y1, x2, y2)
     end
 end
 
+function Grid:_healthBrightness(record)
+    local maxHealth = self:_maxHealth(record.material)
+    if maxHealth <= 0 then return 1 end
+    return math.max(0, math.min(1, record.health / maxHealth))
+end
+
+function Grid:_drawRecord(record)
+    Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40, 1, self:_healthBrightness(record))
+end
+
 function Grid:drawBlocks()
     for _, record in ipairs(self.blockRecords) do
-        Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
+        self:_drawRecord(record)
     end
 end
 
 function Grid:drawObjects()
     for _, record in ipairs(self.objectRecords) do
         if record.material ~= "bush" then
-            Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
+            self:_drawRecord(record)
         end
     end
 end
@@ -260,7 +317,7 @@ end
 function Grid:drawBushesAboveEntities()
     for _, record in ipairs(self.objectRecords) do
         if record.material == "bush" then
-            Textures.draw(record.material, (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, 40, 40)
+            self:_drawRecord(record)
         end
     end
 end

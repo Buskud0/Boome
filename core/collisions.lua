@@ -98,8 +98,10 @@ function Collisions.seperateZombies()
 end
 
 function Collisions.bulletVsWalls()
-    for i, bullet in ipairs(bullets) do
+    for i = #bullets, 1, -1 do
+        local bullet = bullets[i]
         local cx, cy = bullet.x + bullet.width / 2, bullet.y + bullet.height / 2
+        grid:damageTile(cx, cy, bullet.damage)
         if grid:isCircleBlocked(cx, cy, bullet.radius or math.min(bullet.width, bullet.height) / 2) then
             table.remove(bullets, i)
         end

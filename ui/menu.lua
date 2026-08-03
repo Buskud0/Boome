@@ -1,17 +1,27 @@
 Menu = Object:extend()
 
+local function buildMainOptions()
+    local options = {
+        { label = "Resume",         action = "resume" },
+        { label = "Build Maps",     action = "enter_editor" },
+    }
+    if gameMode == "mapbuilder" then
+        table.insert(options, { label = "Switch to Horde", action = "enter_horde_now" })
+    else
+        table.insert(options, { label = "Switch Horde Map", action = "enter_horde_map" })
+    end
+    table.insert(options, { label = "Multiplayer Server", action = "coming_soon" })
+    table.insert(options, { label = "Lobby Settings",     action = "screen_lobby" })
+    table.insert(options, { label = "Stats",              action = "screen_stats" })
+    table.insert(options, { label = "Quit",               action = "quit" })
+    return options
+end
+
 local function buildScreens()
     return {
         main = {
             title = "PAUSED",
-            options = {
-                { label = "Resume",             action = "resume" },
-                { label = function() return gameMode == "mapbuilder" and "Horde Mode" or "Map Builder" end, action = "toggle_mode" },
-                { label = "Multiplayer Server", action = "coming_soon" },
-                { label = "Lobby Settings",     action = "screen_lobby" },
-                { label = "Stats",              action = "screen_stats" },
-                { label = "Quit",               action = "quit" },
-            },
+            options = function() return buildMainOptions() end,
         },
         stats = {
             title = "STATS",
@@ -49,7 +59,11 @@ function Menu:new()
 end
 
 function Menu:currentScreen()
-    return self.screens[self.stack[#self.stack]]
+    local screen = self.screens[self.stack[#self.stack]]
+    if screen and type(screen.options) == "function" then
+        return { title = screen.title, options = screen.options() }
+    end
+    return screen
 end
 
 function Menu:openSubmenu(name)
@@ -128,13 +142,18 @@ function Menu:doAction(action)
         self.stack = {}
     elseif action == "back" then
         self:closeSubmenu()
-    elseif action == "toggle_mode" then
+    elseif action == "enter_editor" then
         self.stack = {}
-        if gameMode == "mapbuilder" then
-            enterHordeMode()
-        else
-            enterMapBuilder()
-        end
+        paused = false
+        enterMapSelect("builder")
+    elseif action == "enter_horde_map" then
+        self.stack = {}
+        paused = false
+        enterMapSelect("horde")
+    elseif action == "enter_horde_now" then
+        self.stack = {}
+        paused = false
+        startHordeWith(MapBuilder.currentMapName)
     elseif action == "coming_soon" then
         Toast.show("Coming soon!", 2)
     elseif action == "quit" then

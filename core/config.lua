@@ -23,6 +23,15 @@ MAPBUILDER_ZOOM_FACTOR = 1.1
 MAPBUILDER_ZOOM_MAX = 10
 MAPBUILDER_ZOOM_MIN = 0.1
 
+-- ui/map_select.lua
+MAP_SELECT_PANEL_WIDTH = 520
+MAP_SELECT_ROW_HEIGHT = 42
+MAP_SELECT_ROW_GAP = 8
+MAP_SELECT_TITLE_OFFSET_Y = 16
+MAP_SELECT_PADDING = 20
+MAP_SELECT_BUTTON_WIDTH = 64
+MAP_SELECT_MAX_VISIBLE_ROWS = 12
+
 -- world/grid.lua
 GRID_BLOCK_SIZE = 4
 
@@ -39,7 +48,7 @@ WEAPON_SCOPE_PAN_SPEED = 8
 -- systems/melee.lua
 MELEE_STAB_DURATION = 0.15
 MELEE_STAB_STAMINA_COST = 10
-MELEE_SWING_DURATION = 0.2
+MELEE_SWING_DURATION = 0.15
 MELEE_SWING_HALF_ANGLE = math.rad(45)
 MELEE_SWING_STAMINA_COST = 15
 
@@ -50,7 +59,7 @@ ENTITY_HIT_SLOW_FACTOR = 0.5
 -- entities/player.lua
 PLAYER_FOV = math.rad(100)
 PLAYER_LIGHT_CORNER_EPS = math.rad(0.1)
-PLAYER_LIGHT_DARKNESS = 0.05
+PLAYER_LIGHT_DARKNESS = 0.2
 PLAYER_LIGHT_GRID_TIE_BREAK = 1e-6
 PLAYER_LIGHT_SEGMENTS = 48
 PLAYER_MAX_STAMINA = 100
@@ -127,20 +136,20 @@ BUYMENU_PANEL_WIDTH = 420
 BUYMENU_TITLE_OFFSET_Y = 10
 
 BLOCK_ITEMS = {
-    dirt = { name = "Dirt", material = "dirt", destructable = false, blocksMovement = false, blocksVision = false, speedMultiplier = 0.85 },
-    grass = { name = "Grass", material = "grass", destructable = false, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
-    rock_path = { name = "Rock Path", material = "rock_path", destructable = false, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
-    shop = { name = "Shop", material = "shop", destructable = false, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
-    stone = { name = "Stone", material = "stone", destructable = true, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
-    water = { name = "Water", material = "water", destructable = false, blocksMovement = false, blocksVision = false, speedMultiplier = 0.5 },
-    wood_wall = { name = "Wood Wall", material = "wood_wall", destructable = true, blocksMovement = true, blocksVision = true, speedMultiplier = 1 },
+    dirt = { name = "Dirt", material = "dirt", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 0.85 },
+    grass = { name = "Grass", material = "grass", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
+    rock_path = { name = "Rock Path", material = "rock_path", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
+    shop = { name = "Shop", material = "shop", health = 0, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
+    stone = { name = "Stone", material = "stone", health = 500, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
+    water = { name = "Water", material = "water", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 0.5 },
+    wood_wall = { name = "Wood Wall", material = "wood_wall", health = 1000, blocksMovement = true, blocksVision = true, speedMultiplier = 1 },
 }
 
 OBJECT_ITEMS = {
-    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", destructable = true, blocksMovement = true, blocksVision = false },
-    barrel = { name = "Barrel", material = "barrel", destructable = true, blocksMovement = true, blocksVision = false },
-    bush = { name = "Bush", material = "bush", destructable = true, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3 },
-    tree = { name = "Tree", material = "tree", destructable = true, blocksMovement = true, blocksVision = false },
+    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 80, blocksMovement = true, blocksVision = false },
+    barrel = { name = "Barrel", material = "barrel", health = 0, blocksMovement = true, blocksVision = false },
+    bush = { name = "Bush", material = "bush", health = 40, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3 },
+    tree = { name = "Tree", material = "tree", health = 250, blocksMovement = true, blocksVision = false },
 }
 
 BUILDING_ITEMS = {}
