@@ -14,6 +14,7 @@ require "systems.melee"
 require "ui.menu"
 require "world.grid"
 require "entities.powerup"
+require "entities.weapon_pickup"
 Collisions = require "core.collisions"
 MapStorage = require "core.mapstorage"
 MapSelect = require "ui.map_select"
@@ -131,6 +132,7 @@ function resetEntityLists()
     weapons = {}
     damageTexts = {}
     powerUps = {}
+    weaponPickups = {}
 end
 
 function tryMove(entity, dx, dy, constrainToMap)

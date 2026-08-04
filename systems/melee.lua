@@ -46,7 +46,7 @@ function Melee:_trySwing()
 end
 
 function Melee:_isMeleeInputReady(inputAction, wasPressedFlag)
-    if Inventory.dragSlot or ignoreMouseUntilRelease then return false end
+    if Inventory.drag or ignoreMouseUntilRelease then return false end
     if not Input.isDown(inputAction) then
         self[wasPressedFlag] = false
         return false

@@ -22,6 +22,7 @@ weapon5=5
 cycle_prev=left
 cycle_next=right
 inventory=q
+drop=g
 
 # --- Menus ---
 pause=escape

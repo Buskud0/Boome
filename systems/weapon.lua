@@ -123,7 +123,7 @@ function Gun:_tryAttack()
 end
 
 function Gun:_isAttackPermitted()
-    if Inventory.dragSlot or ignoreMouseUntilRelease then return false end
+    if Inventory.drag or ignoreMouseUntilRelease then return false end
     if not Input.isDown("shoot") then
         self.shotFirstBullet = false
         return false

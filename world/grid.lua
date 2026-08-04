@@ -1,6 +1,7 @@
 Grid = Object:extend()
 
 local BLOCK_SIZE = GRID_BLOCK_SIZE
+local Container = require "core.container"
 
 function Grid:new()
     self.grid = {}
@@ -10,6 +11,7 @@ function Grid:new()
     self.tileSize = 10
     self.cols = math.floor(mapWidth / self.tileSize)
     self.rows = math.floor(mapHeight / self.tileSize)
+    self.regrowingRecords = {}
 end
 
 function Grid.load()
@@ -86,8 +88,14 @@ end
 function Grid:placeObject(col, row, material)
     col = math.max(1, math.min(self.cols - BLOCK_SIZE + 1, col))
     row = math.max(1, math.min(self.rows - BLOCK_SIZE + 1, row))
-    table.insert(self.objectRecords, { col = col, row = row, material = material, health = self:_maxHealth(material) })
+    table.insert(self.objectRecords, { col = col, row = row, material = material, health = self:_maxHealth(material), contents = self:_newContents(material) })
     self:_fillArea(self.objects, col, row, material)
+end
+
+function Grid:_newContents(material)
+    local item = BUILDING_ITEMS[material]
+    if item and item.chest then return Container.new(INVENTORY_CHEST_SLOTS) end
+    return nil
 end
 
 function Grid:removeObject(col, row)
@@ -173,14 +181,80 @@ function Grid:_maxHealth(material)
     return 0
 end
 
+function Grid:objectRecordAt(worldX, worldY)
+    local col = math.floor(worldX / self.tileSize) + 1
+    local row = math.floor(worldY / self.tileSize) + 1
+    if col < 1 or col > self.cols or row < 1 or row > self.rows then return nil end
+    local _, record = self:findBlockRecord(col, row, self.objectRecords)
+    return record
+end
+
+function Grid:recordWorldRect(record)
+    local size = BLOCK_SIZE * self.tileSize
+    return (record.col - 1) * self.tileSize, (record.row - 1) * self.tileSize, size, size
+end
+
+function Grid:recordWorldCenter(record)
+    local x, y, w, h = self:recordWorldRect(record)
+    return x + w / 2, y + h / 2
+end
+
+function Grid:nearestChest(worldX, worldY, range)
+    local best, bestDist = nil, range * range
+    for _, record in ipairs(self.objectRecords) do
+        if record.contents then
+            local cx, cy = self:recordWorldCenter(record)
+            local px, py = worldX - cx, worldY - cy
+            local d = px * px + py * py
+            if d <= bestDist then
+                bestDist = d
+                best = record
+            end
+        end
+    end
+    return best
+end
+
 function Grid:_damageRecord(list, index, record, amount)
     record.health = record.health - amount
     if record.health <= 0 then
+        self:_dropContents(record)
+        if self:_regrows(record.material) then
+            table.insert(self.regrowingRecords, { col = record.col, row = record.row, material = record.material, object = list == self.objectRecords })
+        end
         table.remove(list, index)
         self:rebuildGrid()
         return true
     end
     return false
+end
+
+function Grid:_dropContents(record)
+    if not record.contents then return end
+    local cx, cy = self:recordWorldCenter(record)
+    for i = 1, record.contents.size do
+        local item = record.contents:get(i)
+        if item then
+            record.contents:set(i, nil)
+            if WeaponPickup then table.insert(weaponPickups, WeaponPickup(cx, cy, item)) end
+        end
+    end
+end
+
+function Grid:_regrows(material)
+    local item = BUILDING_ITEMS[material]
+    return item and item.regrows == true
+end
+
+function Grid:regrowAll()
+    for _, pending in ipairs(self.regrowingRecords) do
+        if pending.object then
+            self:placeObject(pending.col, pending.row, pending.material)
+        else
+            self:placeBlock(pending.col, pending.row, pending.material)
+        end
+    end
+    self.regrowingRecords = {}
 end
 
 function Grid:_destructibleRecordAt(col, row)

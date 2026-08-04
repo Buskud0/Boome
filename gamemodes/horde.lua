@@ -68,6 +68,7 @@ end
 function Horde.startNextRound()
     currentRound = currentRound + 1
     zombieCount = zombieCount + 2
+    grid:regrowAll()
     Horde.refillWeaponAmmo()
     Horde:buildQueue()
     Horde.state = "intro"
@@ -207,6 +208,8 @@ function Horde.handleKey(key, action)
         Horde.handleReload()
     elseif action == "inventory" then
         Inventory.toggle()
+    elseif action == "drop" then
+        Inventory.dropHeldWeapon()
     elseif action == "cycle_prev" then
         Horde.cycleWeapon(-1)
     elseif action == "cycle_next" then
@@ -248,9 +251,16 @@ function Horde.mainUpdate(dt)
     Collisions.bulletVsWalls()
     Horde.updateZombies(dt)
     Horde.updatePowerUps(dt)
+    Horde.updateWeaponPickups(dt)
     Horde.updateDamageTexts(dt)
     Horde.updateScoreRecord()
     HUD.update(dt)
+end
+
+function Horde.updateWeaponPickups(dt)
+    for _, pickup in ipairs(weaponPickups) do
+        pickup:update(dt)
+    end
 end
 
 function Horde.setActiveWeapon()
@@ -299,6 +309,18 @@ function Horde.updatePowerUps(dt)
     end
 end
 
+function Horde.updateWeaponPickups(dt)
+    for _, pickup in ipairs(weaponPickups) do
+        pickup:update(dt)
+    end
+end
+
+function Horde.drawWeaponPickups()
+    for _, pickup in ipairs(weaponPickups) do
+        pickup:draw()
+    end
+end
+
 function Horde.updateScoreRecord()
     if currentRound - 1 > Horde.maxRounds then Horde.maxRounds = currentRound - 1 end
     if killCount > Horde.maxKills then Horde.maxKills = killCount end
@@ -321,7 +343,8 @@ end
 function Horde.drawWorld()
     Horde.drawMap()
     grid:drawObjects()
-    Horde.drawPowerUps()
+Horde.drawPowerUps()
+    Horde.drawWeaponPickups()
     Horde.drawZombies()
     player:draw()
     grid:drawBushesAboveEntities()

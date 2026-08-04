@@ -86,10 +86,14 @@ INVENTORY_BACKPACK_ROW_OFFSET = 30
 INVENTORY_BACKPACK_SLOTS = 5
 INVENTORY_BACKPACK_TITLE = "BACKPACK"
 INVENTORY_BACKPACK_TITLE_SIZE = 16
+INVENTORY_CHEST_SLOTS = 5
+INVENTORY_CHEST_TITLE = "BARREL"
 INVENTORY_DRAG_THRESHOLD = 10
 INVENTORY_HOTBAR_SLOTS = 5
 INVENTORY_SLOT_GAP = 8
 INVENTORY_SLOT_SIZE = 52
+INTERACT_RANGE = 80
+WEAPON_PICKUP_DELAY = 2
 
 -- ui/mapbuilder_hud.lua
 MAPBUILDER_HUD_BOTTOM_MARGIN = 12
@@ -140,16 +144,16 @@ BLOCK_ITEMS = {
     grass = { name = "Grass", material = "grass", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     rock_path = { name = "Rock Path", material = "rock_path", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     shop = { name = "Shop", material = "shop", health = 0, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
-    stone = { name = "Stone", material = "stone", health = 500, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
+    stone = { name = "Stone", material = "stone", health = 3000, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
     water = { name = "Water", material = "water", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 0.5 },
     wood_wall = { name = "Wood Wall", material = "wood_wall", health = 1000, blocksMovement = true, blocksVision = true, speedMultiplier = 1 },
 }
 
 OBJECT_ITEMS = {
-    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 80, blocksMovement = true, blocksVision = false },
-    barrel = { name = "Barrel", material = "barrel", health = 0, blocksMovement = true, blocksVision = false },
-    bush = { name = "Bush", material = "bush", health = 40, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3 },
-    tree = { name = "Tree", material = "tree", health = 250, blocksMovement = true, blocksVision = false },
+    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 100, blocksMovement = true, blocksVision = false, chest = true },
+    barrel = { name = "Barrel", material = "barrel", health = 80, blocksMovement = true, blocksVision = false, chest = true },
+    bush = { name = "Bush", material = "bush", health = 40, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true },
+    tree = { name = "Tree", material = "tree", health = 250, blocksMovement = true, blocksVision = false, regrows = true },
 }
 
 BUILDING_ITEMS = {}
