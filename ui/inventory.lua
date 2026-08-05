@@ -1,27 +1,42 @@
-local Inventory = {}
+-- Inventory: slot storage, panels (player + chest), drag/swap and selection.
+-- State-injected factory.
 
-local SLOT_SIZE = INVENTORY_SLOT_SIZE
-local SLOT_GAP = INVENTORY_SLOT_GAP
-local HOTBAR_SLOTS = INVENTORY_HOTBAR_SLOTS
-local BACKPACK_SLOTS = INVENTORY_BACKPACK_SLOTS
-local BACKPACK_ROW_OFFSET = INVENTORY_BACKPACK_ROW_OFFSET
-local BACKPACK_TITLE = INVENTORY_BACKPACK_TITLE
-local BACKPACK_TITLE_SIZE = INVENTORY_BACKPACK_TITLE_SIZE
-local CHEST_SLOTS = INVENTORY_CHEST_SLOTS
-local CHEST_TITLE = INVENTORY_CHEST_TITLE
-local DRAG_THRESHOLD = INVENTORY_DRAG_THRESHOLD
+local Config = require "core.config"
+local Fonts = require "core.fonts"
+local Textures = require "core.textures"
+local WeaponPickup = require "entities.weapon_pickup"
+
+local Inventory = {}
+Inventory.__index = Inventory
+
+local SLOT_SIZE = Config.INVENTORY_SLOT_SIZE
+local SLOT_GAP = Config.INVENTORY_SLOT_GAP
+local HOTBAR_SLOTS = Config.INVENTORY_HOTBAR_SLOTS
+local BACKPACK_SLOTS = Config.INVENTORY_BACKPACK_SLOTS
+local BACKPACK_ROW_OFFSET = Config.INVENTORY_BACKPACK_ROW_OFFSET
+local BACKPACK_TITLE = Config.INVENTORY_BACKPACK_TITLE
+local BACKPACK_TITLE_SIZE = Config.INVENTORY_BACKPACK_TITLE_SIZE
+local CHEST_SLOTS = Config.INVENTORY_CHEST_SLOTS
+local CHEST_TITLE = Config.INVENTORY_CHEST_TITLE
+local DRAG_THRESHOLD = Config.INVENTORY_DRAG_THRESHOLD
+local INTERACT_RANGE = Config.INTERACT_RANGE
 local PANEL_PADDING = 6
 local PANEL_TITLE_HEIGHT = 26
 
-Inventory.MAX_SLOTS = HOTBAR_SLOTS + BACKPACK_SLOTS
-Inventory.HOTBAR_SLOTS = HOTBAR_SLOTS
-Inventory.isOpen = false
-Inventory.chest = nil   -- { container = Container, record }
-Inventory.drag = nil    -- { panel, slot, startX, startY }
+function Inventory.new(state)
+    local self = setmetatable({}, Inventory)
+    self.state = state
+    self.MAX_SLOTS = HOTBAR_SLOTS + BACKPACK_SLOTS
+    self.HOTBAR_SLOTS = HOTBAR_SLOTS
+    self.isOpen = false
+    self.chest = nil -- { container = Container, record }
+    self.drag = nil  -- { panel, slot, startX, startY }
+    return self
+end
 
 --------------------------------- lifecycle ---------------------------------
 
-Inventory.load = function()
+function Inventory.load()
     Textures.load("images/item_spritesheet.png", 40)
     local weaponSprites = {
         BAYONET = 1,
@@ -37,73 +52,74 @@ Inventory.load = function()
     end
 end
 
-function Inventory.open()
-    Inventory.isOpen = true
+function Inventory:open()
+    self.isOpen = true
 end
 
-function Inventory.close()
-    Inventory.isOpen = false
-    Inventory.closeChest()
-    Inventory.clearDrag()
+function Inventory:close()
+    self.isOpen = false
+    self:closeChest()
+    self:clearDrag()
 end
 
-function Inventory.toggle()
-    if Inventory.isOpen then Inventory.close() else Inventory.open() end
+function Inventory:toggle()
+    if self.isOpen then self:close() else self:open() end
 end
 
-function Inventory.closeChest()
-    Inventory.chest = nil
+function Inventory:closeChest()
+    self.chest = nil
 end
 
-function Inventory.refreshChest()
-    if not Inventory.isOpen then
-        Inventory.closeChest()
+function Inventory:refreshChest()
+    if not self.isOpen then
+        self:closeChest()
         return
     end
-    local cx, cy = player:getCenter()
-    local record = grid:nearestChest(cx, cy, INTERACT_RANGE)
+    if not self.state.player or not self.state.grid then return end
+    local cx, cy = self.state.player:getCenter()
+    local record = self.state.grid:nearestChest(cx, cy, INTERACT_RANGE)
     if not record then
-        Inventory.closeChest()
+        self:closeChest()
         return
     end
-    if Inventory.chest and Inventory.chest.record == record then
+    if self.chest and self.chest.record == record then
         return
     end
-    Inventory.chest = { container = record.contents, record = record }
+    self.chest = { container = record.contents, record = record }
 end
 
-function Inventory.findFirstEmptySlot()
-    for i = 1, Inventory.MAX_SLOTS do
-        if not weapons[i] then
+function Inventory:findFirstEmptySlot()
+    for i = 1, self.MAX_SLOTS do
+        if not self.state.weapons[i] then
             return i
         end
     end
     return nil
 end
 
-function Inventory.setSlot(slot, item)
-    weapons[slot] = item
+function Inventory:setSlot(slot, item)
+    self.state.weapons[slot] = item
 end
 
---------------------------------- panels ---------------------------------
+---------------------------------- panels ---------------------------------
 
-local function playerPanel()
+function Inventory:playerPanel()
     return {
         id = "player",
-        count = Inventory.isOpen and Inventory.MAX_SLOTS or HOTBAR_SLOTS,
+        count = self.isOpen and self.MAX_SLOTS or HOTBAR_SLOTS,
         frameIndex = HOTBAR_SLOTS + 1,
-        width = Inventory.getBackpackWidth,
-        rects = Inventory.getPlayerRects,
+        width = function() return self:getBackpackWidth() end,
+        rects = function() return self:getPlayerRects() end,
         title = BACKPACK_TITLE,
-        showTitle = function() return Inventory.isOpen end,
+        showTitle = function() return self.isOpen end,
         showIndex = function(i) return i <= HOTBAR_SLOTS end,
-        get = function(i) return weapons[i] end,
-        set = function(i, item) weapons[i] = item end,
+        get = function(i) return self.state.weapons[i] end,
+        set = function(i, item) self.state.weapons[i] = item end,
     }
 end
 
-local function chestPanel()
-    if not Inventory.chest then return nil end
+function Inventory:chestPanel()
+    if not self.chest then return nil end
     return {
         id = "chest",
         count = CHEST_SLOTS,
@@ -111,51 +127,52 @@ local function chestPanel()
         width = function()
             return CHEST_SLOTS * SLOT_SIZE + (CHEST_SLOTS - 1) * SLOT_GAP
         end,
-        rects = Inventory.getChestRects,
+        rects = function() return self:getChestRects() end,
         title = CHEST_TITLE,
         showTitle = function() return true end,
         showIndex = function() return false end,
-        get = function(i) return Inventory.chest.container:get(i) end,
-        set = function(i, item) Inventory.chest.container:set(i, item) end,
+        get = function(i) return self.chest.container:get(i) end,
+        set = function(i, item) self.chest.container:set(i, item) end,
     }
 end
 
-function Inventory.panels()
-    local panels = { playerPanel() }
-    local chest = chestPanel()
+function Inventory:panels()
+    local panels = { self:playerPanel() }
+    local chest = self:chestPanel()
     if chest then panels[#panels + 1] = chest end
     return panels
 end
 
-function Inventory.isPlayerPanel(panel)
+function Inventory:isPlayerPanel(panel)
     return panel and panel.id == "player"
 end
 
---------------------------------- layout ---------------------------------
+---------------------------------- layout ---------------------------------
 
-function Inventory.getBackpackWidth()
+function Inventory:getBackpackWidth()
     return BACKPACK_SLOTS * SLOT_SIZE + (BACKPACK_SLOTS - 1) * SLOT_GAP
 end
 
-function Inventory.getPlayerRects()
-    local totalWidth = Inventory.getBackpackWidth()
-    local startX = math.floor(scrWidth / 2 - totalWidth / 2 + camera.x)
+function Inventory:getPlayerRects()
+    local state = self.state
+    local totalWidth = self:getBackpackWidth()
+    local startX = math.floor(state.scrWidth / 2 - totalWidth / 2 + state.camera.x)
     local rects = {}
-    for i = 1, Inventory.MAX_SLOTS do
+    for i = 1, self.MAX_SLOTS do
         local slotX = startX + ((i - 1) % HOTBAR_SLOTS) * (SLOT_SIZE + SLOT_GAP)
         local row = math.floor((i - 1) / HOTBAR_SLOTS)
-        local slotY = (scrHeight - SLOT_SIZE - 12 + camera.y) - row * (SLOT_SIZE + SLOT_GAP)
+        local slotY = (state.scrHeight - SLOT_SIZE - 12 + state.camera.y) - row * (SLOT_SIZE + SLOT_GAP)
             - (row > 0 and BACKPACK_ROW_OFFSET or 0)
         rects[i] = { x = slotX, y = slotY, w = SLOT_SIZE, h = SLOT_SIZE }
     end
     return rects
 end
 
-function Inventory.getChestRects()
+function Inventory:getChestRects()
     local rects = {}
-    if not Inventory.chest then return rects end
-    local startX = Inventory.getPanelStartX()
-    local backpackY = Inventory.getPlayerRects()[HOTBAR_SLOTS + 1].y
+    if not self.chest then return rects end
+    local startX = self:getPanelStartX()
+    local backpackY = self:getPlayerRects()[HOTBAR_SLOTS + 1].y
     local chestY = backpackY - PANEL_TITLE_HEIGHT - PANEL_PADDING - SLOT_SIZE - SLOT_GAP * 2
     for i = 1, CHEST_SLOTS do
         local slotX = startX + (i - 1) * (SLOT_SIZE + SLOT_GAP)
@@ -164,19 +181,19 @@ function Inventory.getChestRects()
     return rects
 end
 
-function Inventory.getPanelStartX()
-    return math.floor(scrWidth / 2 - Inventory.getBackpackWidth() / 2 + camera.x)
+function Inventory:getPanelStartX()
+    return math.floor(self.state.scrWidth / 2 - self:getBackpackWidth() / 2 + self.state.camera.x)
 end
 
-function Inventory.rectHit(rect, worldX, worldY)
+function Inventory:rectHit(rect, worldX, worldY)
     return worldX >= rect.x and worldX <= rect.x + rect.w
         and worldY >= rect.y and worldY <= rect.y + rect.h
 end
 
-function Inventory.getPanelAt(worldX, worldY)
-    for _, panel in ipairs(Inventory.panels()) do
+function Inventory:getPanelAt(worldX, worldY)
+    for _, panel in ipairs(self:panels()) do
         for i, rect in ipairs(panel.rects()) do
-            if Inventory.rectHit(rect, worldX, worldY) then
+            if self:rectHit(rect, worldX, worldY) then
                 return panel, i
             end
         end
@@ -184,69 +201,69 @@ function Inventory.getPanelAt(worldX, worldY)
     return nil, nil
 end
 
-function Inventory.getItemAt(panel, slot)
+function Inventory:getItemAt(panel, slot)
     return panel.get(slot)
 end
 
-function Inventory.setItemAt(panel, slot, item)
+function Inventory:setItemAt(panel, slot, item)
     panel.set(slot, item)
 end
 
 --------------------------------- container ops ---------------------------------
 
-function Inventory.moveItem(srcPanel, srcSlot, dstPanel, dstSlot)
-    local temp = Inventory.getItemAt(srcPanel, srcSlot)
-    Inventory.setItemAt(srcPanel, srcSlot, Inventory.getItemAt(dstPanel, dstSlot))
-    Inventory.setItemAt(dstPanel, dstSlot, temp)
-    local touchesPlayer = Inventory.isPlayerPanel(srcPanel) or Inventory.isPlayerPanel(dstPanel)
+function Inventory:moveItem(srcPanel, srcSlot, dstPanel, dstSlot)
+    local temp = self:getItemAt(srcPanel, srcSlot)
+    self:setItemAt(srcPanel, srcSlot, self:getItemAt(dstPanel, dstSlot))
+    self:setItemAt(dstPanel, dstSlot, temp)
+    local touchesPlayer = self:isPlayerPanel(srcPanel) or self:isPlayerPanel(dstPanel)
     if touchesPlayer then
-        local srcIndex = Inventory.isPlayerPanel(srcPanel) and srcSlot or nil
-        local dstIndex = Inventory.isPlayerPanel(dstPanel) and dstSlot or nil
-        Inventory.keepSelectionValid(srcIndex, dstIndex)
+        local srcIndex = self:isPlayerPanel(srcPanel) and srcSlot or nil
+        local dstIndex = self:isPlayerPanel(dstPanel) and dstSlot or nil
+        self:keepSelectionValid(srcIndex, dstIndex)
     end
 end
 
-function Inventory.dropItemAt(panel, slot)
-    local item = Inventory.getItemAt(panel, slot)
+function Inventory:dropItemAt(panel, slot)
+    local item = self:getItemAt(panel, slot)
     if not item then return end
-    Inventory.setItemAt(panel, slot, nil)
-    if Inventory.isPlayerPanel(panel) then
-        Inventory.keepSelectionValid(slot, slot)
+    self:setItemAt(panel, slot, nil)
+    if self:isPlayerPanel(panel) then
+        self:keepSelectionValid(slot, slot)
     end
-    local cx, cy = player:getCenter()
-    table.insert(weaponPickups, WeaponPickup(cx, cy, item))
+    local cx, cy = self.state.player:getCenter()
+    table.insert(self.state.weaponPickups, WeaponPickup(self.state, cx, cy, item))
 end
 
-function Inventory.dropHeldWeapon()
-    if not currentWeaponIndex or not weapons[currentWeaponIndex] then return end
-    Inventory.dropItemAt(playerPanel(), currentWeaponIndex)
-    currentWeaponIndex = nil
+function Inventory:dropHeldWeapon()
+    if not self.state.currentWeaponIndex or not self.state.weapons[self.state.currentWeaponIndex] then return end
+    self:dropItemAt(self:playerPanel(), self.state.currentWeaponIndex)
+    self.state.currentWeaponIndex = nil
 end
 
---------------------------------- input ---------------------------------
+---------------------------------- input ---------------------------------
 
-function Inventory.mousepressed(worldX, worldY, button)
+function Inventory:mousepressed(worldX, worldY, button)
     if button == 2 then
-        Inventory.handleRightClick(worldX, worldY)
+        self:handleRightClick(worldX, worldY)
         return
     end
     if button ~= 1 then return end
-    local panel, slot = Inventory.getPanelAt(worldX, worldY)
-    if panel and Inventory.getItemAt(panel, slot) then
-        Inventory.startDrag(panel, slot, worldX, worldY)
+    local panel, slot = self:getPanelAt(worldX, worldY)
+    if panel and self:getItemAt(panel, slot) then
+        self:startDrag(panel, slot, worldX, worldY)
     end
 end
 
-function Inventory.handleRightClick(worldX, worldY)
-    if not Inventory.isOpen then return end
-    local panel, slot = Inventory.getPanelAt(worldX, worldY)
-    if panel and Inventory.getItemAt(panel, slot) then
-        Inventory.dropItemAt(panel, slot)
+function Inventory:handleRightClick(worldX, worldY)
+    if not self.isOpen then return end
+    local panel, slot = self:getPanelAt(worldX, worldY)
+    if panel and self:getItemAt(panel, slot) then
+        self:dropItemAt(panel, slot)
     end
 end
 
-function Inventory.startDrag(panel, slot, worldX, worldY)
-    Inventory.drag = {
+function Inventory:startDrag(panel, slot, worldX, worldY)
+    self.drag = {
         panel = panel,
         slot = slot,
         startX = worldX,
@@ -254,85 +271,86 @@ function Inventory.startDrag(panel, slot, worldX, worldY)
     }
 end
 
-function Inventory.clearDrag()
-    Inventory.drag = nil
+function Inventory:clearDrag()
+    self.drag = nil
 end
 
-function Inventory.dragItem()
-    return Inventory.getItemAt(Inventory.drag.panel, Inventory.drag.slot)
+function Inventory:dragItem()
+    return self:getItemAt(self.drag.panel, self.drag.slot)
 end
 
-function Inventory.isDragClick(worldX, worldY)
-    local dx = worldX - Inventory.drag.startX
-    local dy = worldY - Inventory.drag.startY
+function Inventory:isDragClick(worldX, worldY)
+    local dx = worldX - self.drag.startX
+    local dy = worldY - self.drag.startY
     return dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD
 end
 
-function Inventory.mousereleased(worldX, worldY, button)
-    if button ~= 1 or not Inventory.drag then return end
-    if Inventory.isDragClick(worldX, worldY) then
-        Inventory.selectWeaponSlot(Inventory.drag.panel, Inventory.drag.slot)
+function Inventory:mousereleased(worldX, worldY, button)
+    if button ~= 1 or not self.drag then return end
+    if self:isDragClick(worldX, worldY) then
+        self:selectWeaponSlot(self.drag.panel, self.drag.slot)
         return
     end
-    Inventory.trySwapWithTarget(worldX, worldY)
+    self:trySwapWithTarget(worldX, worldY)
 end
 
-function Inventory.selectWeaponSlot(panel, slot)
-    if Inventory.isPlayerPanel(panel) and slot <= HOTBAR_SLOTS then
-        Inventory.toggleWeaponSelection(slot)
+function Inventory:selectWeaponSlot(panel, slot)
+    if self:isPlayerPanel(panel) and slot <= HOTBAR_SLOTS then
+        self:toggleWeaponSelection(slot)
     end
-    Inventory.clearDrag()
+    self:clearDrag()
 end
 
-function Inventory.toggleWeaponSelection(slot)
-    if currentWeaponIndex == slot then
-        currentWeaponIndex = nil
-    elseif weapons[slot] then
-        currentWeaponIndex = slot
+function Inventory:toggleWeaponSelection(slot)
+    if self.state.currentWeaponIndex == slot then
+        self.state.currentWeaponIndex = nil
+    elseif self.state.weapons[slot] then
+        self.state.currentWeaponIndex = slot
     else
-        currentWeaponIndex = nil
+        self.state.currentWeaponIndex = nil
     end
 end
 
-function Inventory.trySwapWithTarget(worldX, worldY)
-    local targetPanel, targetIndex = Inventory.getPanelAt(worldX, worldY)
+function Inventory:trySwapWithTarget(worldX, worldY)
+    local targetPanel, targetIndex = self:getPanelAt(worldX, worldY)
     if targetPanel then
-        Inventory.moveItem(Inventory.drag.panel, Inventory.drag.slot, targetPanel, targetIndex)
+        self:moveItem(self.drag.panel, self.drag.slot, targetPanel, targetIndex)
     end
-    Inventory.clearDrag()
+    self:clearDrag()
 end
 
-function Inventory.keepSelectionValid(sourceIndex, targetIndex)
+function Inventory:keepSelectionValid(sourceIndex, targetIndex)
+    local weapons = self.state.weapons
     if targetIndex and targetIndex <= HOTBAR_SLOTS and weapons[targetIndex] then
-        currentWeaponIndex = targetIndex
+        self.state.currentWeaponIndex = targetIndex
         return
     end
     if sourceIndex and sourceIndex <= HOTBAR_SLOTS and weapons[sourceIndex] then
-        currentWeaponIndex = sourceIndex
+        self.state.currentWeaponIndex = sourceIndex
         return
     end
     for i = 1, HOTBAR_SLOTS do
         if weapons[i] then
-            currentWeaponIndex = i
+            self.state.currentWeaponIndex = i
             return
         end
     end
-    currentWeaponIndex = nil
+    self.state.currentWeaponIndex = nil
 end
 
---------------------------------- drawing ---------------------------------
+---------------------------------- drawing ---------------------------------
 
-function Inventory.draw()
-    Inventory.refreshChest()
-    for _, panel in ipairs(Inventory.panels()) do
-        Inventory.drawPanelFrame(panel)
-        Inventory.drawPanelSlots(panel)
+function Inventory:draw()
+    self:refreshChest()
+    for _, panel in ipairs(self:panels()) do
+        self:drawPanelFrame(panel)
+        self:drawPanelSlots(panel)
     end
-    Inventory.drawHeldItemName()
-    Inventory.drawDragGhost()
+    self:drawHeldItemName()
+    self:drawDragGhost()
 end
 
-function Inventory.drawPanelFrame(panel)
+function Inventory:drawPanelFrame(panel)
     if not panel.showTitle() then return end
     local rects = panel.rects()
     local frame = rects[panel.frameIndex]
@@ -342,56 +360,58 @@ function Inventory.drawPanelFrame(panel)
         frame.x - PANEL_PADDING, frame.y - PANEL_TITLE_HEIGHT - PANEL_PADDING,
         panel.width() + PANEL_PADDING * 2,
         PANEL_TITLE_HEIGHT + SLOT_SIZE + PANEL_PADDING * 2)
-    Inventory:drawCenteredText(panel.title,
+    self:drawCenteredText(panel.title,
         frame.x + panel.width() / 2,
         frame.y - PANEL_TITLE_HEIGHT + 4, BACKPACK_TITLE_SIZE, {0.9, 0.9, 0.9})
 end
 
-function Inventory.drawPanelSlots(panel)
+function Inventory:drawPanelSlots(panel)
     local rects = panel.rects()
     for i = 1, panel.count do
         local rect = rects[i]
         local item = panel.get(i)
         local showIndex = panel.showIndex(i)
         if item then
-            Inventory:drawSlot(rect.x, rect.y, item,
-                Inventory.isActiveSlot(panel, i), i, showIndex)
+            self:drawSlot(rect.x, rect.y, item,
+                self:isActiveSlot(panel, i), i, showIndex)
         else
-            Inventory:drawEmptySlot(rect.x, rect.y, i, showIndex)
+            self:drawEmptySlot(rect.x, rect.y, i, showIndex)
         end
     end
 end
 
-function Inventory.isActiveSlot(panel, slot)
-    return Inventory.isPlayerPanel(panel) and slot == currentWeaponIndex
+function Inventory:isActiveSlot(panel, slot)
+    return self:isPlayerPanel(panel) and slot == self.state.currentWeaponIndex
 end
 
-function Inventory.drawHeldItemName()
-    local weapon = weapons[currentWeaponIndex]
-    local rects = Inventory.getPlayerRects()
+function Inventory:drawHeldItemName()
+    local state = self.state
+    local weapon = state.weapons[state.currentWeaponIndex]
+    local rects = self:getPlayerRects()
     local label = weapon and weapon.model or "FISTS"
-    local rect = weapon and rects[currentWeaponIndex] or rects[1]
+    local rect = weapon and rects[state.currentWeaponIndex] or rects[1]
     if not rect then return end
-    Inventory:drawCenteredText(label,
-        rect.x + Inventory.getBackpackWidth() / 2, rect.y - 18, 18, {1, 1, 1})
+    local centerX = self:getPanelStartX() + self:getBackpackWidth() / 2
+    self:drawCenteredText(label, centerX, rect.y - 18, 18, {1, 1, 1})
 end
 
-function Inventory.drawDragGhost()
-    if not Inventory.drag then return end
+function Inventory:drawDragGhost()
+    if not self.drag then return end
     local mx, my = love.mouse.getPosition()
-    local weapon = Inventory.dragItem()
+    local weapon = self:dragItem()
     if not weapon then return end
+    local camera = self.state.camera
     Textures.draw("slot_" .. weapon.model, mx + camera.x - 20, my + camera.y - 20, 40, 40, 0.8)
 end
 
 function Inventory:drawSlot(x, y, weapon, isActive, index, showIndex)
-    Inventory:drawSlotFrame(x, y, isActive)
-    Inventory:drawSlotIcon(x, y, weapon.model)
+    self:drawSlotFrame(x, y, isActive)
+    self:drawSlotIcon(x, y, weapon.model)
     if showIndex then
-        Inventory:drawSlotIndex(x, y, index, {1, 1, 1})
+        self:drawSlotIndex(x, y, index, {1, 1, 1})
     end
     if weapon.magSize then
-        Inventory:drawAmmo(x, y, weapon)
+        self:drawAmmo(x, y, weapon)
     end
 end
 
@@ -401,7 +421,7 @@ function Inventory:drawEmptySlot(x, y, index, showIndex)
     love.graphics.setColor(0.2, 0.2, 0.2)
     love.graphics.rectangle("line", x, y, SLOT_SIZE, SLOT_SIZE)
     if showIndex then
-        Inventory:drawSlotIndex(x, y, index, {0.3, 0.3, 0.3})
+        self:drawSlotIndex(x, y, index, {0.3, 0.3, 0.3})
     end
 end
 

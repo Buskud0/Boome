@@ -1,4 +1,7 @@
-Bullet = Object:extend()
+local Object = require "lib.classic"
+local Textures = require "core.textures"
+
+local Bullet = Object:extend()
 
 function Bullet:new(x, y, dx, dy, damage, penetrationLoss)
 	self.x = x
@@ -22,3 +25,5 @@ function Bullet:update(dt)
 	self.x = self.x + (self.dx * dt)
     self.y = self.y + (self.dy * dt)
 end
+
+return Bullet

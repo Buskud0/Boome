@@ -1,7 +1,9 @@
 local Pathfinding = {}
 
+local Config = require "core.config"
+
 local SQRT2 = math.sqrt(2)
-local MAX_ITERATIONS = PATHFINDING_MAX_ITERATIONS
+local MAX_ITERATIONS = Config.PATHFINDING_MAX_ITERATIONS
 
 local NEIGHBORS = {
     { dx = 1,  dy = 0,  cost = 1 },

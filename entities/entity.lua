@@ -1,4 +1,12 @@
-Entity = Object:extend()
+local Object = require "lib.classic"
+local Config = require "core.config"
+local Textures = require "core.textures"
+local Debug = require "core.debug"
+
+local Entity = Object:extend()
+
+local HIT_SLOW_DURATION = Config.ENTITY_HIT_SLOW_DURATION
+local HIT_SLOW_FACTOR = Config.ENTITY_HIT_SLOW_FACTOR
 
 function Entity.load()
     Textures.load("images/entity_spritesheet.png", 40)
@@ -11,7 +19,8 @@ function Entity.load()
     Textures.define("powerup_money", 7)
 end
 
-function Entity:new(x, y)
+function Entity:new(state, x, y)
+    self.state = state
     self.x = x
     self.y = y
     self.width = 30
@@ -30,12 +39,12 @@ end
 
 function Entity:takeDamage(amount)
     self.health = self.health - amount
-    self.hitSlowTimer = ENTITY_HIT_SLOW_DURATION
+    self.hitSlowTimer = HIT_SLOW_DURATION
 end
 
 function Entity:getHitSlowMultiplier()
     if self.hitSlowTimer > 0 then
-        return ENTITY_HIT_SLOW_FACTOR
+        return HIT_SLOW_FACTOR
     end
     return 1
 end
@@ -46,9 +55,9 @@ end
 
 function Entity:getSpeedMultiplier()
     local cx, cy = self:getCenter()
-    local material = grid:getMaterialAt(cx, cy)
+    local material = self.state.grid:getMaterialAt(cx, cy)
     if material then
-        local item = BUILDING_ITEMS[material]
+        local item = Config.BUILDING_ITEMS[material]
         if item and item.speedMultiplier then
             return item.speedMultiplier
         end
@@ -58,7 +67,7 @@ end
 
 function Entity:isOccludedFrom(ox, oy)
     local cx, cy = self:getCenter()
-    return grid:segmentBlocksVision(ox, oy, cx, cy)
+    return self.state.grid:segmentBlocksVision(ox, oy, cx, cy)
 end
 
 function Entity:draw(alpha)
@@ -67,6 +76,7 @@ function Entity:draw(alpha)
 end
 
 function Entity:drawBody(alpha)
+    local player = self.state.player
     if self ~= player and self:isOccludedFrom(player:getCenter()) then return end
     if self.sprite then
         Textures.draw(self.sprite, self.x, self.y, self.width, self.height, alpha)
@@ -86,3 +96,5 @@ function Entity:drawHitbox()
     love.graphics.setColor(1, 0, 0, 1)
     love.graphics.circle("fill", cx, cy, 2)
 end
+
+return Entity

@@ -1,20 +1,29 @@
-Zombie = Entity:extend()
-local Pathfinding = require "core.pathfinding"
+local Object = require "lib.classic"
+local Entity = require "entities.entity"
+local Config = require "core.config"
+local Pathfinding = require "world.pathfinding.pathfinding"
+local WeaponDefs = require "systems.weapon.weapon_defs"
+local Collision = require "world.physics.collision"
+local Movement = require "world.physics.movement"
+local Debug = require "core.debug"
 
-local PATH_RECALC_INTERVAL = ZOMBIE_PATH_RECALC_INTERVAL
-local WAYPOINT_RADIUS = ZOMBIE_WAYPOINT_RADIUS
-local SEPARATION_RADIUS = ZOMBIE_SEPARATION_RADIUS
-local SEPARATION_WEIGHT = ZOMBIE_SEPARATION_WEIGHT
+local Zombie = Entity:extend()
 
-function Zombie:new(type, x, y)
-    Zombie.super.new(self, x, y)
+local PATH_RECALC_INTERVAL = Config.ZOMBIE_PATH_RECALC_INTERVAL
+local WAYPOINT_RADIUS = Config.ZOMBIE_WAYPOINT_RADIUS
+local SEPARATION_RADIUS = Config.ZOMBIE_SEPARATION_RADIUS
+local SEPARATION_WEIGHT = Config.ZOMBIE_SEPARATION_WEIGHT
+local STAB_DURATION = Config.MELEE_STAB_DURATION
+
+function Zombie:new(state, type, x, y)
+    Zombie.super.new(self, state, x, y)
     self.type = type or "normal"
     self:_applyTypeStats()
     self.health = self.maxHealth
     self.sprite = "zombie_" .. self.type
     self.path = {}
     self.pathTimer = 0
-    self.weapon = Weapon.create("FISTS")
+    self.weapon = WeaponDefs.create(state, "FISTS")
     self.attackRange = self.weapon.range
     self.attackCooldown = 1
     self.attackTimer = 0
@@ -52,7 +61,7 @@ end
 
 function Zombie:_distanceToPlayer()
     local cx, cy = self:getCenter()
-    local px, py = player:getCenter()
+    local px, py = self.state.player:getCenter()
     local dx, dy = px - cx, py - cy
     return math.sqrt(dx * dx + dy * dy)
 end
@@ -79,6 +88,7 @@ function Zombie:_damageBlockInFront(dirX, dirY)
     local cx, cy = self:getCenter()
     local tx = cx + dirX * self.attackRange
     local ty = cy + dirY * self.attackRange
+    local grid = self.state.grid
     if not grid:hasDestructibleTile(tx, ty) then return false end
     if self.attackTimer > 0 then return true end
     grid:damageTile(tx, ty, self.weapon.damage)
@@ -89,7 +99,7 @@ end
 
 function Zombie:_getDirectionToPlayer()
     local cx, cy = self:getCenter()
-    local px, py = player:getCenter()
+    local px, py = self.state.player:getCenter()
     local dx, dy = px - cx, py - cy
     local dist = math.sqrt(dx * dx + dy * dy)
     if dist == 0 then return 0, 0 end
@@ -97,16 +107,17 @@ function Zombie:_getDirectionToPlayer()
 end
 
 function Zombie:_startStabAnimation(dirX, dirY)
-    self.stabTimer = MELEE_STAB_DURATION
+    self.stabTimer = STAB_DURATION
     self.stabDirX, self.stabDirY = dirX, dirY
 end
 
 function Zombie:_damagePlayerIfInRange(dirX, dirY)
     local cx, cy = self:getCenter()
+    local player = self.state.player
     local px, py = player:getCenter()
     local tx = cx + dirX * self.attackRange
     local ty = cy + dirY * self.attackRange
-    if Collisions.segmentHitsCircle(cx, cy, tx, ty, px, py, player.radius) then
+    if Collision.segmentHitsCircle(cx, cy, tx, ty, px, py, player.radius) then
         player:takeDamage(self.weapon.damage)
     end
 end
@@ -114,7 +125,7 @@ end
 function Zombie:_moveTowardPlayer(dt)
     local step = self.speed * dt * self:getSpeedMultiplier() * self:getHitSlowMultiplier()
     local cx, cy = self:getCenter()
-    local px, py = player:getCenter()
+    local px, py = self.state.player:getCenter()
 
     self:_refreshPath(dt, cx, cy, px, py)
     local moveX, moveY = self:_getPathDirection(cx, cy)
@@ -124,12 +135,12 @@ function Zombie:_moveTowardPlayer(dt)
 
     moveX, moveY = self:_steerAroundOtherZombies(cx, cy, moveX, moveY)
 
-    tryMove(self, moveX * step, moveY * step, false)
+    Movement.tryMove(self.state, self, moveX * step, moveY * step, false)
 end
 
 function Zombie:_steerAroundOtherZombies(cx, cy, moveX, moveY)
     local sepX, sepY = 0, 0
-    for _, other in ipairs(zombies) do
+    for _, other in ipairs(self.state.zombies) do
         if other ~= self then
             local ox, oy = other:getCenter()
             local dx = cx - ox
@@ -165,6 +176,7 @@ function Zombie:_refreshPath(dt, cx, cy, px, py)
     if self.pathTimer > 0 and #self.path >= 2 then return end
     self.pathTimer = PATH_RECALC_INTERVAL
 
+    local grid = self.state.grid
     local startCol = math.floor(cx / grid.tileSize) + 1
     local startRow = math.floor(cy / grid.tileSize) + 1
     local endCol = math.floor(px / grid.tileSize) + 1
@@ -173,6 +185,7 @@ function Zombie:_refreshPath(dt, cx, cy, px, py)
 end
 
 function Zombie:_getPathDirection(cx, cy)
+    local grid = self.state.grid
     while #self.path >= 2 do
         local waypoint = self.path[2]
         local wx = (waypoint.col - 1) * grid.tileSize + grid.tileSize / 2
@@ -204,7 +217,7 @@ function Zombie:drawStab()
     if alpha <= 0 then return end
 
     local cx, cy = self:getCenter()
-    local progress = 1 - self.stabTimer / MELEE_STAB_DURATION
+    local progress = 1 - self.stabTimer / STAB_DURATION
     local extend = progress < 0.5 and progress * 2 or 2 - progress * 2
     local length = self.attackRange * extend
 
@@ -219,8 +232,8 @@ end
 
 function Zombie:_getVisibilityAlpha()
     local cx, cy = self:getCenter()
-    if self:isOccludedFrom(player:getCenter()) then return 0 end
-    return player:getVisibilityAlphaFor(cx, cy)
+    if self:isOccludedFrom(self.state.player:getCenter()) then return 0 end
+    return self.state.player:getVisibilityAlphaFor(cx, cy)
 end
 
 function Zombie:drawDebug()
@@ -228,6 +241,7 @@ function Zombie:drawDebug()
 end
 
 function Zombie:drawPlannedPath()
+    local grid = self.state.grid
     love.graphics.setColor(0, 1, 0, 0.6)
     for i = 2, #self.path do
         local waypoint = self.path[i]
@@ -248,11 +262,11 @@ function Zombie:drawHealthBar(alpha)
     local height = 3
     local c = self:_getHealthBarColor()
     love.graphics.setColor(0, 0, 0, alpha)
-    love.graphics.rectangle("line", self.x, self.y+self.height+offset, self.width, height)
+    love.graphics.rectangle("line", self.x, self.y + self.height + offset, self.width, height)
     love.graphics.setColor(1, 1, 1, alpha)
-    love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width, height)
+    love.graphics.rectangle("fill", self.x, self.y + self.height + offset, self.width, height)
     love.graphics.setColor(c[1], c[2], c[3], alpha)
-    love.graphics.rectangle("fill", self.x, self.y+self.height+offset, self.width*self.health/self.maxHealth, height)
+    love.graphics.rectangle("fill", self.x, self.y + self.height + offset, self.width * self.health / self.maxHealth, height)
 end
 
 function Zombie:_getHealthBarColor()
@@ -263,3 +277,5 @@ function Zombie:_getHealthBarColor()
     end
     return {1, 0.2, 0.2}
 end
+
+return Zombie

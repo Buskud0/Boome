@@ -1,6 +1,6 @@
 local Fonts = {}
 
-local FONT_PATH = FONTS_PATH
+local FONT_PATH = require("core.config").FONTS_PATH
 local cache = {}
 
 function Fonts.get(size)

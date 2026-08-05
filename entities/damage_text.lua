@@ -1,4 +1,7 @@
-DamageText = Object:extend()
+local Object = require "lib.classic"
+local Fonts = require "core.fonts"
+
+local DamageText = Object:extend()
 
 function DamageText:new(text, x, y, duration, color)
 	self.text = text
@@ -15,8 +18,8 @@ function DamageText:update(dt)
 		self.duration = self.duration - dt
 		self.y = self.y - 50 * dt
 		if self.duration < 0.3 then self.opacity = self.opacity - 5 * dt end
-	else 
-		self.destruct = true 
+	else
+		self.destruct = true
 	end
 end
 
@@ -26,3 +29,5 @@ function DamageText:draw()
 	love.graphics.setColor({self.color[1], self.color[2], self.color[3], self.opacity})
 	love.graphics.print(self.text, self.x, self.y)
 end
+
+return DamageText

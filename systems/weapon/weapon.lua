@@ -1,11 +1,24 @@
-Weapon = Object:extend()
+local Object = require "lib.classic"
+local Config = require "core.config"
+local Input = require "core.input"
+local Coordinates = require "core.coordinates"
+local Bullet = require "entities.bullet"
 
-local SCOPE_PAN_SPEED = WEAPON_SCOPE_PAN_SPEED
+local Weapon = Object:extend()
 
-function Weapon:new(model)
-    local stats = WEAPONS[model]
+local SCOPE_PAN_SPEED = Config.WEAPON_SCOPE_PAN_SPEED
+local BULLET_SPEED = Config.WEAPON_BULLET_SPEED
+
+local function randNegPos(number)
+    number = number or 1
+    return number * (math.random() * 2 - 1)
+end
+
+function Weapon:new(state, model)
+    local stats = Config.WEAPONS[model]
     if not stats then error("unknown weapon model: " .. model) end
 
+    self.state = state
     self.model = model
     self.damage = stats.damage
     self.firerate = stats.firerate
@@ -15,14 +28,6 @@ function Weapon:new(model)
     self.firerateCooldown = 0
     self.firerateProgress = 0
     self.shotFirstBullet = false
-end
-
-function Weapon.create(model)
-    local stats = WEAPONS[model]
-    if stats and stats.weaponType == "melee" then
-        return Melee(model)
-    end
-    return Gun(model)
 end
 
 function Weapon:update(dt)
@@ -52,7 +57,7 @@ function Weapon:_updateFirerateCooldown(dt)
 end
 
 function Weapon:_getAimDirection(startX, startY)
-    local mouseX, mouseY = screenToWorld(love.mouse.getX(), love.mouse.getY())
+    local mouseX, mouseY = Coordinates.screenToWorld(self.state, love.mouse.getX(), love.mouse.getY())
     local dx = mouseX - startX
     local dy = mouseY - startY
     local length = math.sqrt(dx * dx + dy * dy)
@@ -62,11 +67,11 @@ end
 
 Gun = Weapon:extend()
 
-function Gun:new(model)
-    Gun.super.new(self, model)
-    local stats = WEAPONS[model]
+function Gun:new(state, model)
+    Gun.super.new(self, state, model)
+    local stats = Config.WEAPONS[model]
 
-    self.bulletSpeed = WEAPON_BULLET_SPEED
+    self.bulletSpeed = BULLET_SPEED
     self.magSize = stats.magSize
     self.reloadTime = stats.reloadTime
     self.bulletAmount = stats.bulletAmount
@@ -92,8 +97,8 @@ end
 function Gun:updateScope(dt)
     local targetX, targetY = 0, 0
     if self:isScoping() then
-        local mouseX, mouseY = screenToWorld(love.mouse.getPosition())
-        local px, py = player:getCenter()
+        local mouseX, mouseY = Coordinates.screenToWorld(self.state, love.mouse.getPosition())
+        local px, py = self.state.player:getCenter()
         local dx, dy = mouseX - px, mouseY - py
         local len = math.sqrt(dx * dx + dy * dy)
         if len > 0 then
@@ -107,8 +112,8 @@ function Gun:updateScope(dt)
     self.scopeOffsetY = self.scopeOffsetY + (targetY - self.scopeOffsetY) * alpha
     local targetProgress = self:isScoping() and 1 or 0
     self.scopeProgress = self.scopeProgress + (targetProgress - self.scopeProgress) * alpha
-    camera.x = camera.x + self.scopeOffsetX
-    camera.y = camera.y + self.scopeOffsetY
+    self.state.camera.x = self.state.camera.x + self.scopeOffsetX
+    self.state.camera.y = self.state.camera.y + self.scopeOffsetY
 end
 
 function Gun:update(dt)
@@ -123,7 +128,7 @@ function Gun:_tryAttack()
 end
 
 function Gun:_isAttackPermitted()
-    if Inventory.drag or ignoreMouseUntilRelease then return false end
+    if self.state.inventory.drag or self.state.ignoreMouseUntilRelease then return false end
     if not Input.isDown("shoot") then
         self.shotFirstBullet = false
         return false
@@ -152,22 +157,23 @@ end
 function Gun:_drawReloadArc()
     if not self.reloading then return end
     love.graphics.setColor(1, 1, 1)
-    love.graphics.arc("fill", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.reloadProgress)
+    love.graphics.arc("fill", love.mouse.getX() + self.state.camera.x, love.mouse.getY() + self.state.camera.y, 15, 0, math.pi * 2 * self.reloadProgress)
 end
 
 function Gun:_drawFirerateArc()
     if self.firerateCooldown <= 0 or self.reloading then return end
     love.graphics.setColor(1, 1, 1)
-    love.graphics.arc("line", love.mouse.getX() + camera.x, love.mouse.getY() + camera.y, 15, 0, math.pi * 2 * self.firerateProgress)
+    love.graphics.arc("line", love.mouse.getX() + self.state.camera.x, love.mouse.getY() + self.state.camera.y, 15, 0, math.pi * 2 * self.firerateProgress)
 end
 
 function Gun:shootBullet()
     local startX, startY = self:_getMuzzlePosition()
     local bulletDx, bulletDy = self:_calculateBulletDirection(startX, startY)
-    table.insert(bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage, self.penetrationLoss))
+    table.insert(self.state.bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage, self.penetrationLoss))
 end
 
 function Gun:_getMuzzlePosition()
+    local player = self.state.player
     return player.x + player.width / 2, player.y + player.height / 2
 end
 
@@ -209,3 +215,7 @@ function Gun:_completeReload()
     self.reloadProgress = 0
     self.reloading = false
 end
+
+Weapon.Gun = Gun
+
+return Weapon

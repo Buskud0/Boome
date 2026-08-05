@@ -1,73 +1,89 @@
+-- Building-item browser: searchable grid + drag items onto the quick-access bar.
+-- State-injected factory.
+
+local Config = require "core.config"
+local Fonts = require "core.fonts"
+local Textures = require "core.textures"
+
 local ItemBrowser = {}
+ItemBrowser.__index = ItemBrowser
 
-local PANEL_WIDTH = ITEM_BROWSER_PANEL_WIDTH
-local PANEL_HEIGHT = ITEM_BROWSER_PANEL_HEIGHT
-local ITEM_CELL_SIZE = ITEM_BROWSER_ITEM_CELL_SIZE
-local ITEM_CELL_GAP = ITEM_BROWSER_ITEM_CELL_GAP
-local ITEMS_PER_ROW = ITEM_BROWSER_ITEMS_PER_ROW
-local HEADER_HEIGHT = ITEM_BROWSER_HEADER_HEIGHT
-
-ItemBrowser.isOpen = false
-ItemBrowser.searchQuery = ""
-ItemBrowser.filteredItems = {}
-ItemBrowser.draggedItem = nil
-ItemBrowser.scrollY = 0
-ItemBrowser.consumeNextText = false
-ItemBrowser.searchFocused = false
-ItemBrowser.dragStartX = 0
-ItemBrowser.dragStartY = 0
-
-local DRAG_THRESHOLD = ITEM_BROWSER_DRAG_THRESHOLD
-
-local allItems = {}
+local PANEL_WIDTH = Config.ITEM_BROWSER_PANEL_WIDTH
+local PANEL_HEIGHT = Config.ITEM_BROWSER_PANEL_HEIGHT
+local ITEM_CELL_SIZE = Config.ITEM_BROWSER_ITEM_CELL_SIZE
+local ITEM_CELL_GAP = Config.ITEM_BROWSER_ITEM_CELL_GAP
+local ITEMS_PER_ROW = Config.ITEM_BROWSER_ITEMS_PER_ROW
+local HEADER_HEIGHT = Config.ITEM_BROWSER_HEADER_HEIGHT
+local DRAG_THRESHOLD = Config.ITEM_BROWSER_DRAG_THRESHOLD
 
 local function buildItemList()
-    allItems = {}
-    for key, item in pairs(BLOCK_ITEMS) do
-        table.insert(allItems, { key = key, name = item.name, material = item.material })
+    local all = {}
+    for key, item in pairs(Config.BLOCK_ITEMS) do
+        table.insert(all, { key = key, name = item.name, material = item.material })
     end
-    for key, item in pairs(OBJECT_ITEMS) do
-        table.insert(allItems, { key = key, name = item.name, material = item.material })
+    for key, item in pairs(Config.OBJECT_ITEMS) do
+        table.insert(all, { key = key, name = item.name, material = item.material })
     end
-    table.sort(allItems, function(a, b) return a.name < b.name end)
+    table.sort(all, function(a, b) return a.name < b.name end)
+    return all
 end
 
-local function getPanelPosition()
-    local px = math.floor(scrWidth / 2 - PANEL_WIDTH / 2 + camera.x)
-    local py = math.floor(scrHeight / 2 - PANEL_HEIGHT / 2 + camera.y)
+function ItemBrowser.new(state)
+    local self = setmetatable({}, ItemBrowser)
+    self.state = state
+    self.allItems = buildItemList()
+    self.isOpen = false
+    self.searchQuery = ""
+    self.filteredItems = {}
+    self.draggedItem = nil
+    self.scrollY = 0
+    self.consumeNextText = false
+    self.searchFocused = false
+    self.dragStartX = 0
+    self.dragStartY = 0
+    return self
+end
+
+local function isPointInRect(x, y, rectX, rectY, w, h)
+    return x >= rectX and x <= rectX + w and y >= rectY and y <= rectY + h
+end
+
+function ItemBrowser:getPanelPosition()
+    local px = math.floor(self.state.scrWidth / 2 - PANEL_WIDTH / 2 + self.state.camera.x)
+    local py = math.floor(self.state.scrHeight / 2 - PANEL_HEIGHT / 2 + self.state.camera.y)
     return px, py
 end
 
-local function clampScroll()
+function ItemBrowser:clampScroll()
     local rowH = ITEM_CELL_SIZE + ITEM_CELL_GAP
-    local numRows = math.ceil(#ItemBrowser.filteredItems / ITEMS_PER_ROW)
+    local numRows = math.ceil(#self.filteredItems / ITEMS_PER_ROW)
     if numRows == 0 then
-        ItemBrowser.scrollY = 0
+        self.scrollY = 0
         return
     end
     local contentHeight = numRows * rowH
     local visibleHeight = PANEL_HEIGHT - HEADER_HEIGHT
     local maxScroll = math.max(0, contentHeight - visibleHeight)
-    if ItemBrowser.scrollY > maxScroll then
-        ItemBrowser.scrollY = maxScroll
+    if self.scrollY > maxScroll then
+        self.scrollY = maxScroll
     end
 end
 
-local function filterItems()
-    local query = ItemBrowser.searchQuery:lower()
-    ItemBrowser.filteredItems = {}
-    for _, item in ipairs(allItems) do
+function ItemBrowser:filterItems()
+    local query = self.searchQuery:lower()
+    self.filteredItems = {}
+    for _, item in ipairs(self.allItems) do
         if query == "" or item.name:lower():find(query, 1, true) then
-            table.insert(ItemBrowser.filteredItems, item)
+            table.insert(self.filteredItems, item)
         end
     end
-    clampScroll()
+    self:clampScroll()
 end
 
-local function forEachItemCell(px, py, fn)
-    local gridStartY = py + HEADER_HEIGHT - ItemBrowser.scrollY
+function ItemBrowser:forEachItemCell(px, py, fn)
+    local gridStartY = py + HEADER_HEIGHT - self.scrollY
     local col, row = 0, 0
-    for _, item in ipairs(ItemBrowser.filteredItems) do
+    for _, item in ipairs(self.filteredItems) do
         local cellX = px + 10 + col * (ITEM_CELL_SIZE + ITEM_CELL_GAP)
         local cellY = gridStartY + row * (ITEM_CELL_SIZE + ITEM_CELL_GAP)
         fn(item, cellX, cellY)
@@ -79,153 +95,147 @@ local function forEachItemCell(px, py, fn)
     end
 end
 
-local function isPointInRect(x, y, rectX, rectY, w, h)
-    return x >= rectX and x <= rectX + w and y >= rectY and y <= rectY + h
+function ItemBrowser:open()
+    self.state.ignoreMouseUntilRelease = true
+    if #self.allItems == 0 then self.allItems = buildItemList() end
+    self.isOpen = true
+    self.searchQuery = ""
+    self.scrollY = 0
+    self.draggedItem = nil
+    self.searchFocused = false
+    self.dragStartX = 0
+    self.dragStartY = 0
+    self:filterItems()
 end
 
-function ItemBrowser.open()
-    ignoreMouseUntilRelease = true
-    if #allItems == 0 then buildItemList() end
-    ItemBrowser.isOpen = true
-    ItemBrowser.searchQuery = ""
-    ItemBrowser.scrollY = 0
-    ItemBrowser.draggedItem = nil
-    ItemBrowser.searchFocused = false
-    ItemBrowser.dragStartX = 0
-    ItemBrowser.dragStartY = 0
-    filterItems()
+function ItemBrowser:close()
+    self.isOpen = false
+    self.draggedItem = nil
+    self.searchFocused = false
 end
 
-function ItemBrowser.close()
-    ItemBrowser.isOpen = false
-    ItemBrowser.draggedItem = nil
-    ItemBrowser.searchFocused = false
+function ItemBrowser:toggle()
+    if self.isOpen then self:close() else self:open() end
 end
 
-function ItemBrowser.clampScroll()
-    clampScroll()
+function ItemBrowser:handleTextInput(text)
+    if not self.searchFocused then return end
+    self.searchQuery = self.searchQuery .. text
+    self:filterItems()
+    self.scrollY = 0
 end
 
-function ItemBrowser.toggle()
-    if ItemBrowser.isOpen then ItemBrowser.close() else ItemBrowser.open() end
+function ItemBrowser:handleDelete()
+    if not self.searchFocused then return end
+    self.searchQuery = self.searchQuery:sub(1, -2)
+    self:filterItems()
 end
 
-function ItemBrowser.handleTextInput(text)
-    if not ItemBrowser.searchFocused then return end
-    ItemBrowser.searchQuery = ItemBrowser.searchQuery .. text
-    filterItems()
-    ItemBrowser.scrollY = 0
-end
-
-function ItemBrowser.handleDelete()
-    if not ItemBrowser.searchFocused then return end
-    ItemBrowser.searchQuery = ItemBrowser.searchQuery:sub(1, -2)
-    filterItems()
-end
-
-function ItemBrowser.handleOutsideClick(px, py, worldX, worldY)
+function ItemBrowser:handleOutsideClick(px, py, worldX, worldY)
     if isPointInRect(worldX, worldY, px, py, PANEL_WIDTH, PANEL_HEIGHT) then return false end
-    ItemBrowser.close()
+    self:close()
     return true
 end
 
-function ItemBrowser.handleSearchClick(px, py, worldX, worldY)
+function ItemBrowser:handleSearchClick(px, py, worldX, worldY)
     if isPointInRect(worldX, worldY, px + 10, py + 36, PANEL_WIDTH - 20, 24) then
-        ItemBrowser.searchFocused = true
+        self.searchFocused = true
         return true
     end
     return false
 end
 
-function ItemBrowser.handleGridClick(px, py, worldX, worldY)
+function ItemBrowser:handleGridClick(px, py, worldX, worldY)
     local found = false
-    forEachItemCell(px, py, function(item, cellX, cellY)
+    self:forEachItemCell(px, py, function(item, cellX, cellY)
         if not found and isPointInRect(worldX, worldY, cellX, cellY, ITEM_CELL_SIZE, ITEM_CELL_SIZE) then
-            ItemBrowser.draggedItem = item
-            ItemBrowser.dragStartX = worldX
-            ItemBrowser.dragStartY = worldY
+            self.draggedItem = item
+            self.dragStartX = worldX
+            self.dragStartY = worldY
             found = true
         end
     end)
     return found
 end
 
-function ItemBrowser.mousepressed(worldX, worldY)
-    if not ItemBrowser.isOpen then return end
+function ItemBrowser:mousepressed(worldX, worldY)
+    if not self.isOpen then return end
 
-    local px, py = getPanelPosition()
+    local px, py = self:getPanelPosition()
 
-    if ItemBrowser.handleOutsideClick(px, py, worldX, worldY) then return end
-    if ItemBrowser.handleSearchClick(px, py, worldX, worldY) then return end
+    if self:handleOutsideClick(px, py, worldX, worldY) then return end
+    if self:handleSearchClick(px, py, worldX, worldY) then return end
 
-    ItemBrowser.searchFocused = false
-    ItemBrowser.handleGridClick(px, py, worldX, worldY)
+    self.searchFocused = false
+    self:handleGridClick(px, py, worldX, worldY)
 end
 
-function ItemBrowser.autoPlaceItem(item)
-    for i = 1, MapBuilder.QUICK_ACCESS_COUNT do
-        if not MapBuilder.quickAccess[i] then
-            MapBuilder.setQuickAccess(i, item.key)
+function ItemBrowser:autoPlaceItem(item)
+    local mapBuilder = self.state.mapBuilder
+    for i = 1, mapBuilder.QUICK_ACCESS_COUNT do
+        if not mapBuilder.quickAccess[i] then
+            mapBuilder:setQuickAccess(i, item.key)
             return true
         end
     end
     return false
 end
 
-function ItemBrowser.dropOnSlot(worldX, worldY, item)
-    for i, rect in ipairs(MapBuilderHUD.getSlotRects()) do
+function ItemBrowser:dropOnSlot(worldX, worldY, item)
+    for i, rect in ipairs(self.state.mapBuilderHUD:getSlotRects()) do
         if isPointInRect(worldX, worldY, rect.x, rect.y, rect.w, rect.h) then
-            MapBuilder.setQuickAccess(i, item.key)
+            self.state.mapBuilder:setQuickAccess(i, item.key)
             return true
         end
     end
     return false
 end
 
-function ItemBrowser.mousereleased(worldX, worldY)
-    if not ItemBrowser.draggedItem then return end
+function ItemBrowser:mousereleased(worldX, worldY)
+    if not self.draggedItem then return end
 
-    local item = ItemBrowser.draggedItem
-    ItemBrowser.draggedItem = nil
+    local item = self.draggedItem
+    self.draggedItem = nil
 
-    if ItemBrowser.wasDragClick(worldX, worldY) then
-        ItemBrowser.autoPlaceItem(item)
+    if self:wasDragClick(worldX, worldY) then
+        self:autoPlaceItem(item)
         return
     end
 
-    ItemBrowser.dropOnSlot(worldX, worldY, item)
+    self:dropOnSlot(worldX, worldY, item)
 end
 
-function ItemBrowser.wasDragClick(worldX, worldY)
-    local dx = worldX - ItemBrowser.dragStartX
-    local dy = worldY - ItemBrowser.dragStartY
+function ItemBrowser:wasDragClick(worldX, worldY)
+    local dx = worldX - self.dragStartX
+    local dy = worldY - self.dragStartY
     return dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD
 end
 
-function ItemBrowser.drawOverlay()
+function ItemBrowser:drawOverlay()
+    local camera = self.state.camera
     love.graphics.setColor(0, 0, 0, 0.5)
-    love.graphics.rectangle("fill", camera.x, camera.y, scrWidth, scrHeight)
+    love.graphics.rectangle("fill", camera.x, camera.y, self.state.scrWidth, self.state.scrHeight)
 end
 
-function ItemBrowser.drawPanel(px, py)
+function ItemBrowser:drawPanel(px, py)
     love.graphics.setColor(0.15, 0.15, 0.15, 0.95)
     love.graphics.rectangle("fill", px, py, PANEL_WIDTH, PANEL_HEIGHT)
     love.graphics.setColor(0.4, 0.4, 0.4)
     love.graphics.rectangle("line", px, py, PANEL_WIDTH, PANEL_HEIGHT)
 end
 
-function ItemBrowser.drawTitle(px, py)
+function ItemBrowser:drawTitle(px, py)
     local font = Fonts.get(22)
     love.graphics.setFont(font)
     love.graphics.setColor(1, 1, 1)
     love.graphics.print("Building Items", px + 10, py + 8)
 end
 
-local function drawSearchBox(px, py)
+function ItemBrowser:drawSearchBox(px, py)
     love.graphics.setColor(0.25, 0.25, 0.25)
     love.graphics.rectangle("fill", px + 10, py + 36, PANEL_WIDTH - 20, 24)
 
-    if ItemBrowser.searchFocused then
+    if self.searchFocused then
         love.graphics.setColor(0.5, 0.7, 1.0)
     else
         love.graphics.setColor(0.5, 0.5, 0.5)
@@ -233,35 +243,35 @@ local function drawSearchBox(px, py)
     love.graphics.rectangle("line", px + 10, py + 36, PANEL_WIDTH - 20, 24)
 end
 
-local function getSearchDisplayText()
-    if ItemBrowser.searchFocused then
+function ItemBrowser:getSearchDisplayText()
+    if self.searchFocused then
         local cursor = love.timer.getTime() % 1 > 0.5 and "|" or " "
-        return ItemBrowser.searchQuery .. cursor
+        return self.searchQuery .. cursor
     end
-    if ItemBrowser.searchQuery ~= "" then
-        return ItemBrowser.searchQuery
+    if self.searchQuery ~= "" then
+        return self.searchQuery
     end
     return "Press SPACE or click to search"
 end
 
-local function drawSearchText(px, py)
+function ItemBrowser:drawSearchText(px, py)
     love.graphics.setFont(Fonts.get(16))
     love.graphics.setColor(0.8, 0.8, 0.8)
-    love.graphics.print(getSearchDisplayText(), px + 14, py + 38)
+    love.graphics.print(self:getSearchDisplayText(), px + 14, py + 38)
 end
 
-function ItemBrowser.drawSearchBar(px, py)
-    drawSearchBox(px, py)
-    drawSearchText(px, py)
+function ItemBrowser:drawSearchBar(px, py)
+    self:drawSearchBox(px, py)
+    self:drawSearchText(px, py)
 end
 
-function ItemBrowser.drawItemGrid(px, py)
-    forEachItemCell(px, py, function(item, cellX, cellY)
-        ItemBrowser.drawItemCell(cellX, cellY, item)
+function ItemBrowser:drawItemGrid(px, py)
+    self:forEachItemCell(px, py, function(item, cellX, cellY)
+        self:drawItemCell(cellX, cellY, item)
     end)
 end
 
-function ItemBrowser.drawItemCell(cellX, cellY, item)
+function ItemBrowser:drawItemCell(cellX, cellY, item)
     love.graphics.setColor(0.2, 0.2, 0.2)
     love.graphics.rectangle("fill", cellX, cellY, ITEM_CELL_SIZE, ITEM_CELL_SIZE)
     love.graphics.setColor(0.35, 0.35, 0.35)
@@ -274,23 +284,24 @@ function ItemBrowser.drawItemCell(cellX, cellY, item)
     love.graphics.print(item.name, cellX + 2, cellY + ITEM_CELL_SIZE + 4)
 end
 
-function ItemBrowser.drawDragGhost()
-    if not ItemBrowser.draggedItem then return end
+function ItemBrowser:drawDragGhost()
+    if not self.draggedItem then return end
     local mx, my = love.mouse.getPosition()
-    Textures.draw(ItemBrowser.draggedItem.material, mx + camera.x - 20, my + camera.y - 20, 40, 40, 0.8)
+    local camera = self.state.camera
+    Textures.draw(self.draggedItem.material, mx + camera.x - 20, my + camera.y - 20, 40, 40, 0.8)
 end
 
-function ItemBrowser.draw()
-    if not ItemBrowser.isOpen then return end
+function ItemBrowser:draw()
+    if not self.isOpen then return end
 
-    local px, py = getPanelPosition()
+    local px, py = self:getPanelPosition()
 
-    ItemBrowser.drawOverlay()
-    ItemBrowser.drawPanel(px, py)
-    ItemBrowser.drawTitle(px, py)
-    ItemBrowser.drawSearchBar(px, py)
-    ItemBrowser.drawItemGrid(px, py)
-    ItemBrowser.drawDragGhost()
+    self:drawOverlay()
+    self:drawPanel(px, py)
+    self:drawTitle(px, py)
+    self:drawSearchBar(px, py)
+    self:drawItemGrid(px, py)
+    self:drawDragGhost()
 end
 
 return ItemBrowser

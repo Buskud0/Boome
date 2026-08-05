@@ -1,11 +1,23 @@
-Menu = Object:extend()
+-- Pause menu: screen stack, keyboard/mouse selection and actions.
 
-local function buildMainOptions()
+local Config = require "core.config"
+local Input = require "core.input"
+
+local Menu = {}
+Menu.__index = Menu
+
+local PANEL_WIDTH = Config.MENU_PANEL_WIDTH
+local OPTION_HEIGHT = Config.MENU_OPTION_HEIGHT
+local OPTION_GAP = Config.MENU_OPTION_GAP
+local TITLE_OFFSET_Y = Config.MENU_TITLE_OFFSET_Y
+local OPTIONS_OFFSET_Y = Config.MENU_OPTIONS_OFFSET_Y
+
+local function buildMainOptions(self)
     local options = {
         { label = "Resume",         action = "resume" },
         { label = "Build Maps",     action = "enter_editor" },
     }
-    if gameMode == "mapbuilder" then
+    if self.state.gameMode == "mapbuilder" then
         table.insert(options, { label = "Switch to Horde", action = "enter_horde_now" })
     else
         table.insert(options, { label = "Switch Horde Map", action = "enter_horde_map" })
@@ -17,17 +29,17 @@ local function buildMainOptions()
     return options
 end
 
-local function buildScreens()
+local function buildScreens(self)
     return {
         main = {
             title = "PAUSED",
-            options = function() return buildMainOptions() end,
+            options = function() return buildMainOptions(self) end,
         },
         stats = {
             title = "STATS",
             options = {
-                { label = function() return "Max kills: " .. Horde.maxKills end,   action = nil },
-                { label = function() return "Max rounds: " .. Horde.maxRounds end, action = nil },
+                { label = function() return "Max kills: " .. self.state.horde.maxKills end,   action = nil },
+                { label = function() return "Max rounds: " .. self.state.horde.maxRounds end, action = nil },
                 { label = "Back", action = "back" },
             },
         },
@@ -43,19 +55,16 @@ local function buildScreens()
     }
 end
 
-local PANEL_WIDTH = MENU_PANEL_WIDTH
-local OPTION_HEIGHT = MENU_OPTION_HEIGHT
-local OPTION_GAP = MENU_OPTION_GAP
-local TITLE_OFFSET_Y = MENU_TITLE_OFFSET_Y
-local OPTIONS_OFFSET_Y = MENU_OPTIONS_OFFSET_Y
-
-function Menu:new()
-    self.screens = buildScreens()
+function Menu.new(state)
+    local self = setmetatable({}, Menu)
+    self.state = state
+    self.screens = buildScreens(self)
     self.stack = {}
     self.selection = 1
     self.lastMouseX = -1
     self.lastMouseY = -1
     self.optionRects = {}
+    return self
 end
 
 function Menu:currentScreen()
@@ -67,7 +76,7 @@ function Menu:currentScreen()
 end
 
 function Menu:openSubmenu(name)
-    ignoreMouseUntilRelease = true
+    self.state.ignoreMouseUntilRelease = true
     table.insert(self.stack, name)
     self:resetFocus()
 end
@@ -144,18 +153,18 @@ function Menu:doAction(action)
         self:closeSubmenu()
     elseif action == "enter_editor" then
         self.stack = {}
-        paused = false
-        enterMapSelect("builder")
+        self.state.paused = false
+        self.state.enterMapSelect("builder")
     elseif action == "enter_horde_map" then
         self.stack = {}
-        paused = false
-        enterMapSelect("horde")
+        self.state.paused = false
+        self.state.enterMapSelect("horde")
     elseif action == "enter_horde_now" then
         self.stack = {}
-        paused = false
-        startHordeWith(MapBuilder.currentMapName)
+        self.state.paused = false
+        self.state.startHordeWith(self.state.mapBuilder.currentMapName)
     elseif action == "coming_soon" then
-        Toast.show("Coming soon!", 2)
+        self.state.toast:show("Coming soon!", 2)
     elseif action == "quit" then
         love.event.quit()
     elseif action:match("^screen_") then
@@ -163,89 +172,6 @@ function Menu:doAction(action)
     end
 end
 
-function Menu:draw()
-    self.optionRects = {}
-    local screen = self:currentScreen()
-    if not screen then return end
+require("ui.menu.menu_draw")(Menu)
 
-    local panelHeight = OPTIONS_OFFSET_Y + #screen.options * OPTION_GAP
-    local px = scrWidth / 2 - PANEL_WIDTH / 2 + camera.x
-    local py = scrHeight / 2 - panelHeight / 2 + camera.y
-
-    self:drawPanel(px, py, panelHeight)
-    self:drawTitle(screen.title, px, py)
-    self:drawOptions(screen, px, py)
-end
-
-function Menu:drawPanel(px, py, panelHeight)
-    love.graphics.setColor(0.15, 0.15, 0.15, 0.95)
-    love.graphics.rectangle("fill", px, py, PANEL_WIDTH, panelHeight)
-    love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.rectangle("line", px, py, PANEL_WIDTH, panelHeight)
-end
-
-function Menu:drawTitle(title, px, py)
-    local font = Fonts.get(36)
-    love.graphics.setFont(font)
-    love.graphics.setColor(1, 1, 1)
-    local titleW = font:getWidth(title)
-    love.graphics.print(title, px + PANEL_WIDTH / 2 - titleW / 2, py + TITLE_OFFSET_Y)
-end
-
-function Menu:drawOptions(screen, px, py)
-    local mouseX, mouseY = Input.getMousePosition()
-    mouseX = mouseX + camera.x
-    mouseY = mouseY + camera.y
-    local mouseMoved = self:_updateMousePosition(mouseX, mouseY)
-
-    local font = Fonts.get(24)
-    local optionY = py + OPTIONS_OFFSET_Y
-    for i, entry in ipairs(screen.options) do
-        local label = self:_resolveLabel(entry.label)
-        local rect = { x = px + 15, y = optionY, w = PANEL_WIDTH - 30, h = OPTION_HEIGHT }
-
-        if mouseMoved then
-            self:updateHover(entry, rect, mouseX, mouseY, i)
-        end
-
-        self:drawOption(entry, rect, label, font, i)
-        self.optionRects[i] = rect
-        optionY = optionY + OPTION_GAP
-    end
-end
-
-function Menu:_updateMousePosition(mouseX, mouseY)
-    local mouseMoved = mouseX ~= self.lastMouseX or mouseY ~= self.lastMouseY
-    if mouseMoved then
-        self.lastMouseX = mouseX
-        self.lastMouseY = mouseY
-    end
-    return mouseMoved
-end
-
-function Menu:_resolveLabel(label)
-    if type(label) == "function" then
-        return label()
-    end
-    return label
-end
-
-function Menu:drawOption(entry, rect, label, font, index)
-    if index == self.selection and entry.action then
-        love.graphics.setColor(0.3, 0.5, 0.7)
-        love.graphics.rectangle("fill", rect.x, rect.y, rect.w, rect.h)
-    end
-
-    love.graphics.setFont(font)
-    love.graphics.setColor(1, 1, 1)
-    local labelW = font:getWidth(label)
-    love.graphics.print(label, rect.x + rect.w / 2 - labelW / 2, rect.y + 6)
-end
-
-function Menu:updateHover(entry, rect, mouseX, mouseY, index)
-    if entry.action and
-       mouseX >= rect.x and mouseX <= rect.x + rect.w and
-       mouseY >= rect.y and mouseY <= rect.y + rect.h then
-        self.selection = index
-    end
-end
+return Menu

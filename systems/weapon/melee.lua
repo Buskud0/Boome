@@ -1,14 +1,27 @@
-Melee = Weapon:extend()
+local Object = require "lib.classic"
+local Weapon = require "systems.weapon.weapon"
+local Config = require "core.config"
+local Input = require "core.input"
+local Collision = require "world.physics.collision"
+local DamageText = require "entities.damage_text"
 
-function Melee:new(model)
-    Melee.super.new(self, model)
-    local stats = WEAPONS[model]
+local Melee = Weapon:extend()
+
+local STAB_DURATION = Config.MELEE_STAB_DURATION
+local SWING_DURATION = Config.MELEE_SWING_DURATION
+local SWING_HALF_ANGLE = Config.MELEE_SWING_HALF_ANGLE
+local STAB_STAMINA_COST = Config.MELEE_STAB_STAMINA_COST
+local SWING_STAMINA_COST = Config.MELEE_SWING_STAMINA_COST
+
+function Melee:new(state, model)
+    Melee.super.new(self, state, model)
+    local stats = Config.WEAPONS[model]
 
     self.range = stats.range or 50
     self.swingRange = self.range
-    self.swingHalfAngle = MELEE_SWING_HALF_ANGLE
-    self.stabStaminaCost = stats.stabStaminaCost or MELEE_STAB_STAMINA_COST
-    self.swingStaminaCost = stats.swingStaminaCost or MELEE_SWING_STAMINA_COST
+    self.swingHalfAngle = SWING_HALF_ANGLE
+    self.stabStaminaCost = stats.stabStaminaCost or STAB_STAMINA_COST
+    self.swingStaminaCost = stats.swingStaminaCost or SWING_STAMINA_COST
 
     self.stabTimer = 0
     self.stabDirX, self.stabDirY = 0, 0
@@ -46,7 +59,7 @@ function Melee:_trySwing()
 end
 
 function Melee:_isMeleeInputReady(inputAction, wasPressedFlag)
-    if Inventory.drag or ignoreMouseUntilRelease then return false end
+    if self.state.inventory.drag or self.state.ignoreMouseUntilRelease then return false end
     if not Input.isDown(inputAction) then
         self[wasPressedFlag] = false
         return false
@@ -73,13 +86,14 @@ function Melee:_updateSwing(dt)
 end
 
 function Melee:_spendStamina(cost)
+    local player = self.state.player
     if player.stamina < cost then return false end
     player:spendStamina(cost)
     return true
 end
 
 function Melee:_performSwing()
-    local px, py = player:getCenter()
+    local px, py = self.state.player:getCenter()
     local dirX, dirY = self:_getAimDirection(px, py)
     if dirX == 0 and dirY == 0 then return end
 
@@ -89,7 +103,7 @@ function Melee:_performSwing()
 end
 
 function Melee:_performStab()
-    local px, py = player:getCenter()
+    local px, py = self.state.player:getCenter()
     local dirX, dirY = self:_getAimDirection(px, py)
     if dirX == 0 and dirY == 0 then return end
 
@@ -99,35 +113,35 @@ function Melee:_performStab()
 end
 
 function Melee:_damageBlockAtTip(dirX, dirY)
-    local px, py = player:getCenter()
-    grid:damageTile(px + dirX * self.range, py + dirY * self.range, self.damage)
+    local px, py = self.state.player:getCenter()
+    self.state.grid:damageTile(px + dirX * self.range, py + dirY * self.range, self.damage)
 end
 
 function Melee:_startSwingAnimation(dirX, dirY)
-    self.swingTimer = MELEE_SWING_DURATION
+    self.swingTimer = SWING_DURATION
     self.swingDirX, self.swingDirY = dirX, dirY
 end
 
 function Melee:_startStabAnimation(dirX, dirY)
-    self.stabTimer = MELEE_STAB_DURATION
+    self.stabTimer = STAB_DURATION
     self.stabDirX, self.stabDirY = dirX, dirY
 end
 
 function Melee:_damageZombiesAlongSegment(px, py, dirX, dirY)
     local tx = px + dirX * self.range
     local ty = py + dirY * self.range
-    for _, zombie in ipairs(zombies) do
+    for _, zombie in ipairs(self.state.zombies) do
         local zx, zy = zombie:getCenter()
-        if Collisions.segmentHitsCircle(px, py, tx, ty, zx, zy, zombie.radius) then
+        if Collision.segmentHitsCircle(px, py, tx, ty, zx, zy, zombie.radius) then
             self:_damageZombie(zombie)
         end
     end
 end
 
 function Melee:_damageZombiesInSector(px, py, dirX, dirY)
-    for _, zombie in ipairs(zombies) do
+    for _, zombie in ipairs(self.state.zombies) do
         local zx, zy = zombie:getCenter()
-        if Collisions.circleHitsSector(px, py, dirX, dirY, self.swingHalfAngle, self.swingRange, zx, zy, zombie.radius) then
+        if Collision.circleHitsSector(px, py, dirX, dirY, self.swingHalfAngle, self.swingRange, zx, zy, zombie.radius) then
             self:_damageZombie(zombie)
         end
     end
@@ -135,14 +149,14 @@ end
 
 function Melee:_damageZombie(zombie)
     zombie:takeDamage(self.damage)
-    table.insert(damageTexts, DamageText(-self.damage, zombie.x, zombie.y))
+    table.insert(self.state.damageTexts, DamageText(-self.damage, zombie.x, zombie.y))
 end
 
 function Melee:_drawStab()
     if self.stabTimer <= 0 then return end
 
-    local px, py = player:getCenter()
-    local progress = 1 - self.stabTimer / MELEE_STAB_DURATION
+    local px, py = self.state.player:getCenter()
+    local progress = 1 - self.stabTimer / STAB_DURATION
     local extend = progress < 0.5 and progress * 2 or 2 - progress * 2
     local length = self.range * extend
 
@@ -158,9 +172,9 @@ end
 function Melee:_drawSwing()
     if self.swingTimer <= 0 then return end
 
-    local px, py = player:getCenter()
+    local px, py = self.state.player:getCenter()
     local baseAngle = math.atan2(self.swingDirY, self.swingDirX)
-    local progress = 1 - self.swingTimer / MELEE_SWING_DURATION
+    local progress = 1 - self.swingTimer / SWING_DURATION
     local swingAngle = baseAngle - self.swingHalfAngle + self.swingHalfAngle * 2 * progress
 
     local ex = px + math.cos(swingAngle) * self.swingRange
@@ -171,3 +185,5 @@ function Melee:_drawSwing()
     love.graphics.line(px, py, ex, ey)
     love.graphics.setLineWidth(1)
 end
+
+return Melee
