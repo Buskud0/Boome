@@ -17,7 +17,7 @@ MAPBUILDER_PAN_SPEED = 300
 MAPBUILDER_BLOCK_SIZE = 4
 MAPBUILDER_DRAG_THRESHOLD = 10
 MAPBUILDER_MAX_UNDO = 100
-MAPBUILDER_PLACE_INTERVAL = 0.08
+MAPBUILDER_PLACE_INTERVAL = 0
 MAPBUILDER_QUICK_ACCESS_COUNT = 10
 MAPBUILDER_ZOOM_FACTOR = 1.1
 MAPBUILDER_ZOOM_MAX = 10
@@ -140,20 +140,23 @@ BUYMENU_PANEL_WIDTH = 420
 BUYMENU_TITLE_OFFSET_Y = 10
 
 BLOCK_ITEMS = {
-    dirt = { name = "Dirt", material = "dirt", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 0.85 },
+    dirt = { name = "Dirt", material = "dirt", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     grass = { name = "Grass", material = "grass", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     rock_path = { name = "Rock Path", material = "rock_path", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     shop = { name = "Shop", material = "shop", health = 0, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
-    stone = { name = "Stone", material = "stone", health = 3000, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
+    stone_wall = { name = "Stone Wall", material = "stone_wall", health = 3000, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
     water = { name = "Water", material = "water", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 0.5 },
     wood_wall = { name = "Wood Wall", material = "wood_wall", health = 1000, blocksMovement = true, blocksVision = true, speedMultiplier = 1 },
+    sand = { name = "Sand", material = "sand", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
+    glass = { name = "Glass", material = "glass", health = 50, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
 }
 
 OBJECT_ITEMS = {
-    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 100, blocksMovement = true, blocksVision = false, chest = true },
-    barrel = { name = "Barrel", material = "barrel", health = 80, blocksMovement = true, blocksVision = false, chest = true },
-    bush = { name = "Bush", material = "bush", health = 40, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true },
-    tree = { name = "Tree", material = "tree", health = 250, blocksMovement = true, blocksVision = false, regrows = true },
+    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 200, blocksMovement = true, blocksVision = false },
+    barrel = { name = "Barrel", material = "barrel", health = 150, blocksMovement = true, blocksVision = false, chest = true },
+    bush = { name = "Bush", material = "bush", health = 60, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true },
+    tree = { name = "Tree", material = "tree", health = 500, blocksMovement = true, blocksVision = false, regrows = true },
+    stone = { name = "Stone", material = "stone", health = 1500, blocksMovement = true, blocksVision = false, regrows = true },
 }
 
 BUILDING_ITEMS = {}

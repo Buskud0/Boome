@@ -198,7 +198,14 @@ function MapBuilder.tryPlaceObject(col, row, item, silent)
     return true
 end
 
+function MapBuilder.snapToBlockGrid(col, row)
+    local snappedCol = math.floor((col - 1) / BLOCK_SIZE) * BLOCK_SIZE + 1
+    local snappedRow = math.floor((row - 1) / BLOCK_SIZE) * BLOCK_SIZE + 1
+    return snappedCol, snappedRow
+end
+
 function MapBuilder.tryPlaceBlock(col, row, item, silent)
+    col, row = MapBuilder.snapToBlockGrid(col, row)
     if not grid:isAreaFreeOfBlocks(col, row, BLOCK_SIZE) then
         if not silent then Toast.show("Area occupied by another block", 1.5) end
         return false
@@ -376,6 +383,7 @@ function MapBuilder.drawBackground()
     love.graphics.setColor(0.45, 0.45, 0.45)
     love.graphics.rectangle("fill", 0, 0, mapWidth, mapHeight)
     grid:draw()
+    grid:drawBushesAboveEntities()
 end
 
 function MapBuilder.drawGridLines(tileSize)
@@ -395,6 +403,10 @@ function MapBuilder.drawHoverIndicator(tileSize)
     if not MapBuilder.isValidTile(col, row) then return end
 
     if ItemBrowser.isOpen or MapBuilderHUD.isPointerOverHUD(mx + camera.x, my + camera.y) then return end
+
+    if not MapBuilder.isSelectedItemObject() then
+        col, row = MapBuilder.snapToBlockGrid(col, row)
+    end
 
     love.graphics.setColor(0.3, 0.5, 1.0, 0.1)
     love.graphics.rectangle("fill", (col - 1) * tileSize, (row - 1) * tileSize, BLOCK_SIZE * tileSize, BLOCK_SIZE * tileSize)
@@ -517,6 +529,11 @@ function MapBuilder.handleClick(x, y, button)
                     ItemBrowser.mousepressed(wx, wy)
                 end
             end
+        elseif button == 2 then
+            local slotIndex = MapBuilder.slotIndexAtPosition(wx, wy)
+            if slotIndex then
+                MapBuilder.dropItemFromSlot(slotIndex)
+            end
         end
         return
     end
@@ -551,6 +568,11 @@ function MapBuilder.handleLeftClick(wx, wy, x, y)
 end
 
 function MapBuilder.handleRightClick(wx, wy, x, y)
+    local slotIndex = MapBuilder.slotIndexAtPosition(wx, wy)
+    if slotIndex then
+        MapBuilder.dropItemFromSlot(slotIndex)
+        return
+    end
     if MapBuilderHUD.isPointerOverHUD(wx, wy) then return end
     local col, row = MapBuilder.screenToGrid(x, y)
     MapBuilder.placeBlock(col, row)
@@ -621,7 +643,6 @@ function MapBuilder.finalizeSlotDrag(x, y)
         return
     end
 
-    if MapBuilder.tryClearSlotOnItemBrowser(wx, wy) then return end
     if MapBuilder.trySwapSlotWithTarget(wx, wy) then return end
 
     MapBuilder.completeSlotClick(MapBuilder.dragSlot)
@@ -638,14 +659,11 @@ function MapBuilder.completeSlotClick(slotIndex)
     MapBuilder.dragSlot = nil
 end
 
-function MapBuilder.tryClearSlotOnItemBrowser(wx, wy)
-    if not ItemBrowser.isOpen then return false end
-    local px = math.floor(scrWidth / 2 - 250 + camera.x)
-    local py = math.floor(scrHeight / 2 - 200 + camera.y)
-    if MapBuilder.isPointInRect(wx, wy, { x = px, y = py, w = 500, h = 400 }) then return false end
-    MapBuilder.quickAccess[MapBuilder.dragSlot] = nil
-    MapBuilder.dragSlot = nil
-    return true
+function MapBuilder.dropItemFromSlot(slotIndex)
+    if not MapBuilder.quickAccess[slotIndex] then return end
+    MapBuilder.quickAccess[slotIndex] = nil
+    if MapBuilder.dragSlot == slotIndex then MapBuilder.dragSlot = nil end
+    Toast.show("Item removed", 1)
 end
 
 function MapBuilder.trySwapSlotWithTarget(wx, wy)
