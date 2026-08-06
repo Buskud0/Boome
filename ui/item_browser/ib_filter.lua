@@ -9,6 +9,7 @@ local ITEM_CELL_SIZE = Config.ITEM_BROWSER_ITEM_CELL_SIZE
 local ITEM_CELL_GAP = Config.ITEM_BROWSER_ITEM_CELL_GAP
 local ITEMS_PER_ROW = Config.ITEM_BROWSER_ITEMS_PER_ROW
 local HEADER_HEIGHT = Config.ITEM_BROWSER_HEADER_HEIGHT
+local GRID_TOP = HEADER_HEIGHT + 18
 
 local function isPointInRect(x, y, rectX, rectY, w, h)
     return x >= rectX and x <= rectX + w and y >= rectY and y <= rectY + h
@@ -23,7 +24,7 @@ return function(ItemBrowser)
             return
         end
         local contentHeight = numRows * rowH
-        local visibleHeight = PANEL_HEIGHT - HEADER_HEIGHT
+        local visibleHeight = PANEL_HEIGHT - GRID_TOP
         local maxScroll = math.max(0, contentHeight - visibleHeight)
         if self.scrollY > maxScroll then
             self.scrollY = maxScroll
@@ -50,7 +51,7 @@ return function(ItemBrowser)
     end
 
     function ItemBrowser:forEachItemCell(px, py, fn)
-        local gridStartY = py + HEADER_HEIGHT - self.scrollY
+        local gridStartY = py + GRID_TOP - self.scrollY
         local col, row = 0, 0
         for _, item in ipairs(self.filteredItems) do
             local cellX = px + 10 + col * (ITEM_CELL_SIZE + ITEM_CELL_GAP)

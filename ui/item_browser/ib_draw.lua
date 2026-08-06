@@ -17,7 +17,7 @@ local FILTER_H = 26
 local FILTER_GAP = 8
 local GRID_LEFT = 10
 local GRID_RIGHT_PAD = 14
-local GRID_TOP = HEADER_HEIGHT
+local GRID_TOP = HEADER_HEIGHT + 18
 
 return function(ItemBrowser)
     function ItemBrowser:gridWidth()
@@ -141,9 +141,12 @@ return function(ItemBrowser)
         local rowH = ITEM_CELL_SIZE + ITEM_CELL_GAP
         local numRows = math.max(1, math.ceil(#self.filteredItems / ITEMS_PER_ROW))
         local contentHeight = numRows * rowH
+        if contentHeight <= gridH then return end
+
         local trackX = px + GRID_LEFT + self:gridWidth()
         local trackY = py + GRID_TOP
         local thumbH = math.max(20, gridH * (gridH / contentHeight))
+        if thumbH > gridH then thumbH = gridH end
         local range = math.max(1, contentHeight - gridH)
         local thumbY = trackY + (gridH - thumbH) * (self.scrollY / range)
 
