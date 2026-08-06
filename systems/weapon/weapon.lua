@@ -65,7 +65,7 @@ function Weapon:_getAimDirection(startX, startY)
     return dx / length, dy / length
 end
 
-Gun = Weapon:extend()
+local Gun = Weapon:extend()
 
 function Gun:new(state, model)
     Gun.super.new(self, state, model)
