@@ -65,10 +65,9 @@ return function(Grid)
 
     function Grid:destructibleRecordAt(worldX, worldY)
         local col, row = self:tileAt(worldX, worldY)
-        if not col then return nil, false end
-        local list, _, record = self:_destructibleRecordAt(col, row)
-        if not record then return nil, false end
-        return record, list == self.objectRecords
+        if not col then return nil end
+        local _, _, record = self:_destructibleRecordAt(col, row)
+        return record
     end
 
     function Grid:damageTile(worldX, worldY, amount)

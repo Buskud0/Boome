@@ -156,11 +156,11 @@ Config.BLOCK_ITEMS = {
 }
 
 Config.OBJECT_ITEMS = {
-    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 200, blocksMovement = true, blocksVision = false },
-    barrel = { name = "Barrel", material = "barrel", health = 150, blocksMovement = true, blocksVision = false, chest = true },
-    bush = { name = "Bush", material = "bush", health = 60, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true },
-    tree = { name = "Tree", material = "tree", health = 500, blocksMovement = true, blocksVision = false, regrows = true },
-    stone = { name = "Stone", material = "stone", health = 1500, blocksMovement = true, blocksVision = false, regrows = true },
+    toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 200, blocksMovement = true, blocksVision = false, penetrative = false },
+    barrel = { name = "Barrel", material = "barrel", health = 150, blocksMovement = true, blocksVision = false, chest = true, penetrative = false },
+    bush = { name = "Bush", material = "bush", health = 60, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true, penetrative = true },
+    tree = { name = "Tree", material = "tree", health = 500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false },
+    stone = { name = "Stone", material = "stone", health = 1500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false },
 }
 
 Config.BUILDING_ITEMS = {}
@@ -178,7 +178,6 @@ Config.WEAPONS = {
         spread = 4,
         hipfireSpread = 8,
         price = 0,
-        penetrationLoss = 20,
         scope = 50,
     },
     ["MAC-10"] = {
@@ -191,7 +190,6 @@ Config.WEAPONS = {
         spread = 7,
         hipfireSpread = 15,
         price = 0,
-        penetrationLoss = 9,
         scope = 50,
     },
     AWP = {
@@ -204,7 +202,6 @@ Config.WEAPONS = {
         spread = 2,
         hipfireSpread = 14,
         price = 0,
-        penetrationLoss = 75,
         scope = 200,
     },
     ["REMINGTON-870"] = {
@@ -217,7 +214,6 @@ Config.WEAPONS = {
         spread = 13,
         hipfireSpread = 25,
         price = 0,
-        penetrationLoss = 14,
         scope = 50,
     },
     AK47 = {
@@ -230,7 +226,6 @@ Config.WEAPONS = {
         spread = 4,
         hipfireSpread = 8,
         price = 0,
-        penetrationLoss = 17,
         scope = 100,
     },
     BAYONET = {

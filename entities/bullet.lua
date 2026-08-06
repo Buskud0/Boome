@@ -3,7 +3,7 @@ local Textures = require "core.textures"
 
 local Bullet = Object:extend()
 
-function Bullet:new(x, y, dx, dy, damage, penetrationLoss)
+function Bullet:new(x, y, dx, dy, damage)
 	self.x = x
 	self.y = y
 	self.width = 8
@@ -12,15 +12,13 @@ function Bullet:new(x, y, dx, dy, damage, penetrationLoss)
 	self.dx = dx
 	self.dy = dy
 	self.damage = damage
-	self.penetrationLoss = penetrationLoss
 	self.hitZombies = {}
 	self.penetratedTiles = {}
 	self.sprite = "bullet"
 end
 
-function Bullet:applyPenetrationLoss()
-    if not self.penetrationLoss then return false end
-    self.damage = self.damage - self.penetrationLoss
+function Bullet:applyHit(targetHealthBefore)
+    self.damage = self.damage - targetHealthBefore
     return self.damage > 0
 end
 

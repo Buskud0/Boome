@@ -77,7 +77,6 @@ function Gun:new(state, model)
     self.bulletAmount = stats.bulletAmount
     self.spread = stats.spread
     self.hipfireSpread = stats.hipfireSpread or stats.spread
-    self.penetrationLoss = stats.penetrationLoss
     self.scope = stats.scope
 
     self.capacity = self.magSize
@@ -169,7 +168,7 @@ end
 function Gun:shootBullet()
     local startX, startY = self:_getMuzzlePosition()
     local bulletDx, bulletDy = self:_calculateBulletDirection(startX, startY)
-    table.insert(self.state.bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage, self.penetrationLoss))
+    table.insert(self.state.bullets, Bullet(startX, startY, bulletDx, bulletDy, self.damage))
 end
 
 function Gun:_getMuzzlePosition()
