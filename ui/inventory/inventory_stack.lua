@@ -18,31 +18,27 @@ return function(Inventory)
         return stackSizeOf(model)
     end
 
-    function Inventory:hasRoomFor(item)
-        if self:isStackable(item) then
-            for i = 1, self.MAX_SLOTS do
-                local slot = self.state.items[i]
-                if slot and slot.model == item.model then
-                    if slot.count + item.count <= stackSizeOf(item.model) then
-                        return true
-                    end
-                end
+    function Inventory:_findMergeSlot(item)
+        if not self:isStackable(item) then return nil end
+        for i = 1, self.MAX_SLOTS do
+            local slot = self.state.items[i]
+            if slot and slot.model == item.model and slot.count + item.count <= stackSizeOf(item.model) then
+                return i
             end
         end
+        return nil
+    end
+
+    function Inventory:hasRoomFor(item)
+        if self:_findMergeSlot(item) then return true end
         return self:findFirstEmptySlot() ~= nil
     end
 
     function Inventory:addItem(item)
-        if self:isStackable(item) then
-            for i = 1, self.MAX_SLOTS do
-                local slot = self.state.items[i]
-                if slot and slot.model == item.model then
-                    if slot.count + item.count <= stackSizeOf(item.model) then
-                        slot.count = slot.count + item.count
-                        return true
-                    end
-                end
-            end
+        local merge = self:_findMergeSlot(item)
+        if merge then
+            self.state.items[merge].count = self.state.items[merge].count + item.count
+            return true
         end
         local empty = self:findFirstEmptySlot()
         if not empty then return false end
@@ -72,5 +68,9 @@ return function(Inventory)
 
     function Inventory:isEquippable(obj)
         return obj ~= nil and obj.isItem ~= true
+    end
+
+    function Inventory:isSlotEquippable(i)
+        return i >= 1 and i <= self.HOTBAR_SLOTS and self:isEquippable(self.state.items[i])
     end
 end

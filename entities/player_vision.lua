@@ -63,10 +63,8 @@ return function(Player)
     end
 
     function Player:_computeAimAngle(px, py)
-        local mx, my = Coordinates.screenToWorld(self.state, love.mouse.getPosition())
-        local dx, dy = mx - px, my - py
-        local len = math.sqrt(dx * dx + dy * dy)
-        if len == 0 then return -math.pi / 2 end
+        local dx, dy = Coordinates.aimDirection(self.state, px, py)
+        if dx == 0 and dy == 0 then return -math.pi / 2 end
         local step = self:getFov() / LIGHT_SEGMENTS
         return math.floor(math.atan2(dy, dx) / step + 0.5) * step
     end

@@ -57,12 +57,7 @@ function Weapon:_updateFirerateCooldown(dt)
 end
 
 function Weapon:_getAimDirection(startX, startY)
-    local mouseX, mouseY = Coordinates.screenToWorld(self.state, love.mouse.getX(), love.mouse.getY())
-    local dx = mouseX - startX
-    local dy = mouseY - startY
-    local length = math.sqrt(dx * dx + dy * dy)
-    if length == 0 then return 0, 0 end
-    return dx / length, dy / length
+    return Coordinates.aimDirection(self.state, startX, startY)
 end
 
 local Gun = Weapon:extend()

@@ -53,6 +53,10 @@ return function(BuyMenu)
         return false
     end
 
+    function BuyMenu:isOwned(model)
+        return not self:isItemModel(model) and self:playerHasWeapon(model)
+    end
+
     function BuyMenu:canAffordWeapon(model)
         return self.state.player.money >= priceOf(model)
     end

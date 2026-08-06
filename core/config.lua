@@ -32,6 +32,13 @@ Config.ZOMBIE_SPIDOR_WEIGHT_BASE = 0.4
 Config.ZOMBIE_SPIDOR_WEIGHT_FALLOFF = 0.04
 Config.ZOMBIE_WEIGHT_CAP = 0.35
 Config.ZOMBIE_ROTTER_WEIGHT_MIN = 0.3
+Config.ZOMBIE_STATS = {
+    runner = { speed = 100, maxHealth = 50, color = {0.8, 0.6, 0} },
+    rotter = { speed = 50, maxHealth = 100, color = {1, 0.2, 0} },
+    lastBreath = { speed = 25, maxHealth = 300, color = {1, 0.2, 0.5} },
+    spidor = { speed = 50, maxHealth = 60, color = {0.4, 0, 0.8} },
+}
+Config.ZOMBIE_REWARDS = { runner = 5, rotter = 10, lastBreath = 15, spidor = 8 }
 Config.ZOMBIE_SPAWN_INTERVAL_BASE = 2
 Config.ZOMBIE_SPAWN_INTERVAL_MIN = 0.4
 Config.ZOMBIE_SPAWN_INTERVAL_PER_ROUND = 0.06

@@ -15,4 +15,14 @@ function Coordinates.worldToScreen(state, wx, wy)
            (wy - cy) * state.camera.zoom - state.camera.y + cy
 end
 
+-- Normalized direction from (fromX, fromY) toward the mouse cursor.
+-- Returns 0, 0 when the cursor is exactly on the origin.
+function Coordinates.aimDirection(state, fromX, fromY)
+    local mx, my = Coordinates.screenToWorld(state, love.mouse.getPosition())
+    local dx, dy = mx - fromX, my - fromY
+    local length = math.sqrt(dx * dx + dy * dy)
+    if length == 0 then return 0, 0 end
+    return dx / length, dy / length
+end
+
 return Coordinates

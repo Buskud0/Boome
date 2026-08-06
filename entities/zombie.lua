@@ -32,27 +32,10 @@ function Zombie:new(state, type, x, y)
 end
 
 function Zombie:_applyTypeStats()
-    if self.type == "runner" then
-        self.speed = 100
-        self.maxHealth = 50
-        self.color = {0.8, 0.6, 0}
-    elseif self.type == "rotter" then
-        self.speed = 50
-        self.maxHealth = 100
-        self.color = {1, 0.2, 0}
-    elseif self.type == "lastBreath" then
-        self.speed = 25
-        self.maxHealth = 300
-        self.color = {1, 0.2, 0.5}
-    elseif self.type == "spidor" then
-        self.speed = 50
-        self.maxHealth = 60
-        self.color = {0.4, 0, 0.8}
-    else
-        self.speed = 50
-        self.maxHealth = 100
-        self.color = {1, 0.2, 0}
-    end
+    local stats = Config.ZOMBIE_STATS[self.type] or Config.ZOMBIE_STATS.rotter
+    self.speed = stats.speed
+    self.maxHealth = stats.maxHealth
+    self.color = stats.color
 end
 
 function Zombie:update(dt)

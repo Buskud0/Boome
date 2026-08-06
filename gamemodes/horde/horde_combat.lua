@@ -20,10 +20,8 @@ return function(Horde)
     end
 
     function Horde:rewardKill(zombie)
-        if zombie.type == "runner" then self.state.player.money = self.state.player.money + 5 end
-        if zombie.type == "rotter" then self.state.player.money = self.state.player.money + 10 end
-        if zombie.type == "lastBreath" then self.state.player.money = self.state.player.money + 15 end
-        if zombie.type == "spidor" then self.state.player.money = self.state.player.money + 8 end
+        local reward = Config.ZOMBIE_REWARDS[zombie.type]
+        if reward then self.state.player.money = self.state.player.money + reward end
     end
 
     function Horde:maybeDropPowerUp(zombie)
@@ -33,17 +31,13 @@ return function(Horde)
     end
 
     function Horde:updateDamageTexts(dt)
-        for i = #self.state.damageTexts, 1, -1 do
-            self.state.damageTexts[i]:update(dt)
-            if self.state.damageTexts[i].destruct then table.remove(self.state.damageTexts, i) end
-        end
+        self:_updateDestructibleList(self.state.damageTexts, dt)
     end
 
     function Horde:setActiveWeapon()
         local newWeapon = self.state.fists
         local index = self.state.currentWeaponIndex
-        if index and index <= self.state.inventory.HOTBAR_SLOTS
-        and self.state.inventory:isEquippable(self.state.items[index]) then
+        if index and self.state.inventory:isSlotEquippable(index) then
             newWeapon = self.state.items[index]
         end
         if newWeapon ~= self.state.weapon then
@@ -93,18 +87,19 @@ return function(Horde)
         end
     end
 
-    function Horde:updateExplosions(dt)
-        for i = #self.state.explosions, 1, -1 do
-            self.state.explosions[i]:update(dt)
-            if self.state.explosions[i].destruct then table.remove(self.state.explosions, i) end
+    function Horde:_updateDestructibleList(list, dt)
+        for i = #list, 1, -1 do
+            list[i]:update(dt)
+            if list[i].destruct then table.remove(list, i) end
         end
     end
 
+    function Horde:updateExplosions(dt)
+        self:_updateDestructibleList(self.state.explosions, dt)
+    end
+
     function Horde:updateGrenades(dt)
-        for i = #self.state.grenades, 1, -1 do
-            self.state.grenades[i]:update(dt)
-            if self.state.grenades[i].destruct then table.remove(self.state.grenades, i) end
-        end
+        self:_updateDestructibleList(self.state.grenades, dt)
     end
 
     function Horde:tryThrowGrenade()
@@ -121,11 +116,8 @@ return function(Horde)
         end
 
         local px, py = state.player:getCenter()
-        local mx, my = Coordinates.screenToWorld(state, love.mouse.getPosition())
-        local dx, dy = mx - px, my - py
-        local len = math.sqrt(dx * dx + dy * dy)
-        if len == 0 then return end
-        dx, dy = dx / len, dy / len
+        local dx, dy = Coordinates.aimDirection(state, px, py)
+        if dx == 0 and dy == 0 then return end
 
         state.inventory:decrementItemSlot(slot, 1)
         table.insert(state.grenades, Grenade(state, px, py, dx, dy))
@@ -143,7 +135,7 @@ return function(Horde)
     function Horde:findNextWeaponSlot(startIndex, direction)
         local target = startIndex + direction
         while target >= 1 and target <= 5 do
-            if self.state.inventory:isEquippable(self.state.items[target]) then return target end
+            if self.state.inventory:isSlotEquippable(target) then return target end
             target = target + direction
         end
         return nil
@@ -178,7 +170,7 @@ return function(Horde)
             if Input.isActionBoundToKey("weapon" .. slot, key) then
                 if self.state.currentWeaponIndex == slot then
                     self.state.currentWeaponIndex = nil
-                elseif self.state.inventory:isEquippable(self.state.items[slot]) then
+                elseif self.state.inventory:isSlotEquippable(slot) then
                     self.state.currentWeaponIndex = slot
                 else
                     self.state.currentWeaponIndex = nil
