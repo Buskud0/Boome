@@ -7,7 +7,7 @@ return function(MapBuilder)
 
         local inverseType = self:getInverseActionType(action.type)
         self:applyAction(inverseType, action)
-        self:pushAction(self.redoStack, inverseType, action)
+        self:pushAction(self.redoStack, action.type, action)
 
         self.hasUnsavedChanges = true
         self.state.toast:show("Undo", 1)
