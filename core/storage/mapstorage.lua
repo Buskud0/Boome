@@ -74,17 +74,10 @@ function MapStorage.mapExists(name)
 end
 
 function MapStorage.listMaps()
-    MapStorage.ensureDirectory()
     local names = {}
-    local dir = MapStorage.mapsDir()
-    local cmd = isWindows() and ('dir /b "' .. dir .. '"') or ('ls -1 "' .. dir .. '"')
-    local pipe = io.popen(cmd)
-    if pipe then
-        for line in pipe:lines() do
-            local name = line:match("^(.*)%.txt$")
-            if name then table.insert(names, name) end
-        end
-        pipe:close()
+    for _, file in ipairs(love.filesystem.getDirectoryItems(MAPS_DIR)) do
+        local name = file:match("^(.*)%.txt$")
+        if name then table.insert(names, name) end
     end
     table.sort(names)
     return names
