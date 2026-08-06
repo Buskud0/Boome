@@ -32,6 +32,7 @@ function Inventory.load()
         M9 = 5,
         AWP = 6,
         AXE = 7,
+        GRENADE = 8,
     }
     for model, idx in pairs(weaponSprites) do
         Textures.define("slot_" .. model, idx)
@@ -75,6 +76,7 @@ function Inventory:refreshChest()
 end
 
 require("ui.inventory.inventory_state")(Inventory)
+require("ui.inventory.inventory_stack")(Inventory)
 require("ui.inventory.inventory_layout")(Inventory)
 require("ui.inventory.inventory_input")(Inventory)
 require("ui.inventory.inventory_draw")(Inventory)

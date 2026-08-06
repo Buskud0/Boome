@@ -11,12 +11,13 @@ local HIT_SLOW_FACTOR = Config.ENTITY_HIT_SLOW_FACTOR
 function Entity.load()
     Textures.load("images/entity_spritesheet.png", 40)
     Textures.define("player", 1)
-    Textures.define("zombie_normal", 2)
-    Textures.define("zombie_heavy", 3)
-    Textures.define("zombie_light", 4)
+    Textures.define("zombie_rotter", 2)
+    Textures.define("zombie_lastBreath", 3)
+    Textures.define("zombie_runner", 4)
     Textures.define("bullet", 5)
     Textures.define("powerup_health", 6)
     Textures.define("powerup_money", 7)
+    Textures.define("zombie_spidor", 8)
 end
 
 function Entity:new(state, x, y)

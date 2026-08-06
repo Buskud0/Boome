@@ -61,7 +61,8 @@ return function(BuyMenu)
     end
 
     function BuyMenu:drawWeaponIcon(rect, model)
-        local alpha = self:playerHasWeapon(model) and 0.4 or 1
+        local owned = not self:isItemModel(model) and self:playerHasWeapon(model)
+        local alpha = owned and 0.4 or 1
         Textures.draw("slot_" .. model, rect.x + 4, rect.y + 4, 28, 28, alpha)
     end
 
@@ -77,13 +78,13 @@ return function(BuyMenu)
         else
             love.graphics.setColor(0.8, 0.3, 0.3)
         end
-        love.graphics.print("$" .. Config.WEAPONS[model].price, rect.x + rect.w - 74, rect.y + 8)
+        love.graphics.print("$" .. self:priceOf(model), rect.x + rect.w - 74, rect.y + 8)
     end
 
     function BuyMenu:drawWeaponStatus(rect, model)
         local font = Fonts.get(18)
         love.graphics.setFont(font)
-        if self:playerHasWeapon(model) then
+        if not self:isItemModel(model) and self:playerHasWeapon(model) then
             love.graphics.setColor(0.4, 0.4, 0.4)
             love.graphics.print("OWNED", rect.x + rect.w - 80, rect.y + 8)
         else

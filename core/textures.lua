@@ -41,14 +41,20 @@ function Textures.define(material, tileIndex)
     end
 end
 
-function Textures.draw(material, x, y, w, h, alpha, brightness)
+function Textures.draw(material, x, y, w, h, alpha, brightness, rot)
     local entry = materialRegistry[material]
     if not entry then return end
     local b = brightness or 1
+    local drawW = w or entry.tileSize
+    local drawH = h or entry.tileSize
     love.graphics.setColor(b, b, b, alpha or 1)
-    local sx = (w or entry.tileSize) / entry.tileSize
-    local sy = (h or entry.tileSize) / entry.tileSize
-    love.graphics.draw(entry.image, entry.quad, x, y, 0, sx, sy)
+    local sx = drawW / entry.tileSize
+    local sy = drawH / entry.tileSize
+    if rot and rot ~= 0 then
+        love.graphics.draw(entry.image, entry.quad, x + drawW / 2, y + drawH / 2, rot, sx, sy, entry.tileSize / 2, entry.tileSize / 2)
+    else
+        love.graphics.draw(entry.image, entry.quad, x, y, 0, sx, sy)
+    end
 end
 
 return Textures

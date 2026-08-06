@@ -20,15 +20,18 @@ Config.ZOMBIE_BUDGET_BASE = 10
 Config.ZOMBIE_BUDGET_LINEAR = 3
 Config.ZOMBIE_BUDGET_QUAD = 0.25
 Config.ZOMBIE_BUDGET_CAP = 200
-Config.ZOMBIE_TYPE_COSTS = { normal = 1, light = 1, heavy = 3 }
-Config.ZOMBIE_LIGHT_UNLOCK_ROUND = 2
-Config.ZOMBIE_HEAVY_UNLOCK_ROUND = 3
-Config.ZOMBIE_LIGHT_WEIGHT_BASE = 0.12
-Config.ZOMBIE_LIGHT_WEIGHT_GROWTH = 0.03
-Config.ZOMBIE_HEAVY_WEIGHT_BASE = 0.06
-Config.ZOMBIE_HEAVY_WEIGHT_GROWTH = 0.04
+Config.ZOMBIE_TYPE_COSTS = { rotter = 1, runner = 1, lastBreath = 3, spidor = 1 }
+Config.ZOMBIE_RUNNER_UNLOCK_ROUND = 2
+Config.ZOMBIE_LASTBREATH_UNLOCK_ROUND = 3
+Config.ZOMBIE_SPIDOR_UNLOCK_ROUND = 1
+Config.ZOMBIE_RUNNER_WEIGHT_BASE = 0.1
+Config.ZOMBIE_RUNNER_WEIGHT_GROWTH = 0.03
+Config.ZOMBIE_LASTBREATH_WEIGHT_BASE = 0.05
+Config.ZOMBIE_LASTBREATH_WEIGHT_GROWTH = 0.04
+Config.ZOMBIE_SPIDOR_WEIGHT_BASE = 0.4
+Config.ZOMBIE_SPIDOR_WEIGHT_FALLOFF = 0.04
 Config.ZOMBIE_WEIGHT_CAP = 0.35
-Config.ZOMBIE_NORMAL_WEIGHT_MIN = 0.3
+Config.ZOMBIE_ROTTER_WEIGHT_MIN = 0.3
 Config.ZOMBIE_SPAWN_INTERVAL_BASE = 2
 Config.ZOMBIE_SPAWN_INTERVAL_MIN = 0.4
 Config.ZOMBIE_SPAWN_INTERVAL_PER_ROUND = 0.06
@@ -182,17 +185,39 @@ Config.BLOCK_ITEMS = {
 Config.OBJECT_ITEMS = {
     toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 200, blocksMovement = true, blocksVision = false, penetrative = false },
     barrel = { name = "Barrel", material = "barrel", health = 150, blocksMovement = true, blocksVision = false, chest = true, penetrative = false },
-    bush = { name = "Bush", material = "bush", health = 60, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true, penetrative = true },
+    bush = { name = "Bush", material = "bush", health = 60, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true, penetrative = true, bulletproof = true },
     tree = { name = "Tree", material = "tree", health = 500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false },
     stone = { name = "Stone", material = "stone", health = 1500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false },
+    barricade = { name = "Barricade", material = "barricade", health = 500, blocksMovement = true, blocksVision = false, bulletproof = true },
 }
 
 Config.BUILDING_ITEMS = {}
 for k, v in pairs(Config.BLOCK_ITEMS) do Config.BUILDING_ITEMS[k] = v end
 for k, v in pairs(Config.OBJECT_ITEMS) do Config.BUILDING_ITEMS[k] = v end
 
+-- grid_damage.lua: drops spawned when a material is destroyed (model, count).
+Config.OBJECT_DROPS = {
+    tree = { { "STICKS", 1 } },
+    stone = { { "ROCKS", 1 } },
+}
+
 -- world/physics/explosion.lua
 Config.TOXIC_BARREL_EXPLOSION = { radius = 140, maxDamage = 150, minDamage = 30 }
+
+-- entities/grenade.lua
+Config.GRENADE_EXPLOSION = { radius = 140, maxDamage = 150, minDamage = 30 }
+Config.GRENADE_THROW_SPEED = 420
+Config.GRENADE_DRAG = 2.5         -- fraction of speed lost per second while flying
+Config.GRENADE_SPIN = 8           -- radians per second while airborne
+Config.GRENADE_FUSE = 1
+Config.GRENADE_COOLDOWN = 0.8
+
+-- Stackable inventory items (core/item.lua, ui/inventory)
+Config.ITEMS = {
+    GRENADE = { name = "Grenade", price = 0, stackAmount = 5, stackSize = 99, throwable = true },
+    STICKS = { name = "Sticks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
+    ROCKS = { name = "Rocks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
+}
 
 Config.WEAPONS = {
     M9 = {

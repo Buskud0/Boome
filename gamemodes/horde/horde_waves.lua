@@ -6,8 +6,9 @@ local Zombie = require "entities.zombie"
 local Movement = require "world.physics.movement"
 
 local TYPE_COSTS = Config.ZOMBIE_TYPE_COSTS
-local LIGHT_UNLOCK_ROUND = Config.ZOMBIE_LIGHT_UNLOCK_ROUND
-local HEAVY_UNLOCK_ROUND = Config.ZOMBIE_HEAVY_UNLOCK_ROUND
+local RUNNER_UNLOCK_ROUND = Config.ZOMBIE_RUNNER_UNLOCK_ROUND
+local LASTBREATH_UNLOCK_ROUND = Config.ZOMBIE_LASTBREATH_UNLOCK_ROUND
+local SPIDOR_UNLOCK_ROUND = Config.ZOMBIE_SPIDOR_UNLOCK_ROUND
 
 return function(Horde)
     function Horde:roundBudget()
@@ -18,16 +19,18 @@ return function(Horde)
 
     function Horde:pickZombieType()
         local round = self.state.currentRound
-        local lightWeight = round >= LIGHT_UNLOCK_ROUND and Config.ZOMBIE_LIGHT_WEIGHT_BASE + Config.ZOMBIE_LIGHT_WEIGHT_GROWTH * round or 0
-        local heavyWeight = round >= HEAVY_UNLOCK_ROUND and Config.ZOMBIE_HEAVY_WEIGHT_BASE + Config.ZOMBIE_HEAVY_WEIGHT_GROWTH * round or 0
-        lightWeight = math.min(Config.ZOMBIE_WEIGHT_CAP, lightWeight)
-        heavyWeight = math.min(Config.ZOMBIE_WEIGHT_CAP, heavyWeight)
-        local normalWeight = math.max(Config.ZOMBIE_NORMAL_WEIGHT_MIN, 1 - lightWeight - heavyWeight)
+        local runnerWeight = round >= RUNNER_UNLOCK_ROUND and Config.ZOMBIE_RUNNER_WEIGHT_BASE + Config.ZOMBIE_RUNNER_WEIGHT_GROWTH * round or 0
+        local lastBreathWeight = round >= LASTBREATH_UNLOCK_ROUND and Config.ZOMBIE_LASTBREATH_WEIGHT_BASE + Config.ZOMBIE_LASTBREATH_WEIGHT_GROWTH * round or 0
+        local spidorWeight = round >= SPIDOR_UNLOCK_ROUND and math.max(0, Config.ZOMBIE_SPIDOR_WEIGHT_BASE - Config.ZOMBIE_SPIDOR_WEIGHT_FALLOFF * round) or 0
+        runnerWeight = math.min(Config.ZOMBIE_WEIGHT_CAP, runnerWeight)
+        lastBreathWeight = math.min(Config.ZOMBIE_WEIGHT_CAP, lastBreathWeight)
+        local rotterWeight = math.max(Config.ZOMBIE_ROTTER_WEIGHT_MIN, 1 - runnerWeight - lastBreathWeight - spidorWeight)
 
-        local roll = math.random() * (normalWeight + lightWeight + heavyWeight)
-        if roll < normalWeight then return "normal" end
-        if roll < normalWeight + lightWeight then return "light" end
-        return "heavy"
+        local roll = math.random() * (rotterWeight + runnerWeight + lastBreathWeight + spidorWeight)
+        if roll < rotterWeight then return "rotter" end
+        if roll < rotterWeight + runnerWeight then return "runner" end
+        if roll < rotterWeight + runnerWeight + lastBreathWeight then return "lastBreath" end
+        return "spidor"
     end
 
     function Horde:buildQueue()

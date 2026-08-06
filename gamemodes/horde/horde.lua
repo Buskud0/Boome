@@ -77,7 +77,7 @@ function Horde:startNextRound()
 end
 
 function Horde:refillWeaponAmmo()
-    for _, w in ipairs(self.state.weapons) do
+    for _, w in ipairs(self.state.items) do
         if w.magSize then
             w.reloadCooldown = 0
             w.capacity = w.magSize
@@ -107,6 +107,10 @@ function Horde:mainUpdate(dt)
     self:updateZombies(dt)
     self:updatePowerUps(dt)
     self:updateWeaponPickups(dt)
+    self:updateGrenades(dt)
+    if self.state.grenadeCooldown > 0 then
+        self.state.grenadeCooldown = math.max(0, self.state.grenadeCooldown - dt)
+    end
     self:updateExplosions(dt)
     self:updateDamageTexts(dt)
     self:updateScoreRecord()

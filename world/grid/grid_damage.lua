@@ -3,6 +3,7 @@
 
 local Config = require "core.config"
 local WeaponPickup = require "entities.weapon_pickup"
+local Item = require "core.item"
 local Explosion = require "world.physics.explosion"
 
 local TOXIC_EXPLOSION = Config.TOXIC_BARREL_EXPLOSION
@@ -12,6 +13,7 @@ return function(Grid)
         record.health = record.health - amount
         if record.health <= 0 then
             self:_dropContents(record)
+            self:_dropMaterialLoot(record)
             if self:_regrows(record.material) then
                 table.insert(self.regrowingRecords, { col = record.col, row = record.row, material = record.material, object = list == self.objectRecords })
             end
@@ -33,8 +35,17 @@ return function(Grid)
             local item = record.contents:get(i)
             if item then
                 record.contents:set(i, nil)
-                table.insert(self.state.weaponPickups, WeaponPickup(self.state, cx, cy, item))
+                table.insert(self.state.weaponPickups, WeaponPickup(self.state, cx, cy, item, 0))
             end
+        end
+    end
+
+    function Grid:_dropMaterialLoot(record)
+        local drops = Config.OBJECT_DROPS[record.material]
+        if not drops then return end
+        local cx, cy = self:recordWorldCenter(record)
+        for _, drop in ipairs(drops) do
+            table.insert(self.state.weaponPickups, WeaponPickup(self.state, cx, cy, Item.new(drop[1], drop[2]), 0))
         end
     end
 

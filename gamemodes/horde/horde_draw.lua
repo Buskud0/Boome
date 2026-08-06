@@ -25,6 +25,7 @@ return function(Horde)
         self:drawBullets()
         if self.state.weapon then self.state.weapon:drawWorld() end
         self:drawZombieAttacks()
+        self:drawGrenades()
         self:drawExplosions()
         self:drawDamageTexts()
         self:drawShopButton()
@@ -64,6 +65,12 @@ return function(Horde)
     function Horde:drawDamageTexts()
         for _, damageText in ipairs(self.state.damageTexts) do
             damageText:draw()
+        end
+    end
+
+    function Horde:drawGrenades()
+        for _, grenade in ipairs(self.state.grenades) do
+            grenade:draw()
         end
     end
 

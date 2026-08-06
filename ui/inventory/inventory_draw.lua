@@ -55,7 +55,7 @@ return function(Inventory)
 
     function Inventory:drawHeldItemName()
         local state = self.state
-        local weapon = state.weapons[state.currentWeaponIndex]
+        local weapon = state.items[state.currentWeaponIndex]
         local rects = self:getPlayerRects()
         local label = weapon and weapon.model or "FISTS"
         local rect = weapon and rects[state.currentWeaponIndex] or rects[1]
@@ -79,9 +79,28 @@ return function(Inventory)
         if showIndex then
             self:drawSlotIndex(x, y, index, {1, 1, 1})
         end
+        if weapon.count and weapon.count > 1 then
+            self:drawCountBadge(x, y, weapon.count)
+        end
         if weapon.magSize then
             self:drawAmmo(x, y, weapon)
         end
+    end
+
+    function Inventory:drawCountBadge(x, y, count)
+        local font = Fonts.get(16)
+        local text = "x" .. count
+        local textW = font:getWidth(text)
+        local badgeW = textW + 8
+        local badgeH = 16
+        local bx = x + SLOT_SIZE - badgeW - 2
+        local by = y + SLOT_SIZE - badgeH - 2
+
+        love.graphics.setFont(font)
+        love.graphics.setColor(0, 0, 0, 0.6)
+        love.graphics.rectangle("fill", bx, by, badgeW, badgeH)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print(text, bx + 4, by + (badgeH - font:getHeight()) / 2)
     end
 
     function Inventory:drawEmptySlot(x, y, index, showIndex)

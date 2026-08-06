@@ -24,11 +24,13 @@ function GameState:reset()
     self.camera = { x = 0, y = 0, zoom = Config.HORDE_CAMERA_ZOOM }
     self.bullets = {}
     self.zombies = {}
-    self.weapons = {}
+    self.items = {}
     self.damageTexts = {}
     self.powerUps = {}
     self.weaponPickups = {}
     self.explosions = {}
+    self.grenades = {}
+    self.grenadeCooldown = 0
     self.ignoreMouseUntilRelease = false
     self.paused = false
     self.gameMode = "horde"

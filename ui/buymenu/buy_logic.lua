@@ -2,12 +2,31 @@
 
 local Config = require "core.config"
 local WeaponDefs = require "systems.weapon.weapon_defs"
+local Item = require "core.item"
+
+local function priceOf(model)
+    local item = Config.ITEMS[model]
+    if item then return item.price end
+    return Config.WEAPONS[model].price
+end
+
+local function isItemModel(model)
+    return Config.ITEMS[model] ~= nil
+end
 
 local function isPointInRect(x, y, rect)
     return x >= rect.x and x <= rect.x + rect.w and y >= rect.y and y <= rect.y + rect.h
 end
 
 return function(BuyMenu)
+    function BuyMenu:isItemModel(model)
+        return isItemModel(model)
+    end
+
+    function BuyMenu:priceOf(model)
+        return priceOf(model)
+    end
+
     function BuyMenu:getWeaponsSortedByPrice()
         local all = {}
         for model, stats in pairs(Config.WEAPONS) do
@@ -15,22 +34,27 @@ return function(BuyMenu)
                 table.insert(all, model)
             end
         end
+        for model, stats in pairs(Config.ITEMS) do
+            if not stats.hidden then
+                table.insert(all, model)
+            end
+        end
         table.sort(all, function(a, b)
-            return Config.WEAPONS[a].price < Config.WEAPONS[b].price
+            return priceOf(a) < priceOf(b)
         end)
         return all
     end
 
     function BuyMenu:playerHasWeapon(model)
         for i = 1, self.state.inventory.MAX_SLOTS do
-            local weapon = self.state.weapons[i]
+            local weapon = self.state.items[i]
             if weapon and weapon.model == model then return true end
         end
         return false
     end
 
     function BuyMenu:canAffordWeapon(model)
-        return self.state.player.money >= Config.WEAPONS[model].price
+        return self.state.player.money >= priceOf(model)
     end
 
     function BuyMenu:wrapSelection(index)
@@ -43,9 +67,18 @@ return function(BuyMenu)
         self.state.player.money = self.state.player.money - Config.WEAPONS[model].price
         local slot = self.state.inventory:findFirstEmptySlot()
         if not slot then return end
-        self.state.weapons[slot] = WeaponDefs.create(self.state, model)
+        self.state.items[slot] = WeaponDefs.create(self.state, model)
         if slot <= self.state.inventory.HOTBAR_SLOTS then
             self.state.currentWeaponIndex = slot
+        end
+    end
+
+    function BuyMenu:buyItem(model)
+        local stats = Config.ITEMS[model]
+        self.state.player.money = self.state.player.money - stats.price
+        local item = Item.new(model, stats.stackAmount or 1)
+        if not self.state.inventory:addItem(item) then
+            self.state.toast:show("Inventory full!", 2)
         end
     end
 
@@ -93,7 +126,14 @@ return function(BuyMenu)
 
     function BuyMenu:confirmPurchase()
         local model = self.sortedWeapons[self.selection]
-        if not model or self:playerHasWeapon(model) then return end
+        if not model then return end
+        if isItemModel(model) then
+            if self:canAffordWeapon(model) then
+                self:buyItem(model)
+            end
+            return
+        end
+        if self:playerHasWeapon(model) then return end
         if not self.state.inventory:findFirstEmptySlot() then
             self.state.toast:show("Inventory full!", 2)
             return

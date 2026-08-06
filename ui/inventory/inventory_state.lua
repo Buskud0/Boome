@@ -14,7 +14,7 @@ local CHEST_TITLE = Config.INVENTORY_CHEST_TITLE
 return function(Inventory)
     function Inventory:findFirstEmptySlot()
         for i = 1, self.MAX_SLOTS do
-            if not self.state.weapons[i] then
+            if not self.state.items[i] then
                 return i
             end
         end
@@ -22,7 +22,7 @@ return function(Inventory)
     end
 
     function Inventory:setSlot(slot, item)
-        self.state.weapons[slot] = item
+        self.state.items[slot] = item
     end
 
     function Inventory:playerPanel()
@@ -35,8 +35,8 @@ return function(Inventory)
             title = BACKPACK_TITLE,
             showTitle = function() return self.isOpen end,
             showIndex = function(i) return i <= HOTBAR_SLOTS end,
-            get = function(i) return self.state.weapons[i] end,
-            set = function(i, item) self.state.weapons[i] = item end,
+            get = function(i) return self.state.items[i] end,
+            set = function(i, item) self.state.items[i] = item end,
         }
     end
 
@@ -101,7 +101,7 @@ return function(Inventory)
     end
 
     function Inventory:dropHeldWeapon()
-        if not self.state.currentWeaponIndex or not self.state.weapons[self.state.currentWeaponIndex] then return end
+        if not self.state.currentWeaponIndex or not self.state.items[self.state.currentWeaponIndex] then return end
         self:dropItemAt(self:playerPanel(), self.state.currentWeaponIndex)
         self.state.currentWeaponIndex = nil
     end
@@ -116,7 +116,7 @@ return function(Inventory)
     function Inventory:toggleWeaponSelection(slot)
         if self.state.currentWeaponIndex == slot then
             self.state.currentWeaponIndex = nil
-        elseif self.state.weapons[slot] then
+        elseif self:isEquippable(self.state.items[slot]) then
             self.state.currentWeaponIndex = slot
         else
             self.state.currentWeaponIndex = nil
@@ -124,17 +124,17 @@ return function(Inventory)
     end
 
     function Inventory:keepSelectionValid(sourceIndex, targetIndex)
-        local weapons = self.state.weapons
-        if targetIndex and targetIndex <= HOTBAR_SLOTS and weapons[targetIndex] then
+        local weapons = self.state.items
+        if targetIndex and targetIndex <= HOTBAR_SLOTS and self:isEquippable(weapons[targetIndex]) then
             self.state.currentWeaponIndex = targetIndex
             return
         end
-        if sourceIndex and sourceIndex <= HOTBAR_SLOTS and weapons[sourceIndex] then
+        if sourceIndex and sourceIndex <= HOTBAR_SLOTS and self:isEquippable(weapons[sourceIndex]) then
             self.state.currentWeaponIndex = sourceIndex
             return
         end
         for i = 1, HOTBAR_SLOTS do
-            if weapons[i] then
+            if self:isEquippable(weapons[i]) then
                 self.state.currentWeaponIndex = i
                 return
             end

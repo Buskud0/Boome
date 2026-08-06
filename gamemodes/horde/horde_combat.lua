@@ -3,6 +3,9 @@
 
 local PowerUp = require "entities.powerup"
 local Input = require "core.input"
+local Config = require "core.config"
+local Coordinates = require "core.coordinates"
+local Grenade = require "entities.grenade"
 
 return function(Horde)
     function Horde:onZombieKilled(zombie, index)
@@ -17,9 +20,10 @@ return function(Horde)
     end
 
     function Horde:rewardKill(zombie)
-        if zombie.type == "light" then self.state.player.money = self.state.player.money + 5 end
-        if zombie.type == "normal" then self.state.player.money = self.state.player.money + 10 end
-        if zombie.type == "heavy" then self.state.player.money = self.state.player.money + 15 end
+        if zombie.type == "runner" then self.state.player.money = self.state.player.money + 5 end
+        if zombie.type == "rotter" then self.state.player.money = self.state.player.money + 10 end
+        if zombie.type == "lastBreath" then self.state.player.money = self.state.player.money + 15 end
+        if zombie.type == "spidor" then self.state.player.money = self.state.player.money + 8 end
     end
 
     function Horde:maybeDropPowerUp(zombie)
@@ -38,8 +42,9 @@ return function(Horde)
     function Horde:setActiveWeapon()
         local newWeapon = self.state.fists
         local index = self.state.currentWeaponIndex
-        if index and index <= self.state.inventory.HOTBAR_SLOTS and self.state.weapons[index] then
-            newWeapon = self.state.weapons[index]
+        if index and index <= self.state.inventory.HOTBAR_SLOTS
+        and self.state.inventory:isEquippable(self.state.items[index]) then
+            newWeapon = self.state.items[index]
         end
         if newWeapon ~= self.state.weapon then
             self:resetScope(newWeapon)
@@ -95,6 +100,38 @@ return function(Horde)
         end
     end
 
+    function Horde:updateGrenades(dt)
+        for i = #self.state.grenades, 1, -1 do
+            self.state.grenades[i]:update(dt)
+            if self.state.grenades[i].destruct then table.remove(self.state.grenades, i) end
+        end
+    end
+
+    function Horde:tryThrowGrenade()
+        local state = self.state
+        if state.buyMenu.isOpen or state.inventory.isOpen then return end
+        if state.menu and state.menu:isOpen() then return end
+        if state.inventory.drag or state.ignoreMouseUntilRelease then return end
+        if state.grenadeCooldown > 0 then return end
+
+        local slot, item = state.inventory:findItemSlot("GRENADE")
+        if not slot then
+            state.toast:show("No grenades!", 1.5)
+            return
+        end
+
+        local px, py = state.player:getCenter()
+        local mx, my = Coordinates.screenToWorld(state, love.mouse.getPosition())
+        local dx, dy = mx - px, my - py
+        local len = math.sqrt(dx * dx + dy * dy)
+        if len == 0 then return end
+        dx, dy = dx / len, dy / len
+
+        state.inventory:decrementItemSlot(slot, 1)
+        table.insert(state.grenades, Grenade(state, px, py, dx, dy))
+        state.grenadeCooldown = Config.GRENADE_COOLDOWN
+    end
+
     function Horde:cycleWeapon(direction)
         local start = self.state.currentWeaponIndex or (direction > 0 and 0 or 6)
         local target = self:findNextWeaponSlot(start, direction)
@@ -106,7 +143,7 @@ return function(Horde)
     function Horde:findNextWeaponSlot(startIndex, direction)
         local target = startIndex + direction
         while target >= 1 and target <= 5 do
-            if self.state.weapons[target] then return target end
+            if self.state.inventory:isEquippable(self.state.items[target]) then return target end
             target = target + direction
         end
         return nil
@@ -124,6 +161,8 @@ return function(Horde)
             self:cycleWeapon(-1)
         elseif action == "cycle_next" then
             self:cycleWeapon(1)
+        elseif action == "grenade" then
+            self:tryThrowGrenade()
         end
     end
 
@@ -139,7 +178,7 @@ return function(Horde)
             if Input.isActionBoundToKey("weapon" .. slot, key) then
                 if self.state.currentWeaponIndex == slot then
                     self.state.currentWeaponIndex = nil
-                elseif self.state.weapons[slot] then
+                elseif self.state.inventory:isEquippable(self.state.items[slot]) then
                     self.state.currentWeaponIndex = slot
                 else
                     self.state.currentWeaponIndex = nil

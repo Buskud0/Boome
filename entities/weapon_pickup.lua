@@ -35,13 +35,11 @@ end
 
 function WeaponPickup:_tryCollect()
     if not Collision.check(self.state.player, self) then return false end
-    return self.state.inventory:findFirstEmptySlot() ~= nil
+    return self.state.inventory:hasRoomFor(self.weapon)
 end
 
 function WeaponPickup:_collect()
-    local slot = self.state.inventory:findFirstEmptySlot()
-    if not slot then return end
-    self.state.inventory:setSlot(slot, self.weapon)
+    if not self.state.inventory:addItem(self.weapon) then return end
     table.insert(self.state.damageTexts, DamageText(self.weapon.model, self.x, self.y, 1.5, {0.9, 0.9, 0.9}))
     self:_removeFromWorld()
 end

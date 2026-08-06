@@ -41,6 +41,9 @@ function Grid.load()
     Textures.define("bush", 3)
     Textures.define("tree", 4)
     Textures.define("stone", 5)
+    Textures.define("barricade", 6)
+    Textures.define("slot_STICKS", 7)
+    Textures.define("slot_ROCKS", 8)
 end
 
 function Grid:_index(col, row)
