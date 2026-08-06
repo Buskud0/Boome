@@ -14,7 +14,14 @@ function Bullet:new(x, y, dx, dy, damage, penetrationLoss)
 	self.damage = damage
 	self.penetrationLoss = penetrationLoss
 	self.hitZombies = {}
+	self.penetratedTiles = {}
 	self.sprite = "bullet"
+end
+
+function Bullet:applyPenetrationLoss()
+    if not self.penetrationLoss then return false end
+    self.damage = self.damage - self.penetrationLoss
+    return self.damage > 0
 end
 
 function Bullet:draw()

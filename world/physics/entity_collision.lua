@@ -14,12 +14,7 @@ function EntityCollision.bulletVsZombie(state)
                 bullet.hitZombies[zombie] = true
                 table.insert(state.damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
                 zombie:takeDamage(bullet.damage)
-                if bullet.penetrationLoss then
-                    bullet.damage = bullet.damage - bullet.penetrationLoss
-                    if bullet.damage <= 0 then
-                        consumed = true
-                    end
-                else
+                if not bullet:applyPenetrationLoss() then
                     consumed = true
                 end
             end
@@ -56,8 +51,16 @@ function EntityCollision.bulletVsWalls(state)
     for i = #state.bullets, 1, -1 do
         local bullet = state.bullets[i]
         local cx, cy = bullet.x + bullet.width / 2, bullet.y + bullet.height / 2
-        state.grid:damageTile(cx, cy, bullet.damage)
-        if state.grid:isCircleBlocked(cx, cy, bullet.radius or math.min(bullet.width, bullet.height) / 2) then
+        local radius = bullet.radius or math.min(bullet.width, bullet.height) / 2
+        local record = state.grid:destructibleRecordAt(cx, cy)
+        local blocked = state.grid:isCircleBlocked(cx, cy, radius)
+        local remove = blocked
+        if record and not bullet.penetratedTiles[record] then
+            bullet.penetratedTiles[record] = true
+            state.grid:damageTile(cx, cy, bullet.damage)
+            remove = remove or not bullet:applyPenetrationLoss()
+        end
+        if remove then
             table.remove(state.bullets, i)
         end
     end
