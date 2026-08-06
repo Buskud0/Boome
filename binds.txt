@@ -26,7 +26,6 @@ drop=g
 
 # --- Menus ---
 pause=escape
-buy=b
 menu_up=up
 menu_down=down
 menu_confirm=return

@@ -112,6 +112,7 @@ function Horde:mainUpdate(dt)
     self:updateWeaponPickups(dt)
     self:updateDamageTexts(dt)
     self:updateScoreRecord()
+    self:updateShopButton()
     self.state.hud:update(dt)
 end
 
@@ -119,5 +120,6 @@ require("gamemodes.horde.horde_waves")(Horde)
 require("gamemodes.horde.horde_combat")(Horde)
 require("gamemodes.horde.horde_camera")(Horde)
 require("gamemodes.horde.horde_draw")(Horde)
+require("gamemodes.horde.horde_shop")(Horde)
 
 return Horde

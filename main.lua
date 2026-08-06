@@ -183,8 +183,6 @@ end
 function handlePlayerAction(action, key)
     if action == "pause" then
         togglePause()
-    elseif action == "buy" then
-        toggleBuyMenu()
     else
         handleActiveMenuInput(action, key)
     end
@@ -199,12 +197,6 @@ function togglePause()
     else
         state.menu:openSubmenu("main")
         state.paused = state.menu:isOpen()
-    end
-end
-
-function toggleBuyMenu()
-    if not state.menu:isOpen() and state.gameMode == "horde" then
-        state.buyMenu:toggle()
     end
 end
 
@@ -236,6 +228,7 @@ function dispatchMousePressed(x, y, button)
         state.ignoreMouseUntilRelease = true
         state.buyMenu:mousepressed(x + state.camera.x, y + state.camera.y)
     elseif state.gameMode == "horde" then
+        if button == 2 and state.horde:tryOpenShop(x, y) then return end
         state.inventory:mousepressed(x + state.camera.x, y + state.camera.y, button)
     elseif state.gameMode == "mapbuilder" then
         state.mapBuilder:handleClick(x, y, button)

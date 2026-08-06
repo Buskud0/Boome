@@ -26,6 +26,7 @@ return function(Horde)
         if self.state.weapon then self.state.weapon:drawWorld() end
         self:drawZombieAttacks()
         self:drawDamageTexts()
+        self:drawShopButton()
         love.graphics.pop()
     end
 

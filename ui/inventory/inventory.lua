@@ -63,8 +63,8 @@ function Inventory:refreshChest()
     end
     if not self.state.player or not self.state.grid then return end
     local cx, cy = self.state.player:getCenter()
-    local record = self.state.grid:nearestChest(cx, cy, INTERACT_RANGE)
-    if not record then
+    local record, kind = self.state.grid:nearestInteractable(cx, cy, INTERACT_RANGE)
+    if not record or kind ~= "chest" then
         self:closeChest()
         return
     end

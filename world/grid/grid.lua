@@ -217,8 +217,8 @@ function Grid:recordWorldCenter(record)
     return x + w / 2, y + h / 2
 end
 
-function Grid:nearestChest(worldX, worldY, range)
-    local best, bestDist = nil, range * range
+function Grid:nearestInteractable(worldX, worldY, range)
+    local best, bestDist, bestKind = nil, range * range, nil
     for _, record in ipairs(self.objectRecords) do
         if record.contents then
             local cx, cy = self:recordWorldCenter(record)
@@ -226,11 +226,22 @@ function Grid:nearestChest(worldX, worldY, range)
             local d = px * px + py * py
             if d <= bestDist then
                 bestDist = d
-                best = record
+                best, bestKind = record, "chest"
             end
         end
     end
-    return best
+    for _, record in ipairs(self.blockRecords) do
+        if record.material == "shop" then
+            local cx, cy = self:recordWorldCenter(record)
+            local px, py = worldX - cx, worldY - cy
+            local d = px * px + py * py
+            if d <= bestDist then
+                bestDist = d
+                best, bestKind = record, "shop"
+            end
+        end
+    end
+    return best, bestKind
 end
 
 require("world.grid.grid_damage")(Grid)
