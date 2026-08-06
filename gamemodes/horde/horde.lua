@@ -8,7 +8,6 @@ local EntityCollision = require "world.physics.entity_collision"
 local Horde = {}
 Horde.__index = Horde
 
-local STARTING_ZOMBIE_COUNT = Config.STARTING_ZOMBIE_COUNT
 local ROUND_FREEZE_TIME = Config.ROUND_FREEZE_TIME
 local ROUND_TEXT_TIME = Config.ROUND_TEXT_TIME
 
@@ -22,7 +21,6 @@ end
 function Horde:reset()
     self.state.inventory:close()
     self.state.currentRound = 1
-    self.zombieCount = STARTING_ZOMBIE_COUNT
     self.waveState = "intro"
     self.introTimer = ROUND_FREEZE_TIME
     self.roundTextTimer = ROUND_TEXT_TIME
@@ -70,7 +68,6 @@ end
 
 function Horde:startNextRound()
     self.state.currentRound = self.state.currentRound + 1
-    self.zombieCount = self.zombieCount + 2
     self.state.grid:regrowAll()
     self:refillWeaponAmmo()
     self:buildQueue()
