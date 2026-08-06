@@ -52,7 +52,17 @@ return function(Player)
         return self:_castVisionRays(px, py, rayAngles, self:_getVisionRadius())
     end
 
+    function Player:cacheAim()
+        local px, py = self:getCenter()
+        self.aimAngle = self:_computeAimAngle(px, py)
+    end
+
     function Player:_getAimAngle(px, py)
+        if self.state.paused and self.aimAngle then return self.aimAngle end
+        return self:_computeAimAngle(px, py)
+    end
+
+    function Player:_computeAimAngle(px, py)
         local mx, my = Coordinates.screenToWorld(self.state, love.mouse.getPosition())
         local dx, dy = mx - px, my - py
         local len = math.sqrt(dx * dx + dy * dy)

@@ -34,6 +34,7 @@ end
 
 function Player:update(dt)
     Player.super.update(self, dt)
+    self:cacheAim()
     self:_updateMovement(dt)
 end
 
