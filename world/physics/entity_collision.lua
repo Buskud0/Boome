@@ -66,9 +66,7 @@ function EntityCollision.bulletVsWalls(state)
                 local item = Config.BUILDING_ITEMS[record.material]
                 local targetHealth = record.health
                 state.grid:damageTile(cx, cy, bullet.damage)
-                if item and item.penetrative then
-                    bullet.damage = math.max(0, bullet.damage - targetHealth)
-                elseif not bullet:applyHit(targetHealth) then
+                if not (item and item.penetrative) and not bullet:applyHit(targetHealth) then
                     remove = true
                 end
             elseif state.grid:isCircleBlocked(cx, cy, radius) then
