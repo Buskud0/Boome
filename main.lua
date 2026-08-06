@@ -205,7 +205,11 @@ function handleActiveMenuInput(action, key)
         state.menu:handleAction(action)
         state.paused = state.menu:isOpen()
     elseif state.buyMenu.isOpen then
-        state.buyMenu:handleAction(action)
+        if action == "inventory" then
+            state.buyMenu:close()
+        else
+            state.buyMenu:handleAction(action)
+        end
     elseif state.gameMode == "horde" then
         state.horde:handleKey(key, action)
     end
