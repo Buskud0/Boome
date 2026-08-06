@@ -40,12 +40,23 @@ return function(ItemBrowser)
         return found
     end
 
+    function ItemBrowser:handleFilterClick(px, py, worldX, worldY)
+        for _, rect in ipairs(self:filterRects(px, py)) do
+            if isPointInRect(worldX, worldY, rect.x, rect.y, rect.w, rect.h) then
+                self:setFilter(rect.id)
+                return true
+            end
+        end
+        return false
+    end
+
     function ItemBrowser:mousepressed(worldX, worldY)
         if not self.isOpen then return end
 
         local px, py = self:getPanelPosition()
 
         if self:handleOutsideClick(px, py, worldX, worldY) then return end
+        if self:handleFilterClick(px, py, worldX, worldY) then return end
         if self:handleSearchClick(px, py, worldX, worldY) then return end
 
         self.searchFocused = false

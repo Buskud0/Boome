@@ -34,11 +34,19 @@ return function(ItemBrowser)
         local query = self.searchQuery:lower()
         self.filteredItems = {}
         for _, item in ipairs(self.allItems) do
-            if query == "" or item.name:lower():find(query, 1, true) then
+            local kindMatch = self.filter == "all" or item.kind == self.filter
+            if kindMatch and (query == "" or item.name:lower():find(query, 1, true)) then
                 table.insert(self.filteredItems, item)
             end
         end
         self:clampScroll()
+    end
+
+    function ItemBrowser:setFilter(filter)
+        if self.filter == filter then return end
+        self.filter = filter
+        self.scrollY = 0
+        self:filterItems()
     end
 
     function ItemBrowser:forEachItemCell(px, py, fn)

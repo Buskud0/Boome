@@ -154,12 +154,13 @@ Config.HUD_MONEY_COUNT_RATE = 20
 
 -- ui/item_browser.lua
 Config.ITEM_BROWSER_DRAG_THRESHOLD = 10
-Config.ITEM_BROWSER_HEADER_HEIGHT = 70
+Config.ITEM_BROWSER_HEADER_HEIGHT = 96
 Config.ITEM_BROWSER_ITEM_CELL_GAP = 28
 Config.ITEM_BROWSER_ITEM_CELL_SIZE = 60
 Config.ITEM_BROWSER_ITEMS_PER_ROW = 5
 Config.ITEM_BROWSER_PANEL_HEIGHT = 400
-Config.ITEM_BROWSER_PANEL_WIDTH = 500
+Config.ITEM_BROWSER_PANEL_WIDTH = 620
+Config.ITEM_BROWSER_SCROLLBAR_WIDTH = 10
 
 -- ui/menu.lua
 Config.MENU_OPTION_GAP = 42
@@ -193,9 +194,10 @@ Config.OBJECT_ITEMS = {
     toxic_barrel = { name = "Toxic Barrel", material = "toxic_barrel", health = 200, blocksMovement = true, blocksVision = false, penetrative = false },
     barrel = { name = "Barrel", material = "barrel", health = 150, blocksMovement = true, blocksVision = false, chest = true, penetrative = false },
     bush = { name = "Bush", material = "bush", health = 60, blocksMovement = false, blocksVision = false, speedMultiplier = 0.3, regrows = true, penetrative = true, bulletproof = true },
-    tree = { name = "Tree", material = "tree", health = 500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false },
-    stone = { name = "Stone", material = "stone", health = 1500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false },
+    tree = { name = "Tree", material = "tree", health = 500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false, bulletproof = true, stopsBullets = true },
+    stone = { name = "Stone", material = "stone", health = 1500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false, bulletproof = true, stopsBullets = true },
     barricade = { name = "Barricade", material = "barricade", health = 500, blocksMovement = true, blocksVision = false, bulletproof = true },
+    sand_object = { name = "Sand", material = "sand_object", health = 0, blocksMovement = false, blocksVision = false, hidden = true },
 }
 
 Config.BUILDING_ITEMS = {}

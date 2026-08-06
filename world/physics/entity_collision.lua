@@ -70,6 +70,8 @@ function EntityCollision.bulletVsWalls(state)
                     if not (item and item.penetrative) and not bullet:applyHit(targetHealth) then
                         remove = true
                     end
+                elseif item and item.stopsBullets then
+                    remove = true
                 end
             elseif not record and state.grid:isCircleBlocked(cx, cy, radius) then
                 remove = true

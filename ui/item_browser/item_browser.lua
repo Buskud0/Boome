@@ -9,10 +9,14 @@ local PANEL_HEIGHT = Config.ITEM_BROWSER_PANEL_HEIGHT
 local function buildItemList()
     local all = {}
     for key, item in pairs(Config.BLOCK_ITEMS) do
-        table.insert(all, { key = key, name = item.name, material = item.material })
+        if not item.hidden then
+            table.insert(all, { key = key, name = item.name, material = item.material, kind = "block" })
+        end
     end
     for key, item in pairs(Config.OBJECT_ITEMS) do
-        table.insert(all, { key = key, name = item.name, material = item.material })
+        if not item.hidden then
+            table.insert(all, { key = key, name = item.name, material = item.material, kind = "object" })
+        end
     end
     table.sort(all, function(a, b) return a.name < b.name end)
     return all
@@ -27,6 +31,7 @@ function ItemBrowser.new(state)
     self.allItems = buildItemList()
     self.isOpen = false
     self.searchQuery = ""
+    self.filter = "all"
     self.filteredItems = {}
     self.draggedItem = nil
     self.scrollY = 0
@@ -48,6 +53,7 @@ function ItemBrowser:open()
     if #self.allItems == 0 then self.allItems = buildItemList() end
     self.isOpen = true
     self.searchQuery = ""
+    self.filter = "all"
     self.scrollY = 0
     self.draggedItem = nil
     self.searchFocused = false

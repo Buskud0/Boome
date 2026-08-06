@@ -18,9 +18,21 @@ return function(Inventory)
         return stackSizeOf(model)
     end
 
+    function Inventory:isBackpackOnly(item)
+        return self:isStackable(item)
+    end
+
+    function Inventory:_slotRangeFor(item)
+        if self:isBackpackOnly(item) then
+            return self.HOTBAR_SLOTS + 1, self.MAX_SLOTS
+        end
+        return 1, self.MAX_SLOTS
+    end
+
     function Inventory:_findMergeSlot(item)
         if not self:isStackable(item) then return nil end
-        for i = 1, self.MAX_SLOTS do
+        local first, last = self:_slotRangeFor(item)
+        for i = first, last do
             local slot = self.state.items[i]
             if slot and slot.model == item.model and slot.count + item.count <= stackSizeOf(item.model) then
                 return i
@@ -31,7 +43,17 @@ return function(Inventory)
 
     function Inventory:hasRoomFor(item)
         if self:_findMergeSlot(item) then return true end
-        return self:findFirstEmptySlot() ~= nil
+        return self:_firstEmptySlotFor(item) ~= nil
+    end
+
+    function Inventory:_firstEmptySlotFor(item)
+        local first, last = self:_slotRangeFor(item)
+        for i = first, last do
+            if not self.state.items[i] then
+                return i
+            end
+        end
+        return nil
     end
 
     function Inventory:addItem(item)
@@ -40,7 +62,7 @@ return function(Inventory)
             self.state.items[merge].count = self.state.items[merge].count + item.count
             return true
         end
-        local empty = self:findFirstEmptySlot()
+        local empty = self:_firstEmptySlotFor(item)
         if not empty then return false end
         self:setSlot(empty, item)
         return true
@@ -54,6 +76,17 @@ return function(Inventory)
             end
         end
         return nil
+    end
+
+    function Inventory:countModel(model)
+        local total = 0
+        for i = 1, self.MAX_SLOTS do
+            local slot = self.state.items[i]
+            if slot and slot.model == model and slot.count then
+                total = total + slot.count
+            end
+        end
+        return total
     end
 
     function Inventory:decrementItemSlot(slot, amount)

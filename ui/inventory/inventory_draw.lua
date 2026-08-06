@@ -11,12 +11,27 @@ local PANEL_TITLE_HEIGHT = 26
 return function(Inventory)
     function Inventory:draw()
         self:refreshChest()
+        self:drawGrenadeIndicator()
         for _, panel in ipairs(self:panels()) do
             self:drawPanelFrame(panel)
             self:drawPanelSlots(panel)
         end
         self:drawHeldItemName()
         self:drawDragGhost()
+    end
+
+    function Inventory:drawGrenadeIndicator()
+        local rect = self:getPlayerRects()[1]
+        if not rect then return end
+        local size = 34
+        local gap = 18
+        local x = rect.x - gap - size
+        local y = rect.y + (SLOT_SIZE - size) / 2
+        local count = self:countModel("GRENADE")
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.circle("fill", x + size / 2, y + size / 2, size / 2)
+        Textures.draw("slot_GRENADE", x, y, size, size)
+        self:drawCountBadge(x, y, count, size, 2)
     end
 
     function Inventory:drawPanelFrame(panel)
@@ -87,14 +102,16 @@ return function(Inventory)
         end
     end
 
-    function Inventory:drawCountBadge(x, y, count)
+    function Inventory:drawCountBadge(x, y, count, size, offset)
+        size = size or SLOT_SIZE
+        offset = offset or 2
         local font = Fonts.get(16)
         local text = "x" .. count
         local textW = font:getWidth(text)
         local badgeW = textW + 8
         local badgeH = 16
-        local bx = x + SLOT_SIZE - badgeW - 2
-        local by = y + SLOT_SIZE - badgeH - 2
+        local bx = x + size - badgeW - offset
+        local by = y + size - badgeH - offset
 
         love.graphics.setFont(font)
         love.graphics.setColor(0, 0, 0, 0.6)
