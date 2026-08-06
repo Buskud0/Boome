@@ -148,6 +148,7 @@ Config.BLOCK_ITEMS = {
     grass = { name = "Grass", material = "grass", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     rock_path = { name = "Rock Path", material = "rock_path", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     shop = { name = "Shop", material = "shop", health = 0, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
+    workshop = { name = "Workshop", material = "workshop", health = 0, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
     stone_wall = { name = "Stone Wall", material = "stone_wall", health = 3000, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
     water = { name = "Water", material = "water", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 0.5 },
     wood_wall = { name = "Wood Wall", material = "wood_wall", health = 1000, blocksMovement = true, blocksVision = true, speedMultiplier = 1 },

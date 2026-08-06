@@ -514,7 +514,6 @@
 45,49,rock_path
 49,45,rock_path
 49,49,rock_path
-53,45,rock_path
 53,49,rock_path
 53,53,rock_path
 49,61,dirt
@@ -623,6 +622,7 @@
 93,5,sand
 97,1,sand
 97,9,sand
+53,45,workshop
 o,53,53,barrel
 o,58,18,toxic_barrel
 o,72,8,toxic_barrel

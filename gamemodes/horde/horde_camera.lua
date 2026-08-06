@@ -4,7 +4,7 @@
 return function(Horde)
     function Horde:updateCamera(dt)
         self:followPlayer()
-        if self.state.weapon then self.state.weapon:updateScope(dt) end
+        if self.state.weapon and not self.state.buyMenu.isOpen then self.state.weapon:updateScope(dt) end
         self:clampCameraToMap()
     end
 
