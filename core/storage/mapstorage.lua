@@ -53,6 +53,7 @@ function MapStorage.legacyPath()
 end
 
 function MapStorage.ensureDirectory()
+    if love.filesystem.getInfo(MAPS_DIR) then return end
     local dir = MapStorage.mapsDir()
     if isWindows() then
         os.execute('if not exist "' .. dir .. '" mkdir "' .. dir .. '"')
