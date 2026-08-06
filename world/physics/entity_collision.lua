@@ -14,7 +14,7 @@ function EntityCollision.bulletVsZombie(state)
             for _, zombie in ipairs(state.zombies) do
                 if not consumed and not bullet.hitZombies[zombie] and Collision.check(bullet, zombie) then
                     bullet.hitZombies[zombie] = true
-                    table.insert(state.damageTexts, DamageText(-bullet.damage, bullet.x, bullet.y))
+                    table.insert(state.damageTexts, DamageText(-math.floor(bullet.damage), bullet.x, bullet.y))
                     local targetHealth = zombie.health
                     zombie:takeDamage(bullet.damage)
                     if not bullet:applyHit(targetHealth) then
@@ -59,13 +59,13 @@ function EntityCollision.bulletVsWalls(state)
         else
             local cx, cy = bullet.x + bullet.width / 2, bullet.y + bullet.height / 2
             local radius = bullet.radius or math.min(bullet.width, bullet.height) / 2
-            local record = state.grid:destructibleRecordAt(cx, cy)
+            local record = state.grid:destructibleRecordNear(cx, cy, radius)
             local remove = false
             if record and not bullet.penetratedTiles[record] then
                 bullet.penetratedTiles[record] = true
                 local item = Config.BUILDING_ITEMS[record.material]
                 local targetHealth = record.health
-                state.grid:damageTile(cx, cy, bullet.damage)
+                state.grid:damageRecord(record, bullet.damage)
                 if not (item and item.penetrative) and not bullet:applyHit(targetHealth) then
                     remove = true
                 end

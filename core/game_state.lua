@@ -28,6 +28,7 @@ function GameState:reset()
     self.damageTexts = {}
     self.powerUps = {}
     self.weaponPickups = {}
+    self.explosions = {}
     self.ignoreMouseUntilRelease = false
     self.paused = false
     self.gameMode = "horde"

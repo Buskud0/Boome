@@ -29,7 +29,7 @@ end
 
 function Player:takeDamage(amount)
     Player.super.takeDamage(self, amount)
-    table.insert(self.state.damageTexts, DamageText(-amount, self.x, self.y, 1, {1, 0, 0}))
+    table.insert(self.state.damageTexts, DamageText(-math.floor(amount), self.x, self.y, 1, {1, 0, 0}))
 end
 
 function Player:update(dt)

@@ -191,6 +191,9 @@ Config.BUILDING_ITEMS = {}
 for k, v in pairs(Config.BLOCK_ITEMS) do Config.BUILDING_ITEMS[k] = v end
 for k, v in pairs(Config.OBJECT_ITEMS) do Config.BUILDING_ITEMS[k] = v end
 
+-- world/physics/explosion.lua
+Config.TOXIC_BARREL_EXPLOSION = { radius = 140, maxDamage = 150, minDamage = 30 }
+
 Config.WEAPONS = {
     M9 = {
         automatic = false,

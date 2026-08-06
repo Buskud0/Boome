@@ -25,6 +25,7 @@ return function(Horde)
         self:drawBullets()
         if self.state.weapon then self.state.weapon:drawWorld() end
         self:drawZombieAttacks()
+        self:drawExplosions()
         self:drawDamageTexts()
         self:drawShopButton()
         love.graphics.pop()
@@ -63,6 +64,12 @@ return function(Horde)
     function Horde:drawDamageTexts()
         for _, damageText in ipairs(self.state.damageTexts) do
             damageText:draw()
+        end
+    end
+
+    function Horde:drawExplosions()
+        for _, explosion in ipairs(self.state.explosions) do
+            explosion:draw()
         end
     end
 

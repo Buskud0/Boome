@@ -88,6 +88,13 @@ return function(Horde)
         end
     end
 
+    function Horde:updateExplosions(dt)
+        for i = #self.state.explosions, 1, -1 do
+            self.state.explosions[i]:update(dt)
+            if self.state.explosions[i].destruct then table.remove(self.state.explosions, i) end
+        end
+    end
+
     function Horde:cycleWeapon(direction)
         local start = self.state.currentWeaponIndex or (direction > 0 and 0 or 6)
         local target = self:findNextWeaponSlot(start, direction)

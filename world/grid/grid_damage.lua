@@ -3,9 +3,12 @@
 
 local Config = require "core.config"
 local WeaponPickup = require "entities.weapon_pickup"
+local Explosion = require "world.physics.explosion"
+
+local TOXIC_EXPLOSION = Config.TOXIC_BARREL_EXPLOSION
 
 return function(Grid)
-    function Grid:_damageRecord(list, index, record, amount)
+    function Grid:_damageRecord(list, index, record, amount, noExplode)
         record.health = record.health - amount
         if record.health <= 0 then
             self:_dropContents(record)
@@ -14,6 +17,10 @@ return function(Grid)
             end
             table.remove(list, index)
             self:rebuildGrid()
+            if not noExplode and record.material == "toxic_barrel" then
+                local cx, cy = self:recordWorldCenter(record)
+                Explosion.detonate(self.state, cx, cy, TOXIC_EXPLOSION.radius, TOXIC_EXPLOSION.maxDamage, TOXIC_EXPLOSION.minDamage)
+            end
             return true
         end
         return false
@@ -48,7 +55,7 @@ return function(Grid)
     end
 
     function Grid:_destructibleRecordAt(col, row)
-        for _, list in ipairs({ self.blockRecords, self.objectRecords }) do
+        for _, list in ipairs({ self.objectRecords, self.blockRecords }) do
             local index, record = self:findBlockRecord(col, row, list)
             if index and record.health > 0 then
                 return list, index, record
@@ -70,12 +77,59 @@ return function(Grid)
         return record
     end
 
+    function Grid:destructibleRecordNear(worldX, worldY, radius)
+        local minCol = math.max(1, math.floor((worldX - radius) / self.tileSize) + 1)
+        local maxCol = math.min(self.cols, math.floor((worldX + radius) / self.tileSize) + 1)
+        local minRow = math.max(1, math.floor((worldY - radius) / self.tileSize) + 1)
+        local maxRow = math.min(self.rows, math.floor((worldY + radius) / self.tileSize) + 1)
+        local best, bestD = nil, radius * radius
+        for row = minRow, maxRow do
+            for col = minCol, maxCol do
+                local _, _, record = self:_destructibleRecordAt(col, row)
+                if record then
+                    local x, y, w, h = self:recordWorldRect(record)
+                    local closestX = math.max(x, math.min(worldX, x + w))
+                    local closestY = math.max(y, math.min(worldY, y + h))
+                    local dx = worldX - closestX
+                    local dy = worldY - closestY
+                    local d = dx * dx + dy * dy
+                    if d <= bestD then
+                        bestD = d
+                        best = record
+                    end
+                end
+            end
+        end
+        return best
+    end
+
+    function Grid:damageRecord(record, amount)
+        for _, list in ipairs({ self.objectRecords, self.blockRecords }) do
+            for i = #list, 1, -1 do
+                if list[i] == record then
+                    self:_damageRecord(list, i, record, amount)
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
     function Grid:damageTile(worldX, worldY, amount)
         local col, row = self:tileAt(worldX, worldY)
         if not col then return false end
         local list, index, record = self:_destructibleRecordAt(col, row)
         if not list then return false end
         self:_damageRecord(list, index, record, amount)
+        return true
+    end
+
+    function Grid:damageTileBlast(worldX, worldY, amount)
+        local col, row = self:tileAt(worldX, worldY)
+        if not col then return false end
+        local list, index, record = self:_destructibleRecordAt(col, row)
+        if not list then return false end
+        self:_damageRecord(list, index, record, amount, true)
         return true
     end
 
