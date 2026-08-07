@@ -22,6 +22,7 @@ function Melee:new(state, model)
     self.swingHalfAngle = SWING_HALF_ANGLE
     self.stabStaminaCost = stats.stabStaminaCost or STAB_STAMINA_COST
     self.swingStaminaCost = stats.swingStaminaCost or SWING_STAMINA_COST
+    self.materialDamageMultiplier = stats.materialDamageMultiplier
 
     self.stabTimer = 0
     self.stabDirX, self.stabDirY = 0, 0
@@ -105,8 +106,13 @@ end
 function Melee:_damageBlocksInSector(px, py, dirX, dirY)
     local records = self.state.grid:destructibleRecordsInSector(px, py, dirX, dirY, self.swingHalfAngle, self.swingRange)
     for _, record in ipairs(records) do
-        self.state.grid:damageRecord(record, self.damage)
+        self.state.grid:damageRecord(record, self:_damageFor(record))
     end
+end
+
+function Melee:_damageFor(record)
+    local mult = (self.materialDamageMultiplier or {})[record.material]
+    return mult and self.damage * mult or self.damage
 end
 
 function Melee:_performStab()
@@ -121,7 +127,12 @@ end
 
 function Melee:_damageBlockAtTip(dirX, dirY)
     local px, py = self.state.player:getCenter()
-    self.state.grid:damageTile(px + dirX * self.range, py + dirY * self.range, self.damage)
+    local tx = px + dirX * self.range
+    local ty = py + dirY * self.range
+    local record = self.state.grid:destructibleRecordAt(tx, ty)
+    if record then
+        self.state.grid:damageRecord(record, self:_damageFor(record))
+    end
 end
 
 function Melee:_startSwingAnimation(dirX, dirY)

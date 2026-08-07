@@ -345,6 +345,7 @@ Config.WEAPONS = {
         range = 40,
         stabStaminaCost = 45,
         swingStaminaCost = 60,
+        materialDamageMultiplier = { tree = 3, stone = 3 },
     },
 }
 
