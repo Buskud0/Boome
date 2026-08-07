@@ -8,12 +8,9 @@ local Explosion = require "world.physics.explosion"
 local Collision = require "world.physics.collision"
 
 local TOXIC_EXPLOSION = Config.TOXIC_BARREL_EXPLOSION
-local MIN_TILE_DAMAGE = Config.MIN_TILE_DAMAGE
 
 return function(Grid)
     function Grid:_damageRecord(list, index, record, amount, noExplode)
-        local minDamage = MIN_TILE_DAMAGE[record.material]
-        if minDamage and amount < minDamage then return false end
         record.health = record.health - amount
         if record.health <= 0 then
             self:_dropContents(record)

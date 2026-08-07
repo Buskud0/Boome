@@ -14,7 +14,6 @@ local WAYPOINT_RADIUS = Config.ZOMBIE_WAYPOINT_RADIUS
 local SEPARATION_RADIUS = Config.ZOMBIE_SEPARATION_RADIUS
 local SEPARATION_WEIGHT = Config.ZOMBIE_SEPARATION_WEIGHT
 local STAB_DURATION = Config.MELEE_STAB_DURATION
-local MIN_TILE_DAMAGE = Config.MIN_TILE_DAMAGE
 
 function Zombie:new(state, type, x, y)
     Zombie.super.new(self, state, x, y)
@@ -83,17 +82,16 @@ function Zombie:_updateAttack(dt, dist)
     return false
 end
 
--- The destructible tile in front that this zombie can actually damage, plus
--- its hit point. Nil when there is nothing in front or the material is below
--- this zombie's minimum damage threshold.
+-- The destructible tile in front that this zombie can attack, plus its hit
+-- point. Nil when nothing is in front or the material is one zombies walk
+-- around instead of damaging (tree/stone).
 function Zombie:_frontTile(dirX, dirY)
     local cx, cy = self:getCenter()
     local tx = cx + dirX * self.attackRange
     local ty = cy + dirY * self.attackRange
     local record = self.state.grid:destructibleRecordAt(tx, ty)
     if not record then return nil end
-    local minDamage = MIN_TILE_DAMAGE[record.material]
-    if minDamage and self.weapon.damage < minDamage then return nil end
+    if record.material == "tree" or record.material == "stone" then return nil end
     return record, tx, ty
 end
 

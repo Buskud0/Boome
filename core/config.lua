@@ -118,13 +118,6 @@ Config.ZOMBIE_SEPARATION_RADIUS = 30
 Config.ZOMBIE_SEPARATION_WEIGHT = 0.7
 Config.ZOMBIE_WAYPOINT_RADIUS = 6
 
--- world/grid/grid_damage.lua: minimum damage a hit must deal to damage the
--- material. Hits below the threshold deal no damage at all.
-Config.MIN_TILE_DAMAGE = {
-    tree = 50,
-    stone = 100,
-}
-
 -- ui/inventory.lua
 Config.INVENTORY_BACKPACK_ROW_OFFSET = 30
 Config.INVENTORY_BACKPACK_SLOTS = 5
