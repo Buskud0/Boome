@@ -15,6 +15,7 @@ local ROUND_TEXT_TIME = Config.ROUND_TEXT_TIME
 function Horde.new(state)
     local self = setmetatable({}, Horde)
     self.state = state
+    self.buildCooldown = 0
     self.maxRounds, self.maxKills = ScoreStorage.load()
     return self
 end
@@ -105,6 +106,7 @@ function Horde:mainUpdate(dt)
         return
     end
     self:updateActiveWeapon(dt)
+    self:updateBuild(dt)
     self:updateCamera(dt)
     Interact.update(self.state, self)
     EntityCollision.bulletVsZombie(self.state)
@@ -126,6 +128,7 @@ end
 
 require("gamemodes.horde.horde_waves")(Horde)
 require("gamemodes.horde.horde_combat")(Horde)
+require("gamemodes.horde.horde_build")(Horde)
 require("gamemodes.horde.horde_camera")(Horde)
 require("gamemodes.horde.horde_draw")(Horde)
 

@@ -29,6 +29,7 @@ return function(Horde)
         self:drawGrenades()
         self:drawExplosions()
         self:drawDamageTexts()
+        self:drawBuildOutline()
         Interact.draw(self.state, self)
         love.graphics.pop()
     end

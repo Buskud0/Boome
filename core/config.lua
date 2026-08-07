@@ -130,6 +130,7 @@ Config.INVENTORY_HOTBAR_SLOTS = 5
 Config.INVENTORY_SLOT_GAP = 8
 Config.INVENTORY_SLOT_SIZE = 52
 Config.INTERACT_RANGE = 80
+Config.PLAYER_PLACE_INTERVAL = 0.2
 Config.WEAPON_PICKUP_DELAY = 2
 
 -- ui/mapbuilder_hud.lua
@@ -234,10 +235,10 @@ Config.ITEMS = {
     STICKS = { name = "Sticks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
     ROCKS = { name = "Rocks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
     SAND = { name = "Sand", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
-    GLASS = { name = "Glass", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
-    BARRICADE = { name = "Barricade", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
-    BARREL = { name = "Barrel", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
-    STONE_WALL = { name = "Stone Wall", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
+    GLASS = { name = "Glass", price = 0, stackAmount = 1, stackSize = 10, hidden = true, placeable = "glass" },
+    BARRICADE = { name = "Barricade", price = 0, stackAmount = 1, stackSize = 10, hidden = true, placeable = "barricade" },
+    BARREL = { name = "Barrel", price = 0, stackAmount = 1, stackSize = 10, hidden = true, placeable = "barrel" },
+    STONE_WALL = { name = "Stone Wall", price = 0, stackAmount = 1, stackSize = 10, hidden = true, placeable = "stone_wall" },
 }
 
 -- ui/craftmenu.lua: output item model -> required materials ({item, count}).
