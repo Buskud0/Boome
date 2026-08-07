@@ -139,19 +139,17 @@ end
 function Grid:isTileBlocked(col, row, ignoreShootThrough)
     if col < 1 or col > self.cols or row < 1 or row > self.rows then return true end
     local idx = self:_index(col, row)
-    local function isShootThrough(material)
-        local item = Config.BUILDING_ITEMS[material]
-        return item and item.bulletproof and not item.stopsBullets
-    end
-    for _, material in ipairs({ self.grid[idx], self.objects[idx] }) do
-        if material then
-            local item = Config.BUILDING_ITEMS[material]
-            if item and item.blocksMovement and not (ignoreShootThrough and isShootThrough(material)) then
-                return true
-            end
-        end
-    end
+    if self:_tileBlocksMovement(self.grid[idx], ignoreShootThrough) then return true end
+    if self:_tileBlocksMovement(self.objects[idx], ignoreShootThrough) then return true end
     return false
+end
+
+function Grid:_tileBlocksMovement(material, ignoreShootThrough)
+    if not material then return false end
+    local item = Config.BUILDING_ITEMS[material]
+    if not item or not item.blocksMovement then return false end
+    if not ignoreShootThrough then return true end
+    return not (item.bulletproof and not item.stopsBullets)
 end
 
 function Grid:isCircleBlocked(cx, cy, radius, ignoreShootThrough)
