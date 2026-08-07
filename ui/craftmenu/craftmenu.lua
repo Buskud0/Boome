@@ -26,14 +26,12 @@ function CraftMenu:open()
     self.useMouseSelection = true
     self.lastMouseX = -1
     self.lastMouseY = -1
-    self.state.inventory:open()
 end
 
 function CraftMenu:close()
     self.isOpen = false
     self.optionRects = {}
     self.sortedItems = {}
-    self.state.inventory:close()
 end
 
 require("ui.craftmenu.craft_logic")(CraftMenu)
