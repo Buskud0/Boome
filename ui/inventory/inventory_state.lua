@@ -78,16 +78,6 @@ return function(Inventory)
     end
 
     function Inventory:moveItem(srcPanel, srcSlot, dstPanel, dstSlot)
-        local srcItem = self:getItemAt(srcPanel, srcSlot)
-        if self:isPlayerPanel(dstPanel) and dstSlot <= HOTBAR_SLOTS and self:isBackpackOnly(srcItem) then
-            return
-        end
-        if self:isPlayerPanel(srcPanel) and srcSlot <= HOTBAR_SLOTS then
-            local dstItem = self:getItemAt(dstPanel, dstSlot)
-            if self:isBackpackOnly(dstItem) then
-                return
-            end
-        end
         local temp = self:getItemAt(srcPanel, srcSlot)
         self:setItemAt(srcPanel, srcSlot, self:getItemAt(dstPanel, dstSlot))
         self:setItemAt(dstPanel, dstSlot, temp)

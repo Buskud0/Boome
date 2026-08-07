@@ -183,7 +183,7 @@ end
 
 function spawnZombieAtMouse()
     local wx, wy = Coordinates.screenToWorld(state, love.mouse.getPosition())
-    local zombie = Zombie(state, "normal", wx, wy)
+    local zombie = Zombie(state, "rotter", wx, wy)
     Movement.resolveStuck(state, zombie)
     table.insert(state.zombies, zombie)
 end

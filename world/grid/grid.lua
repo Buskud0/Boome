@@ -21,24 +21,25 @@ function Grid:new(state)
     self.cols = math.floor(state.mapWidth / self.tileSize)
     self.rows = math.floor(state.mapHeight / self.tileSize)
     self.regrowingRecords = {}
+    self.layoutVersion = 0
 end
 
 function Grid.load()
     Textures.load("images/block_spritesheet.png", 40)
+    Textures.define("grass", 1)
     Textures.define("dirt", 2)
-    Textures.define("grass", 3)
-    Textures.define("shop", 11)
-    Textures.define("workshop", 4)
-    Textures.define("stone_wall", 5)
-    Textures.define("slot_STONE_WALL", 5)
-    Textures.define("rock_path", 6)
-    Textures.define("water", 7)
-    Textures.define("wood_wall", 8)
-    Textures.define("sand", 9)
-    Textures.define("glass", 10)
-    Textures.define("slot_GLASS", 10)
-    Textures.define("barricade", 12)
-    Textures.define("slot_BARRICADE", 12)
+    Textures.define("workshop", 3)
+    Textures.define("stone_wall", 4)
+    Textures.define("slot_STONE_WALL", 4)
+    Textures.define("rock_path", 5)
+    Textures.define("water", 6)
+    Textures.define("wood_wall", 7)
+    Textures.define("sand", 8)
+    Textures.define("glass", 9)
+    Textures.define("slot_GLASS", 9)
+    Textures.define("shop", 10)
+    Textures.define("barricade", 11)
+    Textures.define("slot_BARRICADE", 11)
     Textures.load("images/object_spritesheet.png", 40)
     Textures.define("toxic_barrel", 1)
     Textures.define("barrel", 2)
@@ -67,6 +68,11 @@ function Grid:rebuildGrid()
     for _, record in ipairs(self.objectRecords) do
         self:_fillArea(self.objects, record.col, record.row, record.material)
     end
+    self:_touchLayout()
+end
+
+function Grid:_touchLayout()
+    self.layoutVersion = self.layoutVersion + 1
 end
 
 function Grid:_fillArea(target, col, row, material)
@@ -97,6 +103,7 @@ function Grid:placeBlock(col, row, material)
     row = math.max(1, math.min(self.rows - BLOCK_SIZE + 1, row))
     table.insert(self.blockRecords, { col = col, row = row, material = material, health = self:_maxHealth(material) })
     self:_fillArea(self.grid, col, row, material)
+    self:_touchLayout()
 end
 
 function Grid:removeBlock(col, row)
@@ -112,6 +119,7 @@ function Grid:placeObject(col, row, material)
     row = math.max(1, math.min(self.rows - BLOCK_SIZE + 1, row))
     table.insert(self.objectRecords, { col = col, row = row, material = material, health = self:_maxHealth(material), contents = self:_newContents(material) })
     self:_fillArea(self.objects, col, row, material)
+    self:_touchLayout()
 end
 
 function Grid:_newContents(material)
@@ -168,13 +176,14 @@ function Grid:isCircleBlocked(cx, cy, radius, ignoreShootThrough)
     return false
 end
 
-function Grid:_isAreaFree(col, row, size, tiles)
+function Grid:_isAreaFree(col, row, size, tiles, ignoreMaterial)
     for dy = 0, size - 1 do
         for dx = 0, size - 1 do
             local c = col + dx
             local r = row + dy
             if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
-                if tiles[self:_index(c, r)] then return false end
+                local material = tiles[self:_index(c, r)]
+                if material and material ~= ignoreMaterial then return false end
             end
         end
     end
@@ -182,7 +191,7 @@ function Grid:_isAreaFree(col, row, size, tiles)
 end
 
 function Grid:isAreaFreeOfBlocks(col, row, size)
-    return self:_isAreaFree(col, row, size, self.grid)
+    return self:_isAreaFree(col, row, size, self.grid, "grass")
 end
 
 function Grid:isAreaFreeOfObjects(col, row, size)
@@ -218,7 +227,26 @@ function Grid:recordWorldCenter(record)
     return x + w / 2, y + h / 2
 end
 
-function Grid:nearestInteractable(worldX, worldY, range)
+function Grid:nearestInteractable(worldX, worldY, range, repairable)
+    -- When a repair tool is equipped, a damaged repairable object takes
+    -- priority over openable prompts (barrel/shop/workshop).
+    if repairable then
+        local best, bestDist = nil, range * range
+        for _, list in ipairs({ self.objectRecords, self.blockRecords }) do
+            for _, record in ipairs(list) do
+                if repairable[record.material] and record.health < self:_maxHealth(record.material) then
+                    local cx, cy = self:recordWorldCenter(record)
+                    local px, py = worldX - cx, worldY - cy
+                    local d = px * px + py * py
+                    if d <= bestDist then
+                        bestDist = d
+                        best = record
+                    end
+                end
+            end
+        end
+        if best then return best, "repair" end
+    end
     local best, bestDist, bestKind = nil, range * range, nil
     for _, record in ipairs(self.objectRecords) do
         if record.contents then

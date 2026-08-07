@@ -8,7 +8,6 @@ local MapBuilder = {}
 MapBuilder.__index = MapBuilder
 
 local QUICK_ACCESS_COUNT = Config.MAPBUILDER_QUICK_ACCESS_COUNT
-local BLOCK_SIZE = Config.MAPBUILDER_BLOCK_SIZE
 
 function MapBuilder.new(state)
     local self = setmetatable({}, MapBuilder)
@@ -35,21 +34,6 @@ function MapBuilder:enter(mapName)
     self:load()
     self:resetCamera()
     self:resetEditSession()
-end
-
-function MapBuilder:grassFillData()
-    local tileSize = 10
-    local cols = math.floor(self.state.mapWidth / tileSize)
-    local rows = math.floor(self.state.mapHeight / tileSize)
-    local blockCols = math.ceil(cols / BLOCK_SIZE)
-    local blockRows = math.ceil(rows / BLOCK_SIZE)
-    local lines = {}
-    for br = 0, blockRows - 1 do
-        for bc = 0, blockCols - 1 do
-            table.insert(lines, (1 + bc * BLOCK_SIZE) .. "," .. (1 + br * BLOCK_SIZE) .. ",grass")
-        end
-    end
-    return table.concat(lines, "\n")
 end
 
 function MapBuilder:resetCamera()

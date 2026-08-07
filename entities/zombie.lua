@@ -14,6 +14,7 @@ local WAYPOINT_RADIUS = Config.ZOMBIE_WAYPOINT_RADIUS
 local SEPARATION_RADIUS = Config.ZOMBIE_SEPARATION_RADIUS
 local SEPARATION_WEIGHT = Config.ZOMBIE_SEPARATION_WEIGHT
 local STAB_DURATION = Config.MELEE_STAB_DURATION
+local MIN_TILE_DAMAGE = Config.MIN_TILE_DAMAGE
 
 function Zombie:new(state, type, x, y)
     Zombie.super.new(self, state, x, y)
@@ -57,35 +58,48 @@ function Zombie:_distanceToPlayer()
     return math.sqrt(dx * dx + dy * dy)
 end
 
+-- Returns true when the zombie is attacking (so it does not move this frame).
 function Zombie:_updateAttack(dt, dist)
-    if self.attackTimer > 0 then
-        self.attackTimer = self.attackTimer - dt
-    end
-
+    self.attackTimer = math.max(0, self.attackTimer - dt)
     local dirX, dirY = self:_getDirectionToPlayer()
 
     if dist <= self.attackRange then
-        if self.attackTimer > 0 then return true end
-        self.attackTimer = self.attackCooldown
-        self:_startStabAnimation(dirX, dirY)
-        self:_damagePlayerIfInRange(dirX, dirY)
+        if self.attackTimer <= 0 then
+            self:_startAttack(dirX, dirY)
+            self:_damagePlayerIfInRange(dirX, dirY)
+        end
         return true
     end
 
-    return self:_damageBlockInFront(dirX, dirY)
+    local record, tx, ty = self:_frontTile(dirX, dirY)
+    if record then
+        if self.attackTimer <= 0 then
+            self:_startAttack(dirX, dirY)
+            self.state.grid:damageTile(tx, ty, self.weapon.damage)
+        end
+        return true
+    end
+
+    return false
 end
 
-function Zombie:_damageBlockInFront(dirX, dirY)
+-- The destructible tile in front that this zombie can actually damage, plus
+-- its hit point. Nil when there is nothing in front or the material is below
+-- this zombie's minimum damage threshold.
+function Zombie:_frontTile(dirX, dirY)
     local cx, cy = self:getCenter()
     local tx = cx + dirX * self.attackRange
     local ty = cy + dirY * self.attackRange
-    local grid = self.state.grid
-    if not grid:hasDestructibleTile(tx, ty) then return false end
-    if self.attackTimer > 0 then return true end
-    grid:damageTile(tx, ty, self.weapon.damage)
+    local record = self.state.grid:destructibleRecordAt(tx, ty)
+    if not record then return nil end
+    local minDamage = MIN_TILE_DAMAGE[record.material]
+    if minDamage and self.weapon.damage < minDamage then return nil end
+    return record, tx, ty
+end
+
+function Zombie:_startAttack(dirX, dirY)
     self.attackTimer = self.attackCooldown
     self:_startStabAnimation(dirX, dirY)
-    return true
 end
 
 function Zombie:_getDirectionToPlayer()

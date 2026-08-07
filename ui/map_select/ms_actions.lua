@@ -40,7 +40,7 @@ return function(MapSelect)
             self.state.toast:show("A map with that name exists", 1.5)
             return
         end
-        local ok = MapStorage.saveMap(name, self.state.mapBuilder:grassFillData() or "")
+        local ok = MapStorage.saveMap(name, "")
         if not ok then
             self.state.toast:show("Save failed", 1.5)
             return

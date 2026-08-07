@@ -5,7 +5,9 @@ return function(Grid)
     function Grid:saveData()
         local lines = {}
         for _, record in ipairs(self.blockRecords) do
-            table.insert(lines, record.col .. "," .. record.row .. "," .. record.material)
+            if record.material ~= "grass" then
+                table.insert(lines, record.col .. "," .. record.row .. "," .. record.material)
+            end
         end
         for _, record in ipairs(self.objectRecords) do
             table.insert(lines, "o," .. record.col .. "," .. record.row .. "," .. record.material)
@@ -25,7 +27,7 @@ return function(Grid)
                 self:placeObject(tonumber(x), tonumber(y), material)
             else
                 x, y, material = line:match("^(%d+),(%d+),(%S+)$")
-                if x then
+                if x and material ~= "grass" then
                     self:placeBlock(tonumber(x), tonumber(y), material)
                 end
             end

@@ -18,14 +18,7 @@ return function(Inventory)
         return stackSizeOf(model)
     end
 
-    function Inventory:isBackpackOnly(item)
-        return self:isStackable(item)
-    end
-
     function Inventory:_slotRangeFor(item)
-        if self:isBackpackOnly(item) then
-            return self.HOTBAR_SLOTS + 1, self.MAX_SLOTS
-        end
         return 1, self.MAX_SLOTS
     end
 
@@ -100,10 +93,31 @@ return function(Inventory)
     end
 
     function Inventory:isEquippable(obj)
-        return obj ~= nil and obj.isItem ~= true
+        return obj ~= nil
     end
 
     function Inventory:isSlotEquippable(i)
         return i >= 1 and i <= self.HOTBAR_SLOTS and self:isEquippable(self.state.items[i])
+    end
+
+    -- Returns the equipped tool model that can repair this record, or nil.
+    function Inventory:repairMaterialFor(record)
+        local weapon = self.state.weapon
+        if not weapon or not weapon.isItem or not record then return nil end
+        local materials = Config.REPAIR_TOOLS[weapon.model]
+        if not materials or not materials[record.material] then return nil end
+        if record.health >= self.state.grid:_maxHealth(record.material) then return nil end
+        return weapon.model
+    end
+
+    function Inventory:repairRecord(record)
+        local model = self:repairMaterialFor(record)
+        if not model then return false end
+        local index = self.state.currentWeaponIndex
+        local equipped = index and self.state.items[index]
+        if not equipped or equipped.model ~= model then return false end
+        self:decrementItemSlot(index, 1)
+        self.state.grid:repairRecord(record)
+        return true
     end
 end

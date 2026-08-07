@@ -97,6 +97,10 @@ return function(BuyMenu)
     end
 
     function BuyMenu:mousepressed(worldX, worldY)
+        if self.panelRect and not self:isPointInRect(worldX, worldY, self.panelRect) then
+            self:close()
+            return
+        end
         for i, rect in ipairs(self.optionRects) do
             if self:isPointInRect(worldX, worldY, rect) then
                 self.selection = i
@@ -104,6 +108,5 @@ return function(BuyMenu)
                 return
             end
         end
-        self:close()
     end
 end

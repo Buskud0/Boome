@@ -99,7 +99,14 @@ function Melee:_performSwing()
 
     self:_startSwingAnimation(dirX, dirY)
     self:_damageZombiesInSector(px, py, dirX, dirY)
-    self:_damageBlockAtTip(dirX, dirY)
+    self:_damageBlocksInSector(px, py, dirX, dirY)
+end
+
+function Melee:_damageBlocksInSector(px, py, dirX, dirY)
+    local records = self.state.grid:destructibleRecordsInSector(px, py, dirX, dirY, self.swingHalfAngle, self.swingRange)
+    for _, record in ipairs(records) do
+        self.state.grid:damageRecord(record, self.damage)
+    end
 end
 
 function Melee:_performStab()

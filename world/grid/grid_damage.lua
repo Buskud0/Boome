@@ -5,11 +5,15 @@ local Config = require "core.config"
 local WeaponPickup = require "entities.weapon_pickup"
 local Item = require "core.item"
 local Explosion = require "world.physics.explosion"
+local Collision = require "world.physics.collision"
 
 local TOXIC_EXPLOSION = Config.TOXIC_BARREL_EXPLOSION
+local MIN_TILE_DAMAGE = Config.MIN_TILE_DAMAGE
 
 return function(Grid)
     function Grid:_damageRecord(list, index, record, amount, noExplode)
+        local minDamage = MIN_TILE_DAMAGE[record.material]
+        if minDamage and amount < minDamage then return false end
         record.health = record.health - amount
         if record.health <= 0 then
             self:_dropContents(record)
@@ -141,6 +145,52 @@ return function(Grid)
 
     function Grid:damageTileBlast(worldX, worldY, amount)
         return self:_damageTileAt(worldX, worldY, amount, true)
+    end
+
+    function Grid:repairRecord(record)
+        local maxHealth = self:_maxHealth(record.material)
+        if maxHealth <= 0 then return false end
+        record.health = maxHealth
+        return true
+    end
+
+    -- All destructible records whose tile rect the given sector touches.
+    function Grid:destructibleRecordsInSector(px, py, dirX, dirY, halfAngle, radius)
+        local records = {}
+        for _, list in ipairs({ self.objectRecords, self.blockRecords }) do
+            for _, record in ipairs(list) do
+                if record.health > 0 then
+                    local x, y, w, h = self:recordWorldRect(record)
+                    if self:_rectHitsSector(px, py, dirX, dirY, halfAngle, radius, x, y, w, h) then
+                        records[#records + 1] = record
+                    end
+                end
+            end
+        end
+        return records
+    end
+
+    function Grid:_closestRectPoint(px, py, x, y, w, h)
+        return math.max(x, math.min(px, x + w)), math.max(y, math.min(py, y + h))
+    end
+
+    function Grid:_rectHitsSector(px, py, dirX, dirY, halfAngle, radius, x, y, w, h)
+        local cx, cy = self:_closestRectPoint(px, py, x, y, w, h)
+        if Collision.circleHitsSector(px, py, dirX, dirY, halfAngle, radius, cx, cy, 0) then
+            return true
+        end
+        local corners = {
+            { x, y },
+            { x + w, y },
+            { x, y + h },
+            { x + w, y + h },
+        }
+        for _, corner in ipairs(corners) do
+            if Collision.circleHitsSector(px, py, dirX, dirY, halfAngle, radius, corner[1], corner[2], 0) then
+                return true
+            end
+        end
+        return false
     end
 
     function Grid:_healthBrightness(record)

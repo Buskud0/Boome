@@ -20,6 +20,7 @@ return function(BuyMenu)
         local panelHeight = OPTIONS_OFFSET_Y + optionCount * OPTION_GAP + 16
         local px = math.floor(self.state.scrWidth / 2 - PANEL_WIDTH / 2 + self.state.camera.x)
         local py = math.floor(self.state.scrHeight / 2 - panelHeight / 2 + self.state.camera.y)
+        self.panelRect = { x = px, y = py, w = PANEL_WIDTH, h = panelHeight }
 
         local mouseX, mouseY, mouseMoved = self:getMouseSelectionState()
         self:drawPanel(px, py, panelHeight)

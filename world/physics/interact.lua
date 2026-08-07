@@ -44,6 +44,17 @@ Interact.TYPES = {
             if not state.craftMenu.isOpen then state.craftMenu:open() end
         end,
     },
+    repair = {
+        kind = "repair",
+        lines = { "REPAIR" },
+        labelFit = true,
+        canShow = function(state, record)
+            return state.inventory and state.inventory:repairMaterialFor(record) ~= nil
+        end,
+        activate = function(state, record)
+            if state.inventory then state.inventory:repairRecord(record) end
+        end,
+    },
 }
 
 function Interact.forKind(kind)
@@ -92,10 +103,15 @@ function Interact.update(state, holder)
     end
     if not state.player or not state.grid then return end
     local cx, cy = state.player:getCenter()
-    local record, kind = state.grid:nearestInteractable(cx, cy, Config.INTERACT_RANGE)
+    local repairable
+    local weapon = state.weapon
+    if weapon and weapon.isItem then
+        repairable = Config.REPAIR_TOOLS[weapon.model]
+    end
+    local record, kind = state.grid:nearestInteractable(cx, cy, Config.INTERACT_RANGE, repairable)
     if not record then return end
     local def = Interact.forKind(kind)
-    if not def or not def.canShow(state) then return end
+    if not def or not def.canShow(state, record) then return end
     holder.interactRecord = record
     holder.interactKind = kind
     holder.interactButtonRect = Interact.buttonRect(state.grid, record)
@@ -108,7 +124,7 @@ function Interact.tryActivate(state, sx, sy, holder)
     if not isPointInRect(wx, wy, rect) then return false end
     local def = Interact.forKind(holder.interactKind)
     if not def then return false end
-    if def.canShow(state) then def.activate(state, holder.interactRecord) end
+    if def.canShow(state, holder.interactRecord) then def.activate(state, holder.interactRecord) end
     return true
 end
 
@@ -117,7 +133,7 @@ function Interact.activateNearest(state, holder)
     if not holder.interactRecord or not holder.interactKind then return false end
     local def = Interact.forKind(holder.interactKind)
     if not def then return false end
-    if def.canShow(state) then def.activate(state, holder.interactRecord) end
+    if def.canShow(state, holder.interactRecord) then def.activate(state, holder.interactRecord) end
     return true
 end
 

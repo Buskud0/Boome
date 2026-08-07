@@ -36,6 +36,7 @@ return function(Horde)
     function Horde:drawMap()
         love.graphics.setColor(0.2, 0.2, 0.2)
         love.graphics.rectangle("fill", 0, 0, self.state.mapWidth, self.state.mapHeight)
+        self.state.grid:drawGrassBase()
         self.state.grid:drawBlocks()
     end
 

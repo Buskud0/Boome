@@ -12,7 +12,7 @@ Config.MAP_HEIGHT = 1000
 Config.HORDE_CAMERA_ZOOM = 1.3
 
 -- gamemodes/horde.lua
-Config.ROUND_FREEZE_TIME = 0
+Config.ROUND_FREEZE_TIME = 2
 Config.ROUND_TEXT_TIME = 5
 
 -- gamemodes/horde_waves.lua
@@ -118,6 +118,13 @@ Config.ZOMBIE_SEPARATION_RADIUS = 30
 Config.ZOMBIE_SEPARATION_WEIGHT = 0.7
 Config.ZOMBIE_WAYPOINT_RADIUS = 6
 
+-- world/grid/grid_damage.lua: minimum damage a hit must deal to damage the
+-- material. Hits below the threshold deal no damage at all.
+Config.MIN_TILE_DAMAGE = {
+    tree = 50,
+    stone = 100,
+}
+
 -- ui/inventory.lua
 Config.INVENTORY_BACKPACK_ROW_OFFSET = 30
 Config.INVENTORY_BACKPACK_SLOTS = 5
@@ -187,7 +194,6 @@ Config.CRAFTMENU_TITLE_OFFSET_Y = 10
 
 Config.BLOCK_ITEMS = {
     dirt = { name = "Dirt", material = "dirt", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
-    grass = { name = "Grass", material = "grass", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     rock_path = { name = "Rock Path", material = "rock_path", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     shop = { name = "Shop", material = "shop", health = 0, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
     workshop = { name = "Workshop", material = "workshop", health = 0, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
@@ -247,6 +253,12 @@ Config.CRAFT_RECIPES = {
     BARRICADE = { materials = { { "STICKS", 1 } } },
     BARREL = { materials = { { "STICKS", 1 } } },
     STONE_WALL = { materials = { { "ROCKS", 1 } } },
+}
+
+-- world/physics/interact.lua: equipped tool -> materials it can repair.
+Config.REPAIR_TOOLS = {
+    STICKS = { wood_wall = true, barrel = true, barricade = true },
+    ROCKS = { stone_wall = true },
 }
 
 Config.WEAPONS = {

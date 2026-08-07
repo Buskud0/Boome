@@ -90,16 +90,20 @@ local function computeWalkableMap(grid, radius)
     return walkable
 end
 
--- The walkable map only depends on the grid layout and entity radius, both of
--- which stay fixed during horde mode, so cache it across path requests.
-local walkableCache = { grid = nil, radius = nil, map = nil }
+-- The walkable map only depends on the grid layout and entity radius. The
+-- layout can change at runtime (walls destroyed/regrown), so it is keyed on
+-- the grid's layout version and invalidated whenever that changes.
+local walkableCache = { grid = nil, radius = nil, version = nil, map = nil }
 
 local function getWalkableMap(grid, radius)
-    if walkableCache.grid == grid and walkableCache.radius == radius then
+    if walkableCache.grid == grid
+    and walkableCache.radius == radius
+    and walkableCache.version == grid.layoutVersion then
         return walkableCache.map
     end
     walkableCache.grid = grid
     walkableCache.radius = radius
+    walkableCache.version = grid.layoutVersion
     walkableCache.map = computeWalkableMap(grid, radius)
     return walkableCache.map
 end
