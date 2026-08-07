@@ -2,15 +2,10 @@
 
 local Config = require "core.config"
 
-local BLOCK_SIZE = Config.MAPBUILDER_BLOCK_SIZE
 local PLACE_INTERVAL = Config.MAPBUILDER_PLACE_INTERVAL
 
 local function buildingItems(self)
     return Config.BUILDING_ITEMS
-end
-
-local function objectItems(self)
-    return Config.OBJECT_ITEMS
 end
 
 return function(MapBuilder)
@@ -22,7 +17,7 @@ return function(MapBuilder)
     function MapBuilder:isSelectedItemObject()
         local item = self.quickAccess[self.selectedSlot]
         if not item then return false end
-        return objectItems(self)[item.material] ~= nil
+        return self:isObjectMaterial(item.material)
     end
 
     function MapBuilder:processContinuousPlacement(dt)
@@ -91,28 +86,22 @@ return function(MapBuilder)
     end
 
     function MapBuilder:tryPlaceObject(col, row, item, silent)
-        if not self.state.grid:isAreaFreeOfObjects(col, row, BLOCK_SIZE) then
+        if not self:canPlaceAt(col, row, item.material) then
             if not silent then self.state.toast:show("Area occupied by another object", 1.5) end
             return false
         end
-        self.state.grid:placeObject(col, row, item.material)
+        self:placeAt(col, row, item.material)
         table.insert(self.undoStack, { type = "object_place", col = col, row = row, material = item.material })
         return true
     end
 
-    function MapBuilder:snapToBlockGrid(col, row)
-        local snappedCol = math.floor((col - 1) / BLOCK_SIZE) * BLOCK_SIZE + 1
-        local snappedRow = math.floor((row - 1) / BLOCK_SIZE) * BLOCK_SIZE + 1
-        return snappedCol, snappedRow
-    end
-
     function MapBuilder:tryPlaceBlock(col, row, item, silent)
-        col, row = self:snapToBlockGrid(col, row)
-        if not self.state.grid:isAreaFreeOfBlocks(col, row, BLOCK_SIZE) then
+        col, row = self:snapToGrid(col, row)
+        if not self:canPlaceAt(col, row, item.material) then
             if not silent then self.state.toast:show("Area occupied by another block", 1.5) end
             return false
         end
-        self.state.grid:placeBlock(col, row, item.material)
+        self:placeAt(col, row, item.material)
         table.insert(self.undoStack, { type = "block_place", col = col, row = row, material = item.material })
         return true
     end

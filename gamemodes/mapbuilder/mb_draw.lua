@@ -48,13 +48,10 @@ return function(MapBuilder)
         if self.state.itemBrowser.isOpen or self.state.mapBuilderHUD:isPointerOverHUD(mx + self.state.camera.x, my + self.state.camera.y) then return end
 
         if not self:isSelectedItemObject() then
-            col, row = self:snapToBlockGrid(col, row)
+            col, row = self:snapToGrid(col, row)
         end
 
-        love.graphics.setColor(0.3, 0.5, 1.0, 0.1)
-        love.graphics.rectangle("fill", (col - 1) * tileSize, (row - 1) * tileSize, BLOCK_SIZE * tileSize, BLOCK_SIZE * tileSize)
-        love.graphics.setColor(0.3, 0.5, 1.0, 0.5)
-        love.graphics.rectangle("line", (col - 1) * tileSize, (row - 1) * tileSize, BLOCK_SIZE * tileSize, BLOCK_SIZE * tileSize)
+        self:drawPlacementOutline(col, row, tileSize, true)
     end
 
     function MapBuilder:drawDragGhost()

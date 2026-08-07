@@ -4,7 +4,6 @@
 local Config = require "core.config"
 local Coordinates = require "core.coordinates"
 
-local BLOCK_SIZE = Config.MAPBUILDER_BLOCK_SIZE
 local PLACE_INTERVAL = Config.PLAYER_PLACE_INTERVAL
 
 return function(Horde)
@@ -22,27 +21,10 @@ return function(Horde)
         local wx, wy = Coordinates.screenToWorld(self.state, love.mouse.getPosition())
         local col, row = self.state.grid:tileAt(wx, wy)
         if not col then return nil end
-        local isObject = Config.OBJECT_ITEMS[material] ~= nil
-        if not isObject then
-            col, row = self:snapToBlockGrid(col, row)
+        if not self:isObjectMaterial(material) then
+            col, row = self:snapToGrid(col, row)
         end
-        return { material = material, col = col, row = row, isObject = isObject }
-    end
-
-    function Horde:snapToBlockGrid(col, row)
-        local snappedCol = math.floor((col - 1) / BLOCK_SIZE) * BLOCK_SIZE + 1
-        local snappedRow = math.floor((row - 1) / BLOCK_SIZE) * BLOCK_SIZE + 1
-        return snappedCol, snappedRow
-    end
-
-    function Horde:isBuildValid(target)
-        local grid = self.state.grid
-        if target.col < 1 or target.col + BLOCK_SIZE - 1 > grid.cols
-        or target.row < 1 or target.row + BLOCK_SIZE - 1 > grid.rows then return false end
-        if target.isObject then
-            return grid:isAreaFreeOfObjects(target.col, target.row, BLOCK_SIZE)
-        end
-        return grid:isAreaFreeOfBlocks(target.col, target.row, BLOCK_SIZE)
+        return { material = material, col = col, row = row }
     end
 
     function Horde:updateBuild(dt)
@@ -58,19 +40,14 @@ return function(Horde)
             return
         end
         if target.col == self.lastPlacedCol and target.row == self.lastPlacedRow then return end
-        if not self:isBuildValid(target) then return end
+        if not self:canPlaceAt(target.col, target.row, target.material) then return end
         self:placeBuild(target)
         self.lastPlacedCol, self.lastPlacedRow = target.col, target.row
         self.buildCooldown = PLACE_INTERVAL
     end
 
     function Horde:placeBuild(target)
-        local grid = self.state.grid
-        if target.isObject then
-            grid:placeObject(target.col, target.row, target.material)
-        else
-            grid:placeBlock(target.col, target.row, target.material)
-        end
+        self:placeAt(target.col, target.row, target.material)
         local index = self.state.currentWeaponIndex
         if index then
             self.state.inventory:decrementItemSlot(index, 1)
@@ -80,22 +57,8 @@ return function(Horde)
     function Horde:drawBuildOutline()
         local target = self:buildTarget()
         if not target then return end
-        local valid = self:isBuildValid(target)
+        local valid = self:canPlaceAt(target.col, target.row, target.material)
         local tileSize = self.state.grid.tileSize
-        local x = (target.col - 1) * tileSize
-        local y = (target.row - 1) * tileSize
-        local size = BLOCK_SIZE * tileSize
-        if valid then
-            love.graphics.setColor(0.3, 0.5, 1.0, 0.15)
-        else
-            love.graphics.setColor(1.0, 0.3, 0.3, 0.15)
-        end
-        love.graphics.rectangle("fill", x, y, size, size)
-        if valid then
-            love.graphics.setColor(0.3, 0.5, 1.0, 0.6)
-        else
-            love.graphics.setColor(1.0, 0.3, 0.3, 0.6)
-        end
-        love.graphics.rectangle("line", x, y, size, size)
+        self:drawPlacementOutline(target.col, target.row, tileSize, valid)
     end
 end

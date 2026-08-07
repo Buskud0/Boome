@@ -158,5 +158,6 @@ require("gamemodes.mapbuilder.mb_placement")(MapBuilder)
 require("gamemodes.mapbuilder.mb_history")(MapBuilder)
 require("gamemodes.mapbuilder.mb_input")(MapBuilder)
 require("gamemodes.mapbuilder.mb_draw")(MapBuilder)
+require("gamemodes.placement_common")(MapBuilder)
 
 return MapBuilder

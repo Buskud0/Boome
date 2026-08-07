@@ -131,5 +131,6 @@ require("gamemodes.horde.horde_combat")(Horde)
 require("gamemodes.horde.horde_build")(Horde)
 require("gamemodes.horde.horde_camera")(Horde)
 require("gamemodes.horde.horde_draw")(Horde)
+require("gamemodes.placement_common")(Horde)
 
 return Horde
