@@ -24,6 +24,7 @@ cycle_prev=left
 cycle_next=right
 inventory=q
 drop=g
+interact=e
 
 # --- Menus ---
 pause=escape
@@ -50,3 +51,4 @@ search_backspace=backspace
 # --- Debug ---
 debug_toggle=f3
 debug_spawn=f2
+stop_spawn=f1

@@ -30,21 +30,26 @@ function Grid.load()
     Textures.define("shop", 11)
     Textures.define("workshop", 4)
     Textures.define("stone_wall", 5)
+    Textures.define("slot_STONE_WALL", 5)
     Textures.define("rock_path", 6)
     Textures.define("water", 7)
     Textures.define("wood_wall", 8)
     Textures.define("sand", 9)
     Textures.define("glass", 10)
+    Textures.define("slot_GLASS", 10)
     Textures.define("barricade", 12)
+    Textures.define("slot_BARRICADE", 12)
     Textures.load("images/object_spritesheet.png", 40)
     Textures.define("toxic_barrel", 1)
     Textures.define("barrel", 2)
+    Textures.define("slot_BARREL", 2)
     Textures.define("bush", 3)
     Textures.define("tree", 4)
     Textures.define("stone", 5)
     Textures.define("slot_STICKS", 6)
     Textures.define("slot_ROCKS", 7)
     Textures.define("sand_object", 8)
+    Textures.define("slot_SAND", 8)
 end
 
 function Grid:_index(col, row)
@@ -123,21 +128,25 @@ function Grid:removeObject(col, row)
     return true
 end
 
-function Grid:isTileBlocked(col, row)
+function Grid:isTileBlocked(col, row, ignoreShootThrough)
     if col < 1 or col > self.cols or row < 1 or row > self.rows then return true end
     local idx = self:_index(col, row)
-    if self.grid[idx] then
-        local item = Config.BUILDING_ITEMS[self.grid[idx]]
-        if item and item.blocksMovement then return true end
+    local function isShootThrough(material)
+        local item = Config.BUILDING_ITEMS[material]
+        return item and item.bulletproof and not item.stopsBullets
     end
-    if self.objects[idx] then
-        local item = Config.BUILDING_ITEMS[self.objects[idx]]
-        if item and item.blocksMovement then return true end
+    for _, material in ipairs({ self.grid[idx], self.objects[idx] }) do
+        if material then
+            local item = Config.BUILDING_ITEMS[material]
+            if item and item.blocksMovement and not (ignoreShootThrough and isShootThrough(material)) then
+                return true
+            end
+        end
     end
     return false
 end
 
-function Grid:isCircleBlocked(cx, cy, radius)
+function Grid:isCircleBlocked(cx, cy, radius, ignoreShootThrough)
     local minCol = math.max(1, math.floor((cx - radius) / self.tileSize) + 1)
     local maxCol = math.min(self.cols, math.floor((cx + radius) / self.tileSize) + 1)
     local minRow = math.max(1, math.floor((cy - radius) / self.tileSize) + 1)
@@ -145,7 +154,7 @@ function Grid:isCircleBlocked(cx, cy, radius)
 
     for row = minRow, maxRow do
         for col = minCol, maxCol do
-            if self:isTileBlocked(col, row) then
+            if self:isTileBlocked(col, row, ignoreShootThrough) then
                 local tileX = (col - 1) * self.tileSize
                 local tileY = (row - 1) * self.tileSize
                 local closestX = math.max(tileX, math.min(cx, tileX + self.tileSize))
@@ -159,30 +168,25 @@ function Grid:isCircleBlocked(cx, cy, radius)
     return false
 end
 
-function Grid:isAreaFreeOfBlocks(col, row, size)
+function Grid:_isAreaFree(col, row, size, tiles)
     for dy = 0, size - 1 do
         for dx = 0, size - 1 do
             local c = col + dx
             local r = row + dy
             if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
-                if self.grid[self:_index(c, r)] then return false end
+                if tiles[self:_index(c, r)] then return false end
             end
         end
     end
     return true
 end
 
+function Grid:isAreaFreeOfBlocks(col, row, size)
+    return self:_isAreaFree(col, row, size, self.grid)
+end
+
 function Grid:isAreaFreeOfObjects(col, row, size)
-    for dy = 0, size - 1 do
-        for dx = 0, size - 1 do
-            local c = col + dx
-            local r = row + dy
-            if c >= 1 and c <= self.cols and r >= 1 and r <= self.rows then
-                if self.objects[self:_index(c, r)] then return false end
-            end
-        end
-    end
-    return true
+    return self:_isAreaFree(col, row, size, self.objects)
 end
 
 function Grid:tileAt(worldX, worldY)
@@ -202,14 +206,6 @@ function Grid:getMaterialAt(worldX, worldY)
     local col, row = self:tileAt(worldX, worldY)
     if not col then return nil end
     return self.objects[self:_index(col, row)] or self.grid[self:_index(col, row)]
-end
-
-function Grid:objectRecordAt(worldX, worldY)
-    local col = math.floor(worldX / self.tileSize) + 1
-    local row = math.floor(worldY / self.tileSize) + 1
-    if col < 1 or col > self.cols or row < 1 or row > self.rows then return nil end
-    local _, record = self:findBlockRecord(col, row, self.objectRecords)
-    return record
 end
 
 function Grid:recordWorldRect(record)
@@ -236,13 +232,13 @@ function Grid:nearestInteractable(worldX, worldY, range)
         end
     end
     for _, record in ipairs(self.blockRecords) do
-        if record.material == "shop" then
+        if record.material == "shop" or record.material == "workshop" then
             local cx, cy = self:recordWorldCenter(record)
             local px, py = worldX - cx, worldY - cy
             local d = px * px + py * py
             if d <= bestDist then
                 bestDist = d
-                best, bestKind = record, "shop"
+                best, bestKind = record, record.material == "shop" and "shop" or "workshop"
             end
         end
     end

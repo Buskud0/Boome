@@ -501,12 +501,10 @@
 53,57,wood_wall
 57,57,wood_wall
 57,53,wood_wall
-57,49,wood_wall
 57,45,wood_wall
 57,41,wood_wall
 53,41,wood_wall
 45,41,wood_wall
-41,49,wood_wall
 45,45,shop
 49,53,rock_path
 49,57,rock_path
@@ -623,6 +621,8 @@
 97,1,sand
 97,9,sand
 53,45,workshop
+41,49,glass
+57,49,glass
 o,53,53,barrel
 o,58,18,toxic_barrel
 o,72,8,toxic_barrel
@@ -649,3 +649,4 @@ o,73,51,bush
 o,30,51,bush
 o,68,74,bush
 o,67,40,tree
+o,49,57,barricade

@@ -47,6 +47,7 @@ function GameState:reset()
     self.horde:reset()
     self.hud:reset()
     self.buyMenu:close()
+    self.craftMenu:close()
     self.menu = Menu.new(self)
 end
 

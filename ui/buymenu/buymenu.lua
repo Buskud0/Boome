@@ -10,7 +10,7 @@ function BuyMenu.new(state)
     self.isOpen = false
     self.selection = 1
     self.optionRects = {}
-    self.sortedWeapons = {}
+    self.sortedItems = {}
     self.lastMouseX = -1
     self.lastMouseY = -1
     self.useMouseSelection = true
@@ -19,7 +19,7 @@ end
 
 function BuyMenu:open()
     self.state.ignoreMouseUntilRelease = true
-    self.sortedWeapons = self:getWeaponsSortedByPrice()
+    self.sortedItems = self:getWeaponsSortedByPrice()
     self.isOpen = true
     self.selection = 1
     self.optionRects = {}
@@ -31,14 +31,11 @@ end
 function BuyMenu:close()
     self.isOpen = false
     self.optionRects = {}
-    self.sortedWeapons = {}
-end
-
-function BuyMenu:toggle()
-    if self.isOpen then self:close() else self:open() end
+    self.sortedItems = {}
 end
 
 require("ui.buymenu.buy_logic")(BuyMenu)
 require("ui.buymenu.buy_draw")(BuyMenu)
+require("ui.menu_common")(BuyMenu)
 
 return BuyMenu

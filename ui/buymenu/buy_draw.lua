@@ -16,7 +16,7 @@ return function(BuyMenu)
         if not self.isOpen then return end
 
         self.optionRects = {}
-        local optionCount = #self.sortedWeapons
+        local optionCount = #self.sortedItems
         local panelHeight = OPTIONS_OFFSET_Y + optionCount * OPTION_GAP + 16
         local px = math.floor(self.state.scrWidth / 2 - PANEL_WIDTH / 2 + self.state.camera.x)
         local py = math.floor(self.state.scrHeight / 2 - panelHeight / 2 + self.state.camera.y)
@@ -107,7 +107,7 @@ return function(BuyMenu)
 
     function BuyMenu:drawWeaponOptions(px, py, mouseX, mouseY, mouseMoved)
         local optionY = py + OPTIONS_OFFSET_Y
-        for i, model in ipairs(self.sortedWeapons) do
+        for i, model in ipairs(self.sortedItems) do
             self:drawWeaponOption(px, optionY, i, model, mouseX, mouseY, mouseMoved)
             optionY = optionY + OPTION_GAP
         end

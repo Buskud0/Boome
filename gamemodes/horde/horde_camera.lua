@@ -1,10 +1,14 @@
 -- Horde camera: following the player, clamping to the map and applying zoom.
 -- Attaches methods to the Horde factory.
 
+local Interact = require "world.physics.interact"
+
 return function(Horde)
     function Horde:updateCamera(dt)
         self:followPlayer()
-        if self.state.weapon and not self.state.buyMenu.isOpen then self.state.weapon:updateScope(dt) end
+        if self.state.weapon and not Interact.isActive(self.state, self) and not Interact.hasOpenMenu(self.state) then
+            self.state.weapon:updateScope(dt)
+        end
         self:clampCameraToMap()
     end
 

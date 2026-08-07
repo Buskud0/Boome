@@ -126,22 +126,21 @@ return function(Grid)
         return false
     end
 
-    function Grid:damageTile(worldX, worldY, amount)
+    function Grid:_damageTileAt(worldX, worldY, amount, noExplode)
         local col, row = self:tileAt(worldX, worldY)
         if not col then return false end
         local list, index, record = self:_destructibleRecordAt(col, row)
         if not list then return false end
-        self:_damageRecord(list, index, record, amount)
+        self:_damageRecord(list, index, record, amount, noExplode)
         return true
     end
 
+    function Grid:damageTile(worldX, worldY, amount)
+        return self:_damageTileAt(worldX, worldY, amount)
+    end
+
     function Grid:damageTileBlast(worldX, worldY, amount)
-        local col, row = self:tileAt(worldX, worldY)
-        if not col then return false end
-        local list, index, record = self:_destructibleRecordAt(col, row)
-        if not list then return false end
-        self:_damageRecord(list, index, record, amount, true)
-        return true
+        return self:_damageTileAt(worldX, worldY, amount, true)
     end
 
     function Grid:_healthBrightness(record)

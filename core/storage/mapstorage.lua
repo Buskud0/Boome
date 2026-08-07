@@ -77,14 +77,10 @@ end
 function MapStorage.listMaps()
     local names = {}
     MapStorage.ensureDirectory()
-    local dir = MapStorage.mapsDir()
-    local p = io.popen('dir /b "' .. dir .. '" 2>nul')
-    if not p then return names end
-    for line in p:lines() do
-        local name = line:match("^(.*)%.txt$")
+    for _, file in ipairs(love.filesystem.getDirectoryItems(MAPS_DIR)) do
+        local name = file:match("^(.*)%.txt$")
         if name and name ~= "" then table.insert(names, name) end
     end
-    p:close()
     table.sort(names)
     return names
 end

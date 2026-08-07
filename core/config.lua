@@ -16,8 +16,8 @@ Config.ROUND_FREEZE_TIME = 0
 Config.ROUND_TEXT_TIME = 5
 
 -- gamemodes/horde_waves.lua
-Config.ZOMBIE_BUDGET_BASE = 10
-Config.ZOMBIE_BUDGET_LINEAR = 3
+Config.ZOMBIE_BUDGET_BASE = 3
+Config.ZOMBIE_BUDGET_LINEAR = 1
 Config.ZOMBIE_BUDGET_QUAD = 0.25
 Config.ZOMBIE_BUDGET_CAP = 200
 Config.ZOMBIE_TYPE_COSTS = { rotter = 1, runner = 1, lastBreath = 3, spidor = 1 }
@@ -177,6 +177,14 @@ Config.BUYMENU_OPTIONS_OFFSET_Y = 85
 Config.BUYMENU_PANEL_WIDTH = 420
 Config.BUYMENU_TITLE_OFFSET_Y = 10
 
+-- ui/craftmenu.lua
+Config.CRAFTMENU_MATERIAL_GAP = 42
+Config.CRAFTMENU_OPTION_GAP = 62
+Config.CRAFTMENU_OPTION_HEIGHT = 44
+Config.CRAFTMENU_OPTIONS_OFFSET_Y = 85
+Config.CRAFTMENU_PANEL_WIDTH = 540
+Config.CRAFTMENU_TITLE_OFFSET_Y = 10
+
 Config.BLOCK_ITEMS = {
     dirt = { name = "Dirt", material = "dirt", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
     grass = { name = "Grass", material = "grass", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
@@ -187,7 +195,7 @@ Config.BLOCK_ITEMS = {
     water = { name = "Water", material = "water", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 0.5 },
     wood_wall = { name = "Wood Wall", material = "wood_wall", health = 1000, blocksMovement = true, blocksVision = true, speedMultiplier = 1 },
     sand = { name = "Sand", material = "sand", health = 0, blocksMovement = false, blocksVision = false, speedMultiplier = 1 },
-    glass = { name = "Glass", material = "glass", health = 50, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
+    glass = { name = "Glass", material = "glass", health = 1000, blocksMovement = true, blocksVision = false, speedMultiplier = 1 },
 }
 
 Config.OBJECT_ITEMS = {
@@ -226,6 +234,19 @@ Config.ITEMS = {
     GRENADE = { name = "Grenade", price = 0, stackAmount = 5, stackSize = 99, throwable = true },
     STICKS = { name = "Sticks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
     ROCKS = { name = "Rocks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
+    SAND = { name = "Sand", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
+    GLASS = { name = "Glass", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
+    BARRICADE = { name = "Barricade", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
+    BARREL = { name = "Barrel", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
+    STONE_WALL = { name = "Stone Wall", price = 0, stackAmount = 1, stackSize = 10, hidden = true },
+}
+
+-- ui/craftmenu.lua: output item model -> required materials ({item, count}).
+Config.CRAFT_RECIPES = {
+    GLASS = { materials = { { "SAND", 1 } } },
+    BARRICADE = { materials = { { "STICKS", 1 } } },
+    BARREL = { materials = { { "STICKS", 1 } } },
+    STONE_WALL = { materials = { { "ROCKS", 1 } } },
 }
 
 Config.WEAPONS = {

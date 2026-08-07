@@ -6,6 +6,7 @@ local Input = require "core.input"
 local Config = require "core.config"
 local Coordinates = require "core.coordinates"
 local Grenade = require "entities.grenade"
+local Interact = require "world.physics.interact"
 
 return function(Horde)
     function Horde:onZombieKilled(zombie, index)
@@ -57,7 +58,7 @@ return function(Horde)
     end
 
     function Horde:updateActiveWeapon(dt)
-        if not self.state.buyMenu.isOpen and self.state.weapon then
+        if not Interact.hasOpenMenu(self.state) and self.state.weapon then
             self.state.weapon:update(dt)
         end
     end
@@ -102,25 +103,29 @@ return function(Horde)
         self:_updateDestructibleList(self.state.grenades, dt)
     end
 
-    function Horde:tryThrowGrenade()
+    function Horde:throwGrenade()
         local state = self.state
         if state.buyMenu.isOpen or state.inventory.isOpen then return end
         if state.menu and state.menu:isOpen() then return end
         if state.inventory.drag or state.ignoreMouseUntilRelease then return end
         if state.grenadeCooldown > 0 then return end
 
-        local slot, item = state.inventory:findItemSlot("GRENADE")
+        local slot = state.inventory:findItemSlot("GRENADE")
         if not slot then
             state.toast:show("No grenades!", 1.5)
             return
         end
 
         local px, py = state.player:getCenter()
-        local dx, dy = Coordinates.aimDirection(state, px, py)
-        if dx == 0 and dy == 0 then return end
+        local mx, my = Coordinates.screenToWorld(state, love.mouse.getPosition())
+        local dx, dy = mx - px, my - py
+        local dist = math.sqrt(dx * dx + dy * dy)
+        if dist == 0 then return end
+        dx, dy = dx / dist, dy / dist
 
+        local speed = dist * Config.GRENADE_DRAG / (1 - math.exp(-Config.GRENADE_DRAG * Config.GRENADE_FUSE))
         state.inventory:decrementItemSlot(slot, 1)
-        table.insert(state.grenades, Grenade(state, px, py, dx, dy))
+        table.insert(state.grenades, Grenade(state, px, py, dx, dy, speed))
         state.grenadeCooldown = Config.GRENADE_COOLDOWN
     end
 
@@ -134,7 +139,8 @@ return function(Horde)
 
     function Horde:findNextWeaponSlot(startIndex, direction)
         local target = startIndex + direction
-        while target >= 1 and target <= 5 do
+        local maxSlot = self.state.inventory.HOTBAR_SLOTS
+        while target >= 1 and target <= maxSlot do
             if self.state.inventory:isSlotEquippable(target) then return target end
             target = target + direction
         end
@@ -154,7 +160,7 @@ return function(Horde)
         elseif action == "cycle_next" then
             self:cycleWeapon(1)
         elseif action == "grenade" then
-            self:tryThrowGrenade()
+            self:throwGrenade()
         end
     end
 

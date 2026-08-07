@@ -53,6 +53,11 @@ function Inventory:toggle()
     if self.isOpen then self:close() else self:open() end
 end
 
+function Inventory:openChest(record)
+    self.chest = { container = record.contents, record = record }
+    self:open()
+end
+
 function Inventory:closeChest()
     self.chest = nil
 end
@@ -62,17 +67,16 @@ function Inventory:refreshChest()
         self:closeChest()
         return
     end
-    if not self.state.player or not self.state.grid then return end
-    local cx, cy = self.state.player:getCenter()
-    local record, kind = self.state.grid:nearestInteractable(cx, cy, INTERACT_RANGE)
-    if not record or kind ~= "chest" then
+    if self.state.craftMenu and self.state.craftMenu.isOpen then
         self:closeChest()
         return
     end
-    if self.chest and self.chest.record == record then
-        return
+    if not self.chest or not self.state.player or not self.state.grid then return end
+    local cx, cy = self.state.player:getCenter()
+    local record, kind = self.state.grid:nearestInteractable(cx, cy, INTERACT_RANGE)
+    if not record or record ~= self.chest.record or kind ~= "chest" then
+        self:closeChest()
     end
-    self.chest = { container = record.contents, record = record }
 end
 
 require("ui.inventory.inventory_state")(Inventory)

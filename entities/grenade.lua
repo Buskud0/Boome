@@ -15,15 +15,15 @@ local SPRITE = "slot_GRENADE"
 
 local Grenade = Object:extend()
 
-function Grenade:new(state, x, y, dirX, dirY)
+function Grenade:new(state, x, y, dirX, dirY, speed)
     self.state = state
-    self.x = x
-    self.y = y
     self.width = 20
     self.height = 20
+    self.x = x - self.width / 2
+    self.y = y - self.height / 2
     self.radius = 10
-    self.vx = dirX * THROW_SPEED
-    self.vy = dirY * THROW_SPEED
+    self.vx = dirX * (speed or THROW_SPEED)
+    self.vy = dirY * (speed or THROW_SPEED)
     self.rot = 0
     self.fuse = FUSE
     self.destruct = false
@@ -79,7 +79,7 @@ function Grenade:_canMoveTo(x, y)
     if y < 0 or y > self.state.mapHeight - self.height then return false end
     local cx = x + self.width / 2
     local cy = y + self.height / 2
-    return not self.state.grid:isCircleBlocked(cx, cy, self.radius)
+    return not self.state.grid:isCircleBlocked(cx, cy, self.radius, true)
 end
 
 function Grenade:draw()

@@ -7,10 +7,6 @@ local MapStorage = require "core.storage.mapstorage"
 local MapBuilder = {}
 MapBuilder.__index = MapBuilder
 
-local PAN_SPEED = Config.MAPBUILDER_PAN_SPEED
-local ZOOM_MIN = Config.MAPBUILDER_ZOOM_MIN
-local ZOOM_MAX = Config.MAPBUILDER_ZOOM_MAX
-local ZOOM_FACTOR = Config.MAPBUILDER_ZOOM_FACTOR
 local QUICK_ACCESS_COUNT = Config.MAPBUILDER_QUICK_ACCESS_COUNT
 local BLOCK_SIZE = Config.MAPBUILDER_BLOCK_SIZE
 

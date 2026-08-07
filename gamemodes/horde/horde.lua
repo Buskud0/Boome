@@ -4,6 +4,7 @@
 local Config = require "core.config"
 local ScoreStorage = require "core.storage.scorestorage"
 local EntityCollision = require "world.physics.entity_collision"
+local Interact = require "world.physics.interact"
 
 local Horde = {}
 Horde.__index = Horde
@@ -21,6 +22,7 @@ end
 function Horde:reset()
     self.state.inventory:close()
     self.state.currentRound = 1
+    self.spawnEnabled = true
     self.waveState = "intro"
     self.introTimer = ROUND_FREEZE_TIME
     self.roundTextTimer = ROUND_TEXT_TIME
@@ -53,7 +55,11 @@ end
 function Horde:updateSpawning(dt)
     self.spawnTimer = self.spawnTimer - dt
     if self.spawnTimer <= 0 and #self.spawnQueue > 0 then
-        self:spawnNextQueuedZombie()
+        if self.spawnEnabled then
+            self:spawnNextQueuedZombie()
+        else
+            self.spawnTimer = Config.ZOMBIE_CAP_RETRY_INTERVAL
+        end
     end
     if #self.spawnQueue == 0 then
         self.waveState = "waiting"
@@ -100,6 +106,7 @@ function Horde:mainUpdate(dt)
     end
     self:updateActiveWeapon(dt)
     self:updateCamera(dt)
+    Interact.update(self.state, self)
     EntityCollision.bulletVsZombie(self.state)
     EntityCollision.seperateZombies(self.state)
     self:updateBullets(dt)
@@ -114,7 +121,6 @@ function Horde:mainUpdate(dt)
     self:updateExplosions(dt)
     self:updateDamageTexts(dt)
     self:updateScoreRecord()
-    self:updateShopButton()
     self.state.hud:update(dt)
 end
 
@@ -122,6 +128,5 @@ require("gamemodes.horde.horde_waves")(Horde)
 require("gamemodes.horde.horde_combat")(Horde)
 require("gamemodes.horde.horde_camera")(Horde)
 require("gamemodes.horde.horde_draw")(Horde)
-require("gamemodes.horde.horde_shop")(Horde)
 
 return Horde

@@ -20,6 +20,13 @@ end
 function Debug.handleKey(state, key)
     if require("core.input").isActionBoundToKey("debug_toggle", key) then
         Debug.toggle()
+        if state.toast then
+            if Debug.enabled then
+                state.toast:show("Debug ON", 1.5)
+            else
+                state.toast:show("Debug OFF", 1.5)
+            end
+        end
         return true
     end
     return false

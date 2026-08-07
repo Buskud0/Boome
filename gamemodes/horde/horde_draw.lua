@@ -3,6 +3,7 @@
 
 local Config = require "core.config"
 local Fonts = require "core.fonts"
+local Interact = require "world.physics.interact"
 
 local ROUND_TEXT_TIME = Config.ROUND_TEXT_TIME
 
@@ -28,7 +29,7 @@ return function(Horde)
         self:drawGrenades()
         self:drawExplosions()
         self:drawDamageTexts()
-        self:drawShopButton()
+        Interact.draw(self.state, self)
         love.graphics.pop()
     end
 
@@ -92,6 +93,7 @@ return function(Horde)
         self.state.inventory:draw()
         self:drawOverlay()
         self.state.buyMenu:draw()
+        self.state.craftMenu:draw()
     end
 
     function Horde:drawOverlay()

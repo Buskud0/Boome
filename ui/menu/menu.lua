@@ -1,16 +1,7 @@
 -- Pause menu: screen stack, keyboard/mouse selection and actions.
 
-local Config = require "core.config"
-local Input = require "core.input"
-
 local Menu = {}
 Menu.__index = Menu
-
-local PANEL_WIDTH = Config.MENU_PANEL_WIDTH
-local OPTION_HEIGHT = Config.MENU_OPTION_HEIGHT
-local OPTION_GAP = Config.MENU_OPTION_GAP
-local TITLE_OFFSET_Y = Config.MENU_TITLE_OFFSET_Y
-local OPTIONS_OFFSET_Y = Config.MENU_OPTIONS_OFFSET_Y
 
 local function buildMainOptions(self)
     local options = {

@@ -3,9 +3,7 @@
 
 require "conf"
 
-local Config = require "core.config"
 local Input = require "core.input"
-local Fonts = require "core.fonts"
 local GameState = require "core.game_state"
 local Coordinates = require "core.coordinates"
 local MapStorage = require "core.storage.mapstorage"
@@ -18,6 +16,7 @@ local Movement = require "world.physics.movement"
 local Grid = require "world.grid.grid"
 local Inventory = require "ui.inventory"
 local BuyMenu = require "ui.buymenu"
+local CraftMenu = require "ui.craftmenu"
 local MapSelect = require "ui.map_select"
 local MapBuilderHUD = require "ui.mapbuilder_hud"
 local ItemBrowser = require "ui.item_browser"
@@ -25,6 +24,7 @@ local Toast = require "ui.toast"
 local HUD = require "ui.hud"
 local Horde = require "gamemodes.horde.horde"
 local MapBuilder = require "gamemodes.mapbuilder.mapbuilder"
+local Interact = require "world.physics.interact"
 
 local state
 local cursor
@@ -47,7 +47,7 @@ local function updateCursor()
         love.mouse.setCursor(love.mouse.getSystemCursor("arrow"))
         return
     end
-    if state.gameMode == "horde" and not state.menu:isOpen() and not state.buyMenu.isOpen then
+    if state.gameMode == "horde" and not state.menu:isOpen() and not state.buyMenu.isOpen and not state.craftMenu.isOpen then
         love.mouse.setCursor(cursor)
     else
         love.mouse.setCursor(love.mouse.getSystemCursor("arrow"))
@@ -86,6 +86,7 @@ function love.load()
     state.hud = HUD.new(state)
     state.inventory = Inventory.new(state)
     state.buyMenu = BuyMenu.new(state)
+    state.craftMenu = CraftMenu.new(state)
     state.mapBuilderHUD = MapBuilderHUD.new(state)
     state.itemBrowser = ItemBrowser.new(state)
     state.mapBuilder = MapBuilder.new(state)
@@ -146,6 +147,7 @@ end
 function love.keypressed(key)
     if Debug.handleKey(state, key) then return end
     if handleDebugSpawn(key) then return end
+    if handleStopSpawn(key) then return end
 
     local action = Input.getActionForKey(key)
     if state.gameMode == "select" and state.mapSelect.isOpen then
@@ -161,6 +163,19 @@ end
 function handleDebugSpawn(key)
     if Input.isActionBoundToKey("debug_spawn", key) and state.gameMode == "horde" then
         spawnZombieAtMouse()
+        return true
+    end
+    return false
+end
+
+function handleStopSpawn(key)
+    if Input.isActionBoundToKey("stop_spawn", key) and state.gameMode == "horde" then
+        state.horde.spawnEnabled = not state.horde.spawnEnabled
+        if state.horde.spawnEnabled then
+            state.toast:show("Zombie spawning resumed", 1.5)
+        else
+            state.toast:show("Zombie spawning stopped", 1.5)
+        end
         return true
     end
     return false
@@ -191,6 +206,8 @@ end
 function togglePause()
     if state.buyMenu.isOpen then
         state.buyMenu:close()
+    elseif state.craftMenu.isOpen then
+        state.craftMenu:close()
     elseif state.menu:isOpen() then
         state.menu:closeSubmenu()
         state.paused = state.menu:isOpen()
@@ -205,13 +222,27 @@ function handleActiveMenuInput(action, key)
         state.menu:handleAction(action)
         state.paused = state.menu:isOpen()
     elseif state.buyMenu.isOpen then
-        if action == "inventory" then
+        if action == "inventory" or action == "interact" then
             state.buyMenu:close()
         else
             state.buyMenu:handleAction(action)
         end
+    elseif state.craftMenu.isOpen then
+        if action == "inventory" or action == "interact" then
+            state.craftMenu:close()
+        else
+            state.craftMenu:handleAction(action)
+        end
     elseif state.gameMode == "horde" then
-        state.horde:handleKey(key, action)
+        if action == "interact" then
+            if state.inventory.isOpen then
+                state.inventory:close()
+            else
+                Interact.activateNearest(state, state.horde)
+            end
+        else
+            state.horde:handleKey(key, action)
+        end
     end
 end
 
@@ -231,8 +262,13 @@ function dispatchMousePressed(x, y, button)
     elseif button == 1 and state.buyMenu.isOpen then
         state.ignoreMouseUntilRelease = true
         state.buyMenu:mousepressed(x + state.camera.x, y + state.camera.y)
+    elseif button == 1 and state.craftMenu.isOpen then
+        state.ignoreMouseUntilRelease = true
+        if not state.craftMenu:mousepressed(x + state.camera.x, y + state.camera.y) then
+            state.inventory:mousepressed(x + state.camera.x, y + state.camera.y, button)
+        end
     elseif state.gameMode == "horde" then
-        if button == 2 and state.horde:tryOpenShop(x, y) then return end
+        if button == 2 and Interact.tryActivate(state, x, y, state.horde) then return end
         state.inventory:mousepressed(x + state.camera.x, y + state.camera.y, button)
     elseif state.gameMode == "mapbuilder" then
         state.mapBuilder:handleClick(x, y, button)
@@ -279,6 +315,10 @@ function dispatchWheel(direction)
     end
     if state.buyMenu.isOpen then
         state.buyMenu:wheelmoved(direction)
+        return
+    end
+    if state.craftMenu.isOpen then
+        state.craftMenu:wheelmoved(direction)
         return
     end
     if direction > 0 then

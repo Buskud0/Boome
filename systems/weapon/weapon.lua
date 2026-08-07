@@ -150,14 +150,14 @@ end
 
 function Gun:_drawReloadArc()
     if not self.reloading then return end
-    local mx, my = love.mouse.getX(), love.mouse.getY()
+    local mx, my = love.mouse.getX() + self.state.camera.x, love.mouse.getY() + self.state.camera.y
     love.graphics.setColor(1, 1, 1)
     love.graphics.arc("line", mx, my, 15, 0, math.pi * 2 * self.reloadProgress)
 end
 
 function Gun:_drawFirerateArc()
     if self.firerateCooldown <= 0 or self.reloading then return end
-    local mx, my = love.mouse.getX(), love.mouse.getY()
+    local mx, my = love.mouse.getX() + self.state.camera.x, love.mouse.getY() + self.state.camera.y
     love.graphics.setColor(1, 1, 1, 0.6)
     love.graphics.arc("line", mx, my, 20, 0, math.pi * 2 * self.firerateProgress)
 end
