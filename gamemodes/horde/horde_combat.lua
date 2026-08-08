@@ -43,8 +43,9 @@ return function(Horde)
         end
         if newWeapon ~= self.state.weapon then
             self:resetScope(newWeapon)
+            self.state.weapon = newWeapon
+            self.state:deactivateHeldWeaponInput()
         end
-        self.state.weapon = newWeapon
     end
 
     function Horde:resetScope(newWeapon)

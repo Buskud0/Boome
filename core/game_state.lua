@@ -32,7 +32,6 @@ function GameState:reset()
     self.grenades = {}
     self.grenadeCooldown = 0
     self.ignoreMouseUntilRelease = false
-    self.suppressSwing = false
     self.paused = false
     self.gameMode = "horde"
 
@@ -50,6 +49,20 @@ function GameState:reset()
     self.buyMenu:close()
     self.craftMenu:close()
     self.menu = Menu.new(self)
+    self:deactivateHeldWeaponInput()
+end
+
+-- After any action that changes the equipped weapon (or resets it), a still-held
+-- mouse button must not fire the newly equipped weapon until it is pressed again.
+function GameState:deactivateHeldWeaponInput()
+    local weapon = self.weapon
+    if weapon then
+        weapon.shotFirstBullet = true
+        weapon.swingShotFirst = true
+    end
+    if love.mouse.isDown(1) or love.mouse.isDown(2) then
+        self.ignoreMouseUntilRelease = true
+    end
 end
 
 return GameState

@@ -253,17 +253,17 @@ end
 
 function dispatchMousePressed(x, y, button)
     if state.gameMode == "select" and state.mapSelect.isOpen then
-        state.ignoreMouseUntilRelease = true
+        state:deactivateHeldWeaponInput()
         state.mapSelect:mousepressed(x, y, button)
     elseif button == 1 and state.menu:isOpen() then
-        state.ignoreMouseUntilRelease = true
+        state:deactivateHeldWeaponInput()
         state.menu:mousepressed(x + state.camera.x, y + state.camera.y)
         state.paused = state.menu:isOpen()
     elseif button == 1 and state.buyMenu.isOpen then
-        state.ignoreMouseUntilRelease = true
+        state:deactivateHeldWeaponInput()
         state.buyMenu:mousepressed(x + state.camera.x, y + state.camera.y)
     elseif button == 1 and state.craftMenu.isOpen then
-        state.ignoreMouseUntilRelease = true
+        state:deactivateHeldWeaponInput()
         if not state.craftMenu:mousepressed(x + state.camera.x, y + state.camera.y) then
             state.inventory:mousepressed(x + state.camera.x, y + state.camera.y, button)
         end
@@ -276,7 +276,9 @@ function dispatchMousePressed(x, y, button)
 end
 
 function love.mousereleased(x, y, button)
-    state.ignoreMouseUntilRelease = false
+    if not love.mouse.isDown(1) and not love.mouse.isDown(2) then
+        state.ignoreMouseUntilRelease = false
+    end
     dispatchMouseReleased(x, y, button)
 end
 
@@ -344,7 +346,7 @@ end
 -------------------------------- mode transitions ---------------------------------
 
 function enterMapSelect(mode)
-    state.ignoreMouseUntilRelease = true
+    state:deactivateHeldWeaponInput()
     state.mapSelect.previousMode = state.gameMode
     state.gameMode = "select"
     state.paused = false
@@ -364,7 +366,7 @@ function enterBuilderWith(mapName)
     state.selectedMapName = mapName
     MapStorage.setSelectedMap(mapName)
     state.mapBuilder.currentMapName = mapName
-    state.ignoreMouseUntilRelease = true
+    state:deactivateHeldWeaponInput()
     state.gameMode = "mapbuilder"
     state.paused = false
     state.mapBuilder:enter(mapName)

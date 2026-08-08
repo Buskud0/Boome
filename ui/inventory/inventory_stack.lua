@@ -114,7 +114,6 @@ return function(Inventory)
         if not equipped or equipped.model ~= model then return false end
         self:decrementItemSlot(index, 1)
         self.state.grid:repairRecord(record)
-        self.state.suppressSwing = true
         return true
     end
 end

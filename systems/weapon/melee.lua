@@ -59,12 +59,6 @@ end
 
 function Melee:_isMeleeInputReady(inputAction, wasPressedFlag)
     if self.state.inventory.drag or self.state.ignoreMouseUntilRelease then return false end
-    if inputAction == "swing" and self.state.suppressSwing then
-        if not Input.isDown("swing") then
-            self.state.suppressSwing = false
-        end
-        return false
-    end
     if not Input.isDown(inputAction) then
         self[wasPressedFlag] = false
         return false
