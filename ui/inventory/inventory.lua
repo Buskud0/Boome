@@ -31,8 +31,9 @@ function Inventory.load()
         ["REMINGTON-870"] = 4,
         M9 = 5,
         AWP = 6,
-        AXE = 7,
-        GRENADE = 8,
+        GRENADE = 7,
+        SHOVEL = 8,
+        AXE = 9,
     }
     for model, idx in pairs(weaponSprites) do
         Textures.define("slot_" .. model, idx)

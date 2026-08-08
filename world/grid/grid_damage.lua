@@ -76,12 +76,6 @@ return function(Grid)
         return nil
     end
 
-    function Grid:hasDestructibleTile(worldX, worldY)
-        local col, row = self:tileAt(worldX, worldY)
-        if not col then return false end
-        return self:_destructibleRecordAt(col, row) ~= nil
-    end
-
     function Grid:destructibleRecordAt(worldX, worldY)
         local col, row = self:tileAt(worldX, worldY)
         if not col then return nil end

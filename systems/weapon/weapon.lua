@@ -23,7 +23,6 @@ function Weapon:new(state, model)
     self.damage = stats.damage
     self.firerate = stats.firerate
     self.automatic = stats.automatic
-    self.price = stats.price
 
     self.firerateCooldown = 0
     self.firerateProgress = 0

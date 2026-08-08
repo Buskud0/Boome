@@ -7,8 +7,7 @@ local ExplosionEffect = Object:extend()
 
 local DURATION = 0.4
 
-function ExplosionEffect:new(state, x, y, radius)
-    self.state = state
+function ExplosionEffect:new(x, y, radius)
     self.x = x
     self.y = y
     self.radius = radius

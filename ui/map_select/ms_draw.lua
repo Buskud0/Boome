@@ -36,7 +36,7 @@ return function(MapSelect)
         local panel = self:panelBox()
 
         self:drawPanel(panel)
-        self:drawRows(panel)
+        self:drawRows()
         self:drawBottom(panel)
 
         if self.prompt then self:drawPrompt() end
@@ -56,7 +56,7 @@ return function(MapSelect)
         drawCentered(title, panel.x + PANEL_WIDTH / 2, panel.y + PADDING, 28, 1)
     end
 
-    function MapSelect:drawRows(panel)
+    function MapSelect:drawRows()
         for _, row in ipairs(self.rows) do
             if row.index == self.selected then
                 love.graphics.setColor(COL.selected)

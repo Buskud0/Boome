@@ -1,4 +1,3 @@
-local Object = require "lib.classic"
 local Weapon = require "systems.weapon.weapon"
 local Config = require "core.config"
 local Input = require "core.input"
@@ -6,7 +5,6 @@ local Collision = require "world.physics.collision"
 local DamageText = require "entities.damage_text"
 
 local Melee = Weapon:extend()
-
 local STAB_DURATION = Config.MELEE_STAB_DURATION
 local SWING_DURATION = Config.MELEE_SWING_DURATION
 local SWING_HALF_ANGLE = Config.MELEE_SWING_HALF_ANGLE
@@ -22,7 +20,7 @@ function Melee:new(state, model)
     self.swingHalfAngle = SWING_HALF_ANGLE
     self.stabStaminaCost = stats.stabStaminaCost or STAB_STAMINA_COST
     self.swingStaminaCost = stats.swingStaminaCost or SWING_STAMINA_COST
-    self.materialDamageMultiplier = stats.materialDamageMultiplier
+    self.blockDamageMultiplier = stats.blockDamageMultiplier
 
     self.stabTimer = 0
     self.stabDirX, self.stabDirY = 0, 0
@@ -61,6 +59,12 @@ end
 
 function Melee:_isMeleeInputReady(inputAction, wasPressedFlag)
     if self.state.inventory.drag or self.state.ignoreMouseUntilRelease then return false end
+    if inputAction == "swing" and self.state.suppressSwing then
+        if not Input.isDown("swing") then
+            self.state.suppressSwing = false
+        end
+        return false
+    end
     if not Input.isDown(inputAction) then
         self[wasPressedFlag] = false
         return false
@@ -111,8 +115,8 @@ function Melee:_damageBlocksInSector(px, py, dirX, dirY)
 end
 
 function Melee:_damageFor(record)
-    local mult = (self.materialDamageMultiplier or {})[record.material]
-    return mult and self.damage * mult or self.damage
+    if not record or not self.blockDamageMultiplier then return self.damage end
+    return self.damage * self.blockDamageMultiplier
 end
 
 function Melee:_performStab()

@@ -27,8 +27,6 @@ function Horde:reset()
     self.waveState = "intro"
     self.introTimer = ROUND_FREEZE_TIME
     self.roundTextTimer = ROUND_TEXT_TIME
-    self.spawnQueue = {}
-    self.spawnTimer = 0
     self:buildQueue()
 end
 

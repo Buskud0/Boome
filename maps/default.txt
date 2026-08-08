@@ -80,7 +80,6 @@
 21,21,water
 81,5,sand
 81,9,sand
-81,13,sand
 85,13,sand
 85,17,sand
 89,17,sand
@@ -93,10 +92,6 @@
 81,1,sand
 77,1,sand
 77,5,sand
-77,9,sand
-73,1,sand
-73,5,sand
-69,1,sand
 57,1,dirt
 61,1,dirt
 65,5,dirt
@@ -113,6 +108,7 @@
 41,49,rock_path
 57,45,glass
 57,53,glass
+81,13,sand
 o,53,53,barrel
 o,58,18,toxic_barrel
 o,72,8,toxic_barrel
@@ -141,3 +137,6 @@ o,68,74,bush
 o,67,40,tree
 o,49,57,barricade
 o,41,49,barricade
+o,96,23,sand_pile
+o,96,3,sand_pile
+o,79,3,sand_pile

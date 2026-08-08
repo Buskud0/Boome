@@ -49,7 +49,7 @@ function Grid.load()
     Textures.define("stone", 5)
     Textures.define("slot_STICKS", 6)
     Textures.define("slot_ROCKS", 7)
-    Textures.define("sand_object", 8)
+    Textures.define("sand_pile", 8)
     Textures.define("slot_SAND", 8)
 end
 
@@ -107,7 +107,7 @@ function Grid:placeBlock(col, row, material)
 end
 
 function Grid:removeBlock(col, row)
-    local index, record = self:findBlockRecord(col, row, self.blockRecords)
+    local index = self:findBlockRecord(col, row, self.blockRecords)
     if not index then return false end
     table.remove(self.blockRecords, index)
     self:rebuildGrid()
@@ -129,7 +129,7 @@ function Grid:_newContents(material)
 end
 
 function Grid:removeObject(col, row)
-    local index, record = self:findBlockRecord(col, row, self.objectRecords)
+    local index = self:findBlockRecord(col, row, self.objectRecords)
     if not index then return false end
     table.remove(self.objectRecords, index)
     self:rebuildGrid()

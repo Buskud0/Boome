@@ -280,7 +280,14 @@ function love.mousereleased(x, y, button)
     dispatchMouseReleased(x, y, button)
 end
 
+function love.mousemoved(x, y, dx, dy)
+    if state.buyMenu.isOpen then
+        state.buyMenu:mousemoved(x + state.camera.x, y + state.camera.y)
+    end
+end
+
 function dispatchMouseReleased(x, y, button)
+    if state.buyMenu.isOpen then state.buyMenu:mousereleased() end
     if state.gameMode == "horde" and not state.menu:isOpen() and not state.buyMenu.isOpen then
         state.inventory:mousereleased(x + state.camera.x, y + state.camera.y, button)
     end

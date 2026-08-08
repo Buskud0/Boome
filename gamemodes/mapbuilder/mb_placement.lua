@@ -4,14 +4,14 @@ local Config = require "core.config"
 
 local PLACE_INTERVAL = Config.MAPBUILDER_PLACE_INTERVAL
 
-local function buildingItems(self)
+local function buildingItems()
     return Config.BUILDING_ITEMS
 end
 
 return function(MapBuilder)
     function MapBuilder:setQuickAccess(slot, itemKey)
         if slot < 1 or slot > self.QUICK_ACCESS_COUNT then return end
-        self.quickAccess[slot] = buildingItems(self)[itemKey]
+        self.quickAccess[slot] = buildingItems()[itemKey]
     end
 
     function MapBuilder:isSelectedItemObject()
@@ -174,7 +174,7 @@ return function(MapBuilder)
     end
 
     function MapBuilder:findItemKeyForMaterial(material)
-        for key, item in pairs(buildingItems(self)) do
+        for key, item in pairs(buildingItems()) do
             if item.material == material then return key end
         end
         return nil

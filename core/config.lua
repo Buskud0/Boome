@@ -64,7 +64,6 @@ Config.MAPBUILDER_ZOOM_MIN = 0.1
 Config.MAP_SELECT_PANEL_WIDTH = 520
 Config.MAP_SELECT_ROW_HEIGHT = 42
 Config.MAP_SELECT_ROW_GAP = 8
-Config.MAP_SELECT_TITLE_OFFSET_Y = 16
 Config.MAP_SELECT_PADDING = 20
 Config.MAP_SELECT_BUTTON_WIDTH = 64
 Config.MAP_SELECT_MAX_VISIBLE_ROWS = 12
@@ -176,6 +175,7 @@ Config.BUYMENU_OPTION_GAP = 50
 Config.BUYMENU_OPTION_HEIGHT = 36
 Config.BUYMENU_OPTIONS_OFFSET_Y = 85
 Config.BUYMENU_PANEL_WIDTH = 420
+Config.BUYMENU_PANEL_MAX_HEIGHT = 400
 Config.BUYMENU_TITLE_OFFSET_Y = 10
 
 -- ui/craftmenu.lua
@@ -205,7 +205,7 @@ Config.OBJECT_ITEMS = {
     tree = { name = "Tree", material = "tree", health = 500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false, bulletproof = true, stopsBullets = true },
     stone = { name = "Stone", material = "stone", health = 1500, blocksMovement = true, blocksVision = false, regrows = true, penetrative = false, bulletproof = true, stopsBullets = true },
     barricade = { name = "Barricade", material = "barricade", health = 500, blocksMovement = true, blocksVision = false, bulletproof = true },
-    sand_object = { name = "Sand", material = "sand_object", health = 0, blocksMovement = false, blocksVision = false, hidden = true },
+    sand_pile = { name = "Sand Pile", material = "sand_pile", health = 50, blocksMovement = false, blocksVision = false },
 }
 
 Config.BUILDING_ITEMS = {}
@@ -231,7 +231,7 @@ Config.GRENADE_COOLDOWN = 0.8
 
 -- Stackable inventory items (core/item.lua, ui/inventory)
 Config.ITEMS = {
-    GRENADE = { name = "Grenade", price = 0, stackAmount = 5, stackSize = 99, throwable = true },
+    GRENADE = { name = "Grenade", price = 0, stackAmount = 5, stackSize = 99 },
     STICKS = { name = "Sticks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
     ROCKS = { name = "Rocks", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
     SAND = { name = "Sand", price = 0, stackAmount = 1, stackSize = 99, hidden = true },
@@ -325,6 +325,7 @@ Config.WEAPONS = {
         range = 30,
         stabStaminaCost = 10,
         swingStaminaCost = 15,
+        blockDamageMultiplier = 1.5,
     },
     FISTS = {
         weaponType = "melee",
@@ -346,7 +347,18 @@ Config.WEAPONS = {
         range = 40,
         stabStaminaCost = 45,
         swingStaminaCost = 60,
-        materialDamageMultiplier = { tree = 3, stone = 3 },
+        blockDamageMultiplier = 3,
+    },
+    SHOVEL = {
+        weaponType = "melee",
+        automatic = false,
+        damage = 43,
+        firerate = 0.6,
+        price = 0,
+        range = 50,
+        stabStaminaCost = 20,
+        swingStaminaCost = 27,
+        blockDamageMultiplier = 1.5,
     },
 }
 

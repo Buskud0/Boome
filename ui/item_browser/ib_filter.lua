@@ -3,17 +3,12 @@
 
 local Config = require "core.config"
 
-local PANEL_WIDTH = Config.ITEM_BROWSER_PANEL_WIDTH
 local PANEL_HEIGHT = Config.ITEM_BROWSER_PANEL_HEIGHT
 local ITEM_CELL_SIZE = Config.ITEM_BROWSER_ITEM_CELL_SIZE
 local ITEM_CELL_GAP = Config.ITEM_BROWSER_ITEM_CELL_GAP
 local ITEMS_PER_ROW = Config.ITEM_BROWSER_ITEMS_PER_ROW
 local HEADER_HEIGHT = Config.ITEM_BROWSER_HEADER_HEIGHT
 local GRID_TOP = HEADER_HEIGHT + 18
-
-local function isPointInRect(x, y, rectX, rectY, w, h)
-    return x >= rectX and x <= rectX + w and y >= rectY and y <= rectY + h
-end
 
 return function(ItemBrowser)
     function ItemBrowser:clampScroll()

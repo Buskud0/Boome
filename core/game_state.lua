@@ -32,6 +32,7 @@ function GameState:reset()
     self.grenades = {}
     self.grenadeCooldown = 0
     self.ignoreMouseUntilRelease = false
+    self.suppressSwing = false
     self.paused = false
     self.gameMode = "horde"
 

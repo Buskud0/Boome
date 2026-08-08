@@ -14,10 +14,6 @@ return function(Inventory)
         return item ~= nil and item.isItem == true
     end
 
-    function Inventory:stackSizeOf(model)
-        return stackSizeOf(model)
-    end
-
     function Inventory:_slotRangeFor(item)
         return 1, self.MAX_SLOTS
     end
@@ -118,6 +114,7 @@ return function(Inventory)
         if not equipped or equipped.model ~= model then return false end
         self:decrementItemSlot(index, 1)
         self.state.grid:repairRecord(record)
+        self.state.suppressSwing = true
         return true
     end
 end

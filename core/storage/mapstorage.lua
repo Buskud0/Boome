@@ -44,6 +44,19 @@ function MapStorage.pathFor(name)
     return MapStorage.mapsDir() .. "/" .. name .. ".txt"
 end
 
+function MapStorage.saveMapsDir()
+    return love.filesystem.getSaveDirectory() .. "/" .. MAPS_DIR
+end
+
+function MapStorage.findPath(name)
+    if not MapStorage.isValidName(name) then return nil end
+    local path = MapStorage.pathFor(name)
+    if readFile(path) then return path end
+    local savePath = MapStorage.saveMapsDir() .. "/" .. name .. ".txt"
+    if readFile(savePath) then return savePath end
+    return nil
+end
+
 function MapStorage.selectedPath()
     return MapStorage.getBaseDir() .. "/" .. SELECTED_FILE
 end
@@ -70,8 +83,7 @@ function MapStorage.isValidName(name)
 end
 
 function MapStorage.mapExists(name)
-    if not MapStorage.isValidName(name) then return false end
-    return readFile(MapStorage.pathFor(name)) ~= nil
+    return MapStorage.findPath(name) ~= nil
 end
 
 function MapStorage.listMaps()
@@ -86,8 +98,9 @@ function MapStorage.listMaps()
 end
 
 function MapStorage.loadMap(name)
-    if not MapStorage.isValidName(name) then return nil end
-    return readFile(MapStorage.pathFor(name))
+    local path = MapStorage.findPath(name)
+    if not path then return nil end
+    return readFile(path)
 end
 
 function MapStorage.saveMap(name, content)
@@ -99,7 +112,7 @@ end
 function MapStorage.deleteMap(name)
     if not MapStorage.isValidName(name) then return false end
     if not MapStorage.mapExists(name) then return false end
-    return os.remove(MapStorage.pathFor(name))
+    return os.remove(MapStorage.findPath(name))
 end
 
 function MapStorage.renameMap(oldName, newName)
@@ -108,7 +121,7 @@ function MapStorage.renameMap(oldName, newName)
     local content = MapStorage.loadMap(oldName)
     if content == nil then return false end
     if not MapStorage.saveMap(newName, content) then return false end
-    MapStorage.deleteMap(oldName)
+    if MapStorage.mapExists(oldName) then MapStorage.deleteMap(oldName) end
     return true
 end
 

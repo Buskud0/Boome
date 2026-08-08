@@ -1,4 +1,3 @@
-local Object = require "lib.classic"
 local Entity = require "entities.entity"
 local Config = require "core.config"
 local Input = require "core.input"

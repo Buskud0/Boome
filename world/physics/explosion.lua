@@ -60,7 +60,7 @@ function Explosion.detonate(state, centerX, centerY, radius, maxDamage, minDamag
         end
     end
 
-    table.insert(state.explosions, ExplosionEffect(state, centerX, centerY, radius))
+    table.insert(state.explosions, ExplosionEffect(centerX, centerY, radius))
 end
 
 function Explosion._castBlast(state, originX, originY, targetX, targetY, radius, maxDamage, minDamage, skipRec)

@@ -101,8 +101,18 @@ return function(BuyMenu)
             self:close()
             return
         end
-        for i, rect in ipairs(self.optionRects) do
-            if self:isPointInRect(worldX, worldY, rect) then
+        if self.maxScroll > 0 then
+            local sbx, trackTop, trackH, thumbH, thumbTop = self:scrollbarGeometry()
+            if worldX >= sbx and worldX <= sbx + 4 and worldY >= trackTop and worldY <= trackTop + trackH then
+                self.dragScroll = true
+                self.dragOffset = worldY - thumbTop
+                self:scrollToWorldY(worldY)
+                return
+            end
+        end
+        for i = 1, #self.sortedItems do
+            local rect = self.optionRects[i]
+            if rect and self:isPointInRect(worldX, worldY, rect) then
                 self.selection = i
                 self:confirmSelection()
                 return
